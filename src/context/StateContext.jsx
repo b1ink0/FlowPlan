@@ -10,7 +10,14 @@ export function useStateContext() {
 
 // Creating Provider
 export function StateProvider({ children }) {
-  const values = {};
+  const [db, setDb] = useState(null);
+  const [treeNotes, setTreeNotes] = useState([]);
+  const values = {
+    db,
+    setDb,
+    treeNotes,
+    setTreeNotes
+  };
   return (
     <StateContext.Provider value={values}>{children}</StateContext.Provider>
   );

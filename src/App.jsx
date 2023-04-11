@@ -1,9 +1,24 @@
 import "./App.css";
+import Dexie from "dexie";
+import { useLiveQuery } from "dexie-react-hooks";
 import DisplayTree from "./components/DisplayTree";
-import { StateProvider } from "./context/StateContext";
+import Home from "./components/Home";
+import { StateProvider, useStateContext } from "./context/StateContext";
 import { TreeNode, addChild, traverseTree } from "./hooks/useTree";
+import { useEffect } from "react";
 
-function App() {
+const initializeDb = new Dexie("TreeNotes");
+initializeDb.version(1).stores({
+  treeNotesIndex: "++id, title",
+  treeNotes: "++id, treeNote"
+});
+
+const App = () => {
+  const { db, setDb } = useStateContext();
+  useEffect(() => {
+    setDb(initializeDb);
+  },[])
+  // console.log("db", db);
   const root = new TreeNode(
     "Root",
     "Description of root",
@@ -50,12 +65,11 @@ function App() {
   // Add child nodes to node 2
   addChild(node2, node4);
   addChild(node2, node5);
-
+  // console.log("root", root);
+  // localStorage.setItem("note_1", JSON.stringify(root));
   // Traverse the tree and print each node's properties
   return (
-    <StateProvider>
-      <DisplayTree node={root} />
-    </StateProvider>
+      <Home/>
   );
 }
 
