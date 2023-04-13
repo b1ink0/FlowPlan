@@ -19,3 +19,7 @@
   background-color: #374151;
   border-radius: 20px;
 }
+
+.hide-scroll-bar {
+  scrollbar-width: none;
+}

@@ -2,7 +2,7 @@
 const imports = {
   env: {
     free: function (ptr) {
-      return free(ptr);
+      return null;
     },
     malloc: function (size) {
       const malloc = new Uint8Array(size);
