@@ -9,15 +9,20 @@ import { useEffect } from "react";
 
 const initializeDb = new Dexie("TreeNotes");
 initializeDb.version(1).stores({
-  treeNotesIndex: "++id, title",
-  treeNotes: "++id, treeNote"
+  treeNotesIndex: "++id, refId, title, createdAt, updatedAt",
+  //  items: "++id,name,price,itemHasBeenPurchased"
+  treeNotes: "++id, refId, title, root, createdAt, updatedAt",
 });
 
 const App = () => {
   const { db, setDb } = useStateContext();
   useEffect(() => {
-    setDb(initializeDb);
-  },[])
+    const init = async () => {
+      const initDb = await initializeDb.open();
+      setDb(initDb);
+    };
+    init();
+  }, []);
   // console.log("db", db);
   const root = new TreeNode(
     "Root",
@@ -68,9 +73,7 @@ const App = () => {
   // console.log("root", root);
   // localStorage.setItem("note_1", JSON.stringify(root));
   // Traverse the tree and print each node's properties
-  return (
-      <Home/>
-  );
-}
+  return <Home />;
+};
 
 export default App;
