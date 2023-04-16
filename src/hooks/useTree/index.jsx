@@ -29,7 +29,8 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, imports);
 
 // Define the tree node structure
 class TreeNode {
-  constructor(title, description = "", markdown = "", html = "") {
+  constructor(id, title, description = "", markdown = "", html = "") {
+    this.id = id;
     this.title = title;
     this.description = description;
     this.markdown = markdown;
@@ -63,6 +64,7 @@ function updateNode(node, title, description, markdown, html) {
 
 // Define a function for traversing the tree and printing each node's properties
 function traverseTree(node, level = 0) {
+  console.log(" ".repeat(level * 2) + node.id);
   console.log(" ".repeat(level * 2) + node.title);
   console.log(" ".repeat(level * 2) + node.description);
   console.log(" ".repeat(level * 2) + node.markdown);

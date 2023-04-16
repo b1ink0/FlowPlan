@@ -1,10 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
+import { v4 } from "uuid";
+import DisplayNode from "../DisplayNode";
 
 const DisplayTree = ({ node }) => {
-  const { currentTreeNote, setCurrentTreeNode } = useStateContext();
+  const { currentTreeNote, setCurrentTreeNode, update, setUpdate } =
+    useStateContext();
   const containerRef = useRef(null);
   const treeRef = useRef(null);
+  const parentRef = useRef(null);
+  
+  const [paths, setPaths] = useState([]);
   const [scaleMultiplier, setScaleMultiplier] = useState(0.1);
 
   const handleGetTransform = () => {
@@ -109,11 +115,23 @@ const DisplayTree = ({ node }) => {
     >
       <div
         ref={treeRef}
-        className="min-w-[100vw] min-h-[100vh] relative bg-gray-900 border-2 flex justify-center items-start  transition-all duration-100 p-2"
+        className="min-w-[100vw] min-h-[100vh] relative bg-gray-900 flex justify-center items-start  transition-all duration-100 p-2"
       >
-        {currentTreeNote && (
-          <DisplayNode location={[]} containerRef={treeRef} />
-        )}
+        <div ref={parentRef} className="w-fit h-fit flex relative">
+          {currentTreeNote && (
+            <DisplayNode
+              update={update}
+              setUpdate={setUpdate}
+              location={[]}
+              containerRef={parentRef}
+              paths={paths}
+              setPaths={setPaths}
+            />
+          )}
+          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+            <Paths paths={paths} />
+          </svg>
+        </div>
       </div>
       <div className="absolute bottom-2 right-2 flex flex-col justify-center items-end gap-2">
         <input
@@ -148,127 +166,20 @@ const DisplayTree = ({ node }) => {
 
 export default DisplayTree;
 
-const DisplayNode = ({ location, left, right, parentRef, containerRef }) => {
-  const { currentTreeNote, setAddEditNode } = useStateContext();
-  const [node, setNode] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [widthAndAngle, setWidthAndAngle] = useState({
-    width: 0,
-    angle: 0,
-    left: 0,
-    top: 0,
-  });
-  const nodeRef = useRef(null);
-
-  const handleAddNode = () => {
-    setAddEditNode({
-      show: true,
-      location: location,
-      type: "add",
-    });
-  };
-
-  const getDistanceBetweenDivs = (parentRef, nodeRef, containerRef) => {
-    if (!parentRef || !nodeRef) return 0;
-    const rect1 = parentRef.current?.getBoundingClientRect();
-    const rect2 = nodeRef.current?.getBoundingClientRect();
-    const container = containerRef.current;
-    console.log(rect1, rect2);
-
-    if (!rect1 || !rect2) return 0;
-
-    const x1 = rect1.left;
-    const y1 = rect1.top;
-    const x2 = rect2.left;
-    const y2 = rect2.top;
-
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    console.log(dx, dy);
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const radians = Math.atan2(dy, dx);
-    let degrees = (radians * 180) / Math.PI;
-
-    // Ensure that the angle is always positive
-    if (degrees < 0) {
-      degrees += 360;
-    }
-    setWidthAndAngle({ width: distance, angle: degrees, left: dx, top: dy });
-    console.log(distance, degrees);
-  };
-
-  useEffect(() => {
-    console.log("location", location);
-    let currentNode = currentTreeNote.root;
-    console.log(location);
-    if (location.length === 0) {
-      setNode(currentNode);
-      return;
-    }
-    location.forEach((loc, i) => {
-      if (i === location.length - 1) {
-        setNode(currentNode?.children[loc]);
-      } else {
-        currentNode = currentNode?.children[loc];
-      }
-    });
-    setTimeout(() => {
-      getDistanceBetweenDivs(parentRef, nodeRef, containerRef);
-    }, 500);
-    console.log(parentRef, nodeRef);
-  }, []);
-
-  useEffect(() => {
-    console.log(currentTreeNote)
-  }, [currentTreeNote])
 
 
-  return (
-    <div className=" border-gray-300 p-2 flex flex-col justify-start items-center mt-16">
-      <div
-        className={`${
-          isExpanded ? "cursor-default" : "cursor-pointer"
-        } w-fit flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 p-2 text-gray-200 rounded-md gap-1`}
-      >
-        {/* <span
-          style={{
-            width: `${widthAndAngle.width + 0}px`,
-            rotate: `${widthAndAngle.angle}deg`,
-            right: `${widthAndAngle.left}px`,
-            bottom: `${widthAndAngle.top}px`,
-          }}
-          className={` z-20 absolute h-1 bg-gray-300`}
-        ></span> */}
-        <span ref={nodeRef} className="absolute w-0 h-0 bg-red-400"></span>
-        <h3>{node?.title}</h3>
-        <p>{node?.description}</p>
-        <div dangerouslySetInnerHTML={{ __html: node?.html }} />
-        <button
-          className="text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-800 transition-colors duration-300"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? "Collapse Child" : "Expand Child"}
-        </button>
-        <button
-          className="text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-800 transition-colors duration-300"
-          onClick={handleAddNode}
-        >
-          Add Child Node
-        </button>
-      </div>
-      <div className="flex">
-        {isExpanded &&
-          node?.children.map((child, i) => (
-            <DisplayNode
-              key={i}
-              location={location.concat([i])}
-              left={i === 0}
-              right={node?.children.length - 1 === i}
-              parentRef={nodeRef}
-              containerRef={containerRef}
-            />
-          ))}
-      </div>
-    </div>
-  );
+const Paths = ({ paths }) => {
+  console.log("paths", paths);
+  if (paths.length === 0) return null;
+  return paths.map((path, i) => (
+    <path
+      key={i}
+      id="curve"
+      d={path?.path}
+      className="stroke-current text-gray-600"
+      stroke-width="4"
+      stroke-linecap="round"
+      fill="transparent"
+    ></path>
+  ));
 };

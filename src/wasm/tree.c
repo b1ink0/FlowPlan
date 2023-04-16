@@ -4,6 +4,7 @@
 
 // Define the structure for each node in the tree
 typedef struct TreeNode {
+  char* id;
   char* title;
   char* description;
   char* markdown;
@@ -14,8 +15,9 @@ typedef struct TreeNode {
 } TreeNode;
 
 // Define functions for creating and destroying tree nodes
-TreeNode* createNode(char* title, char* description, char* markdown, char* html) {
+TreeNode* createNode(char* id, char* title, char* description, char* markdown, char* html) {
   TreeNode* node = malloc(sizeof(TreeNode));
+  node->id = strdup(id);
   node->title = strdup(title);
   node->description = strdup(description);
   node->markdown = strdup(markdown);
@@ -27,6 +29,7 @@ TreeNode* createNode(char* title, char* description, char* markdown, char* html)
 }
 
 void destroyNode(TreeNode* node) {
+  free(node->id);
   free(node->title);
   free(node->description);
   free(node->markdown);
@@ -77,6 +80,7 @@ void updateNode(TreeNode* node, char* title, char* description, char* markdown, 
 
 // Define a function for traversing the tree and printing each node's properties
 void traverseTree(TreeNode* node, int level) {
+  printf("%*s%s\n", level*2, "", node->id);
   printf("%*s%s\n", level*2, "", node->title);
   printf("%*s%s\n", level*2, "", node->description);
   printf("%*s%s\n", level*2, "", node->markdown);

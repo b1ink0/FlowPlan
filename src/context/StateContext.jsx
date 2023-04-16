@@ -18,6 +18,7 @@ export function StateProvider({ children }) {
     location: null,
     type: "add",
   });
+  const [update, setUpdate] = useState(0)
   const values = {
     db,
     setDb,
@@ -27,6 +28,8 @@ export function StateProvider({ children }) {
     setCurrentTreeNote,
     addEditNode,
     setAddEditNode,
+    update,
+    setUpdate
   };
   return (
     <StateContext.Provider value={values}>{children}</StateContext.Provider>

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import BackIcon from "../../assets/Icons/BackIcon";
 import { TreeNode, addChild } from "../../hooks/useTree";
+import { v4 } from "uuid";
 
 const AddEditNode = () => {
   const {
@@ -29,6 +30,7 @@ const AddEditNode = () => {
       if (addEditNode.location.length === 0) {
         const parentNode = currentTreeNote.root;
         const newChildNode = new TreeNode(
+          v4(),
           node.title,
           node.description,
           node.markdown,
@@ -53,6 +55,7 @@ const AddEditNode = () => {
           parentNode = parentNode.children[index];
         });
         const newChildNode = new TreeNode(
+          v4(),
           node.title,
           node.description,
           node.markdown,

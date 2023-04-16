@@ -16,7 +16,7 @@ function SideNavbar() {
     e.preventDefault();
     if (db === null) return;
     const newRefId = v4();
-    const newRootTreeNode = new TreeNode(noteTitle, "", "", "");
+    const newRootTreeNode = new TreeNode(v4(), noteTitle, "", "", "");
     const newNoteIndex = {
       refId: newRefId,
       title: noteTitle,

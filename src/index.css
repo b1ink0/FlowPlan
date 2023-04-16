@@ -31,3 +31,15 @@
 .hide-scroll-bar {
   scrollbar-width: none;
 }
+
+.spread {
+  animation: spread 0.3s ease-in-out;
+}
+@keyframes spread {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
