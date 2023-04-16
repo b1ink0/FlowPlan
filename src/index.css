@@ -37,9 +37,22 @@
 }
 @keyframes spread {
   0% {
+    /* width: 0; */
     transform: scale(0);
   }
   100% {
+    /* width: 100%; */
     transform: scale(1);
+  }
+}
+.fade-in-path {
+  animation: fadeInPath 0.3s ease-in-out;
+}
+@keyframes fadeInPath {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
   }
 }

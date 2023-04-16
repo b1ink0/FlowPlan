@@ -169,16 +169,15 @@ export default DisplayTree;
 
 
 const Paths = ({ paths }) => {
-  console.log("paths", paths);
   if (paths.length === 0) return null;
   return paths.map((path, i) => (
     <path
       key={i}
       id="curve"
       d={path?.path}
-      className="stroke-current text-gray-600"
-      stroke-width="4"
-      stroke-linecap="round"
+      className="fade-in-path stroke-current text-gray-600"
+      strokeWidth="4"
+      strokeLinecap="round"
       fill="transparent"
     ></path>
   ));

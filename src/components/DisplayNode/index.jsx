@@ -5,19 +5,17 @@ const DisplayNode = ({
   update,
   setUpdate,
   location,
-  left,
-  right,
   parentRef,
   containerRef,
   containerParentRef,
   parentPosition,
   paths,
   setPaths,
-  parentIsExpanded,
 }) => {
   const { currentTreeNote, setAddEditNode } = useStateContext();
   const [node, setNode] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [collapse, setCollapse] = useState(false);
   const [position, setPosition] = useState({
     left: "0px",
     top: "0px",
@@ -93,12 +91,10 @@ const DisplayNode = ({
       newPaths[indexToReplace] = path;
       return newPaths;
     });
-
     console.log(offsetLeft, offsetTop, location.toString(), id);
   };
 
   useEffect(() => {
-    console.log(parentIsExpanded);
     console.log("location", location);
     let currentNode = currentTreeNote.root;
     console.log(location);
@@ -130,13 +126,28 @@ const DisplayNode = ({
         currentNode = currentNode?.children[loc];
       }
     });
-    return console.log("unmount");
+    return () => {
+      setPaths((prev) => {
+        let node = currentTreeNote.root;
+        let currentNode = currentTreeNote.root;
+        location.forEach((loc, i) => {
+          if (i === location.length - 1) {
+            node = currentNode?.children[loc];
+          } else {
+            currentNode = currentNode?.children[loc];
+          }
+        });
+        console.log("unmout", node, prev);
+        const indexToReplace = prev.findIndex((path) => path.id === node?.id);
+        if (indexToReplace === -1) return prev;
+        const newPaths = [...prev];
+        newPaths.splice(indexToReplace, 1);
+        console.log("unmout", newPaths.length, prev.length);
+        return newPaths;
+      });
+    };
     // console.log(parentRef, nodeRef);
   }, []);
-
-  useEffect(() => {
-    // console.log(currentTreeNote);
-  }, [currentTreeNote]);
 
   useEffect(() => {
     console.log("update", update);
@@ -145,23 +156,16 @@ const DisplayNode = ({
     }, 0);
   }, [update, parentPosition, currentTreeNote]);
 
-  useEffect(() => {
-    console.log(parentPosition, position);
-  }, [position]);
-
-  useEffect(() => {
-    if (!isExpanded) {
-      console.log("collapsed");
-    }
-  }, [isExpanded]);
-
+  useEffect(() => {}, []);
   return (
-    <div className="spread border-gray-300 flex flex-col justify-start items-center pt-28">
+    <div
+      className="spread border-gray-300 flex flex-col justify-start items-center pt-28"
+    >
       <div
         ref={currentParentRef}
         className={`${
           isExpanded ? "cursor-default" : "cursor-pointer"
-        } w-fit flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 p-2 text-gray-200 rounded-md gap-1`}
+        } w-fit min-w-[150px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 p-2 text-gray-200 rounded-md gap-1`}
       >
         <span
           style={{ top: position.top + "px", left: position.left + "px" }}
@@ -191,6 +195,7 @@ const DisplayNode = ({
         {isExpanded &&
           node?.children.map((child, i) => (
             <DisplayNode
+              display={isExpanded}
               key={i}
               location={location.concat([i])}
               left={i === 0}
