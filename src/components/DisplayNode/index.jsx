@@ -11,6 +11,7 @@ const DisplayNode = ({
   parentPosition,
   paths,
   setPaths,
+  parentCurrentRef,
 }) => {
   const { currentTreeNote, setAddEditNode } = useStateContext();
   const [node, setNode] = useState(null);
@@ -21,6 +22,7 @@ const DisplayNode = ({
     top: "0px",
   });
   const nodeRef = useRef(null);
+  const currentRef = useRef(null);
   const currentParentRef = useRef(null);
 
   const handleAddNode = () => {
@@ -97,6 +99,7 @@ const DisplayNode = ({
   useEffect(() => {
     console.log("location", location);
     let currentNode = currentTreeNote.root;
+    if (!currentNode) return;
     console.log(location);
     if (location.length === 0) {
       setNode(currentNode);
@@ -107,7 +110,7 @@ const DisplayNode = ({
           containerRef,
           currentNode.id
         );
-      }, 0);
+      }, 200);
       return;
     }
     location.forEach((loc, i) => {
@@ -127,6 +130,12 @@ const DisplayNode = ({
       }
     });
     return () => {
+      if (parentCurrentRef.current) {
+        parentCurrentRef.current.classList.add("width-fade-in");
+        setTimeout(() => {
+          parentCurrentRef.current.classList.remove("width-fade-in");
+        }, 0);
+      }
       setPaths((prev) => {
         let node = currentTreeNote.root;
         let currentNode = currentTreeNote.root;
@@ -156,16 +165,17 @@ const DisplayNode = ({
     }, 0);
   }, [update, parentPosition, currentTreeNote]);
 
-  useEffect(() => {}, []);
+  useEffect(() => { console.log("Locations:", node?.title, location.toString())}, []);
   return (
     <div
-      className="spread border-gray-300 flex flex-col justify-start items-center pt-28"
+      ref={currentRef}
+      className=" flex flex-col justify-start items-center pt-28"
     >
       <div
         ref={currentParentRef}
         className={`${
           isExpanded ? "cursor-default" : "cursor-pointer"
-        } w-fit min-w-[150px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 p-2 text-gray-200 rounded-md gap-1`}
+        } spread scale-0 w-fit min-w-[150px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 p-2 text-gray-200 rounded-md gap-1`}
       >
         <span
           style={{ top: position.top + "px", left: position.left + "px" }}
@@ -175,15 +185,17 @@ const DisplayNode = ({
         <h3>{node?.title}</h3>
         <p>{node?.description}</p>
         <div dangerouslySetInnerHTML={{ __html: node?.html }} />
-        <button
-          className="text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-800 transition-colors duration-300"
-          onClick={() => {
-            setIsExpanded(!isExpanded);
-            setUpdate(update + 1);
-          }}
-        >
-          {isExpanded ? "Collapse Child" : "Expand Child"}
-        </button>
+        {node?.children.length > 0 && (
+          <button
+            className="text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-800 transition-colors duration-300"
+            onClick={() => {
+              setIsExpanded(!isExpanded);
+              setUpdate(update + 1);
+            }}
+          >
+            {isExpanded ? "Collapse Child" : "Expand Child"}
+          </button>
+        )}
         <button
           className="text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-800 transition-colors duration-300"
           onClick={handleAddNode}
@@ -209,6 +221,7 @@ const DisplayNode = ({
               paths={paths}
               setPaths={setPaths}
               parentIsExpanded={isExpanded}
+              parentCurrentRef={currentRef}
             />
           ))}
       </div>

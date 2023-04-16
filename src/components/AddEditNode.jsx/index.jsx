@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import BackIcon from "../../assets/Icons/BackIcon";
 import { TreeNode, addChild } from "../../hooks/useTree";
@@ -12,6 +12,7 @@ const AddEditNode = () => {
     currentTreeNode,
     addEditNode,
     setAddEditNode,
+    setUpdate,
   } = useStateContext();
   const [node, setNode] = useState({
     title: "",
@@ -19,9 +20,10 @@ const AddEditNode = () => {
     markdown: "",
     html: "",
   });
+  const inputRef = useRef(null);
 
   const handleUpdateDb = async (node, refId) => {
-   await  db.treeNotes.where("refId").equals(refId).modify({ root: node });
+    await db.treeNotes.where("refId").equals(refId).modify({ root: node });
   };
 
   const handleAddEditNode = async (e) => {
@@ -76,6 +78,14 @@ const AddEditNode = () => {
     }
   };
 
+  useEffect(() => {
+    if (!addEditNode.show) return;
+    if (!inputRef.current) return;
+    setTimeout(() => {
+      inputRef.current.focus();
+    }, 200);
+  }, [addEditNode.show, addEditNode.location]);
+
   return (
     <div
       className={`${
@@ -109,6 +119,7 @@ const AddEditNode = () => {
                   Title:
                 </label>
                 <input
+                  ref={inputRef}
                   type="text"
                   value={node.title}
                   onChange={(e) => setNode({ ...node, title: e.target.value })}

@@ -7,10 +7,10 @@ import { TreeNode, addChild } from "../../hooks/useTree";
 import { v4 } from "uuid";
 
 function SideNavbar() {
-  const { db, setDb, treeNotes, setTreeNotes, setCurrentTreeNote } = useStateContext();
+  const { db, setDb, treeNotes, setTreeNotes, setCurrentTreeNote } =
+    useStateContext();
   const [showSideNavbar, setShowSideNavbar] = useState(true);
   const [noteTitle, setNoteTitle] = useState("");
-  const addNoteRef = useRef(null);
 
   const handleAddNewNote = async (e) => {
     e.preventDefault();
@@ -32,13 +32,14 @@ function SideNavbar() {
     };
     await db?.treeNotes.add(newNote);
     await db?.treeNotesIndex.add(newNoteIndex);
+    await db?.trreNotesExpanded.add({ refId: newRefId, expanded: [] });
 
     setNoteTitle("");
   };
 
   const handleSetCurrentTreeNote = async (refId) => {
     try {
-      const result = await db.treeNotes.where('refId').equals(refId).first();
+      const result = await db.treeNotes.where("refId").equals(refId).first();
       setCurrentTreeNote(result);
     } catch (error) {
       console.error(error);
@@ -49,7 +50,8 @@ function SideNavbar() {
     if (db === null) return;
     const allTreeNote = await db?.treeNotesIndex?.toArray();
     setTreeNotes(allTreeNote);
-    console.log("allTreeNote", allTreeNote);
+    if (allTreeNote.length === 0) return;
+    // handleSetCurrentTreeNote(allTreeNote[0].refId);
   }, [db]);
 
   return (
@@ -101,11 +103,13 @@ function SideNavbar() {
             <button className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
               <EditIcon />
             </button>
-            <span className="absolute text-[10px] group-hover:opacity-0 transition-opacity text-gray-400 right-2 bottom-1">
-              {
-                treeNote?.createdAt?.toTimeString().split(" ")[0].split(":").slice(0, 2).join(":")
-              }
-              {" "}
+            <span className="absolute text-[10px] group-hover:opacity-0 transition-opacity text-gray-400 right-2 bottom-[1px]">
+              {treeNote?.createdAt
+                ?.toTimeString()
+                .split(" ")[0]
+                .split(":")
+                .slice(0, 2)
+                .join(":")}{" "}
               {treeNote?.updatedAt?.toLocaleDateString("en-US", {
                 year: "numeric",
                 month: "short",
@@ -114,14 +118,6 @@ function SideNavbar() {
             </span>
           </div>
         ))}
-        <div className="w-full p-3 group hover:bg-slate-700 transition-colors duration-200 cursor-pointer rounded-md bg-slate-800 flex justify-between items-center shrink-0 gap-2">
-          <h4 title="Note 1" className="truncate">
-            Note{" "}
-          </h4>
-          <button className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
-            <EditIcon />
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -172,10 +172,10 @@ const Paths = ({ paths }) => {
   if (paths.length === 0) return null;
   return paths.map((path, i) => (
     <path
-      key={i}
+      key={v4()}
       id="curve"
       d={path?.path}
-      className="fade-in-path stroke-current text-gray-600"
+      className="fade-in-path opacity-0 stroke-current text-gray-600"
       strokeWidth="4"
       strokeLinecap="round"
       fill="transparent"
