@@ -13,6 +13,7 @@ export function StateProvider({ children }) {
   const [db, setDb] = useState(null);
   const [treeNotes, setTreeNotes] = useState([]);
   const [currentTreeNote, setCurrentTreeNote] = useState(null);
+  const [currentExpanded, setCurrentExpanded] = useState({})
   const [addEditNode, setAddEditNode] = useState({
     show: false,
     location: null,
@@ -29,7 +30,9 @@ export function StateProvider({ children }) {
     addEditNode,
     setAddEditNode,
     update,
-    setUpdate
+    setUpdate,
+    currentExpanded,
+    setCurrentExpanded
   };
   return (
     <StateContext.Provider value={values}>{children}</StateContext.Provider>

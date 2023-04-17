@@ -31,8 +31,9 @@ const AddEditNode = () => {
     if (addEditNode.type === "add") {
       if (addEditNode.location.length === 0) {
         const parentNode = currentTreeNote.root;
+        const id = v4();
         const newChildNode = new TreeNode(
-          v4(),
+          id,
           node.title,
           node.description,
           node.markdown,
@@ -43,6 +44,16 @@ const AddEditNode = () => {
         console.log("parentNode", parentNode);
         setCurrentTreeNote((prev) => ({ ...prev, root: parentNode }));
         await handleUpdateDb(parentNode, currentTreeNote.refId);
+        const expanded = await db.treeNotesExpanded
+          .where("refId")
+          .equals(currentTreeNote.refId)
+          .first();
+          console.log("expanded", expanded);
+        await db.treeNotesExpanded
+          .where("refId")
+          .equals(currentTreeNote.refId)
+          .modify({ expanded: { ...expanded.expanded, [id]: false } });
+
         setNode({
           title: "",
           description: "",

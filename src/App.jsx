@@ -11,7 +11,7 @@ const initializeDb = new Dexie("TreeNotes");
 initializeDb.version(1).stores({
   treeNotesIndex: "++id, refId, title, createdAt, updatedAt",
   treeNotes: "++id, refId, title, root, createdAt, updatedAt",
-  trreNotesExpanded: "++id, refId, expanded",
+  treeNotesExpanded: "++id, refId, expanded",
 });
 
 const App = () => {

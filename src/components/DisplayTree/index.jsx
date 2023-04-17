@@ -4,12 +4,18 @@ import { v4 } from "uuid";
 import DisplayNode from "../DisplayNode";
 
 const DisplayTree = ({ node }) => {
-  const { currentTreeNote, setCurrentTreeNode, update, setUpdate } =
-    useStateContext();
+  const {
+    db,
+    currentTreeNote,
+    setCurrentTreeNode,
+    update,
+    setUpdate,
+    currentExpanded,
+  } = useStateContext();
   const containerRef = useRef(null);
   const treeRef = useRef(null);
   const parentRef = useRef(null);
-  
+
   const [paths, setPaths] = useState([]);
   const [scaleMultiplier, setScaleMultiplier] = useState(0.1);
 
@@ -108,6 +114,128 @@ const DisplayTree = ({ node }) => {
     };
   }, []);
 
+  useEffect(() => {
+    // for mobile
+    const container = containerRef.current;
+    const tree = treeRef.current;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    if (!container) return;
+    const handleTouchStart = (e) => {
+      isDragging = true;
+      startX = e.touches[0].clientX - currentX;
+      startY = e.touches[0].clientY - currentY;
+      container.style.cursor = "grabbing";
+      container.style.userSelect = "none";
+    };
+    const handleTouchEnd = () => {
+      isDragging = false;
+      container.style.cursor = "grab";
+      container.style.removeProperty("user-select");
+    };
+    const handleTouchMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+
+      currentX = e.touches[0].clientX - startX;
+      currentY = e.touches[0].clientY - startY;
+      const { scale } = handleGetTransform();
+      tree.style.transform = `scale(${scale}) translate(${currentX}px, ${currentY}px)`;
+    };
+
+    container.addEventListener("touchstart", handleTouchStart);
+    container.addEventListener("touchend", handleTouchEnd);
+    container.addEventListener("touchmove", handleTouchMove);
+
+    return () => {
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchend", handleTouchEnd);
+      container.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, []);
+
+  useEffect(() => {
+    // for zooming on mobile without pinch with delta -1 or 1
+    const container = containerRef.current;
+    const tree = treeRef.current;
+    let isZooming = false;
+    let startDistance = 0;
+    let currentDistance = 0;
+    let lastUpdateTime = 0; // add this variable
+    if (!container) return;
+    const handleTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        isZooming = true;
+        startDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    };
+    const handleTouchEnd = () => {
+      isZooming = false;
+    };
+    const handleTouchMove = (e) => {
+      if (!isZooming) return;
+      e.preventDefault();
+      currentDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const delta = Math.sign(currentDistance - startDistance);
+      // delta should be positive or negative
+
+      const { scale, translateX, translateY } = handleGetTransform();
+      let newScale = scale + delta * 0.02;
+      if (newScale < 0.02) return;
+      tree.style.transform = `scale(${newScale}) translate(${translateX}px, ${translateY}px)`;
+    };
+
+    container.addEventListener("touchstart", handleTouchStart);
+    container.addEventListener("touchend", handleTouchEnd);
+    container.addEventListener("touchmove", handleTouchMove);
+
+    return () => {
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchend", handleTouchEnd);
+      container.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleExpanded = async () => {
+      try {
+        if (!currentTreeNote?.refId) return;
+        const result = await db.treeNotesExpanded
+          .where("refId")
+          .equals(currentTreeNote.refId)
+          .first();
+        if (result === undefined) {
+          await db.treeNotesExpanded.add({
+            refId: currentTreeNote.refId,
+            expanded: {
+              [location.length > 0 ? location.join("-") : "root"]: false,
+            },
+          });
+        } else {
+          console.log(result);
+          // const { expanded } = result;
+          // if (expanded[location.length > 0 ? location.join("-") : "root"]) {
+          //   setExpanded(true);
+          // } else {
+          //   setExpanded(false);
+          // }
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    handleExpanded();
+  }, [currentTreeNote]);
+
   return (
     <div
       ref={containerRef}
@@ -118,16 +246,18 @@ const DisplayTree = ({ node }) => {
         className="min-w-[100vw] min-h-[100vh] relative bg-gray-900 flex justify-center items-start  transition-all duration-100 p-2"
       >
         <div ref={parentRef} className="w-fit h-fit flex relative">
-          {currentTreeNote && (
-            <DisplayNode
-              update={update}
-              setUpdate={setUpdate}
-              location={[]}
-              containerRef={parentRef}
-              paths={paths}
-              setPaths={setPaths}
-            />
-          )}
+          {currentTreeNote &&
+            currentExpanded[currentTreeNote.refId] !== undefined && (
+              <DisplayNode
+                update={update}
+                setUpdate={setUpdate}
+                location={[]}
+                containerRef={parentRef}
+                paths={paths}
+                setPaths={setPaths}
+                currentIsExpanded={currentExpanded[currentTreeNote.refId]}
+              />
+            )}
           <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
             <Paths paths={paths} />
           </svg>
@@ -165,8 +295,6 @@ const DisplayTree = ({ node }) => {
 };
 
 export default DisplayTree;
-
-
 
 const Paths = ({ paths }) => {
   if (paths.length === 0) return null;

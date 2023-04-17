@@ -12,14 +12,21 @@ const DisplayNode = ({
   paths,
   setPaths,
   parentCurrentRef,
+  currentIsExpanded,
 }) => {
-  const { currentTreeNote, setAddEditNode } = useStateContext();
+  const {
+    db,
+    currentTreeNote,
+    setAddEditNode,
+    currentExpanded,
+    setCurrentExpanded,
+  } = useStateContext();
   const [node, setNode] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [collapse, setCollapse] = useState(false);
   const [position, setPosition] = useState({
-    left: "0px",
-    top: "0px",
+    left: 0,
+    top: 0,
   });
   const nodeRef = useRef(null);
   const currentRef = useRef(null);
@@ -86,6 +93,8 @@ const DisplayNode = ({
       }, ${p2x} ${p2y}`,
     };
 
+    console.log(path);
+
     setPaths((prev) => {
       const indexToReplace = prev.findIndex((path) => path.id === id);
       if (indexToReplace === -1) return [...prev, path];
@@ -97,12 +106,12 @@ const DisplayNode = ({
   };
 
   useEffect(() => {
-    console.log("location", location);
     let currentNode = currentTreeNote.root;
     if (!currentNode) return;
-    console.log(location);
     if (location.length === 0) {
       setNode(currentNode);
+      if (!currentExpanded[currentNode.id]) return;
+      setIsExpanded(currentExpanded[currentNode.id]);
       setTimeout(() => {
         getDistanceBetweenDivs(
           parentRef,
@@ -116,6 +125,7 @@ const DisplayNode = ({
     location.forEach((loc, i) => {
       if (i === location.length - 1) {
         setNode(currentNode?.children[loc]);
+        setIsExpanded(currentExpanded[currentNode?.children[loc].id] || false);
         setTimeout(() => {
           getDistanceBetweenDivs(
             parentRef,
@@ -165,7 +175,6 @@ const DisplayNode = ({
     }, 0);
   }, [update, parentPosition, currentTreeNote]);
 
-  useEffect(() => { console.log("Locations:", node?.title, location.toString())}, []);
   return (
     <div
       ref={currentRef}
@@ -188,9 +197,16 @@ const DisplayNode = ({
         {node?.children.length > 0 && (
           <button
             className="text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-800 transition-colors duration-300"
-            onClick={() => {
+            onClick={async () => {
               setIsExpanded(!isExpanded);
               setUpdate(update + 1);
+              const newPrev = { ...currentExpanded, [node?.id]: !isExpanded };
+              await db.treeNotesExpanded
+                .where("refId")
+                .equals(currentTreeNote.refId)
+                .modify((expanded) => {
+                  expanded.expanded = newPrev;
+                });
             }}
           >
             {isExpanded ? "Collapse Child" : "Expand Child"}
@@ -222,6 +238,7 @@ const DisplayNode = ({
               setPaths={setPaths}
               parentIsExpanded={isExpanded}
               parentCurrentRef={currentRef}
+              currentIsExpanded={currentExpanded[child.id]}
             />
           ))}
       </div>
