@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
+import BackIcon from "../../assets/Icons/BackIcon";
 
 const DisplayNode = ({
   update,
@@ -184,40 +185,53 @@ const DisplayNode = ({
         ref={currentParentRef}
         className={`${
           isExpanded ? "cursor-default" : "cursor-pointer"
-        } spread scale-0 w-fit min-w-[150px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 p-2 text-gray-200 rounded-md gap-1`}
+        } spread scale-0 w-fit min-w-[150px] max-w-[500px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 py-2 text-gray-200 rounded-md gap-1`}
       >
         <span
           style={{ top: position.top + "px", left: position.left + "px" }}
           className="absolute block w-0 h-0 bg-red-500"
         ></span>
         <span ref={nodeRef} className="absolute w-0 h-0 bg-red-400"></span>
-        <h3>{node?.title}</h3>
-        <p>{node?.description}</p>
-        <div dangerouslySetInnerHTML={{ __html: node?.html }} />
-        {node?.children.length > 0 && (
-          <button
-            className="text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-800 transition-colors duration-300"
-            onClick={async () => {
-              setIsExpanded(!isExpanded);
-              setUpdate(update + 1);
-              const newPrev = { ...currentExpanded, [node?.id]: !isExpanded };
-              await db.treeNotesExpanded
-                .where("refId")
-                .equals(currentTreeNote.refId)
-                .modify((expanded) => {
-                  expanded.expanded = newPrev;
-                });
-            }}
-          >
-            {isExpanded ? "Collapse Child" : "Expand Child"}
-          </button>
+        <h3 className="w-full text-center text-2xl truncate border-b border-gray-500 pb-2 px-2">
+          {node?.title}
+        </h3>
+        {node?.description !== "" && (
+          <p className="text-center p-2">{node?.description}</p>
         )}
-        <button
-          className="text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-800 transition-colors duration-300"
-          onClick={handleAddNode}
-        >
-          Add Child Node
-        </button>
+        <div dangerouslySetInnerHTML={{ __html: node?.html }} />
+        <div className="w-full flex justify-center items-center gap-2">
+          {node?.children.length > 0 && (
+            <button
+              className="w-8 h-8 group text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-600 transition-colors duration-300"
+              onClick={async () => {
+                setIsExpanded(!isExpanded);
+                setUpdate(update + 1);
+                const newPrev = { ...currentExpanded, [node?.id]: !isExpanded };
+                await db.treeNotesExpanded
+                  .where("refId")
+                  .equals(currentTreeNote.refId)
+                  .modify((expanded) => {
+                    expanded.expanded = newPrev;
+                  });
+              }}
+            >
+              <span
+                className={`w-full h-full ${
+                  isExpanded ? "-rotate-90" : "rotate-90"
+                } flex justify-center items-center transition-all duration-300 transform group-hover:scale-125`}
+              >
+                <BackIcon />
+              </span>
+            </button>
+          )}
+          <button
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-600 transition-colors duration-300"
+            onClick={handleAddNode}
+          >
+            <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-1 rounded-md h-6 bg-gray-200"></span>
+            <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-6 rounded-md h-1 bg-gray-200"></span>
+          </button>
+        </div>
       </div>
       <div className="flex gap-10">
         {isExpanded &&

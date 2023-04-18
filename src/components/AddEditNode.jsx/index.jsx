@@ -13,6 +13,8 @@ const AddEditNode = () => {
     addEditNode,
     setAddEditNode,
     setUpdate,
+    markdownEditor,
+    setMarkdownEditor,
   } = useStateContext();
   const [node, setNode] = useState({
     title: "",
@@ -48,7 +50,7 @@ const AddEditNode = () => {
           .where("refId")
           .equals(currentTreeNote.refId)
           .first();
-          console.log("expanded", expanded);
+        console.log("expanded", expanded);
         await db.treeNotesExpanded
           .where("refId")
           .equals(currentTreeNote.refId)
@@ -150,32 +152,6 @@ const AddEditNode = () => {
                     setNode({ ...node, description: e.target.value })
                   }
                   placeholder="Enter note description..."
-                  className="w-full resize-none flex-1 px-2 py-1 rounded-md bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
-                />
-              </div>
-              <div className="w-full flex-1 flex flex-col justify-center items-start gap-1">
-                <label htmlFor="markdown" className="text-sm font-medium">
-                  Markdown:
-                </label>
-                <textarea
-                  type="text"
-                  value={node.markdown}
-                  onChange={(e) =>
-                    setNode({ ...node, markdown: e.target.value })
-                  }
-                  placeholder="Enter note markdown..."
-                  className="w-full resize-none flex-1 px-2 py-1 rounded-md bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
-                />
-              </div>
-              <div className="w-full flex-1 flex flex-col justify-center items-start gap-1">
-                <label htmlFor="html" className="text-sm font-medium">
-                  Html:
-                </label>
-                <textarea
-                  type="text"
-                  value={node.html}
-                  onChange={(e) => setNode({ ...node, html: e.target.value })}
-                  placeholder="Enter note html..."
                   className="w-full resize-none flex-1 px-2 py-1 rounded-md bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
                 />
               </div>

@@ -82,3 +82,25 @@ body {
     opacity: 1;
   }
 }
+
+.bounce {
+  animation: bounce 0.3s 0s ease-in-out forwards;
+}
+
+@keyframes bounce {
+  0% {
+    opacity: 0;
+    translate: 0 -20px;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    translatey: 0 0px;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    translatey: 0 0px;
+    transform: scale(1);
+  }
+}

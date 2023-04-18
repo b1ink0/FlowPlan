@@ -10,9 +10,13 @@ function Home() {
   return (
     <div className="w-screen h-screen flex justify-center items-center relative overflow-hidden">
       <SideNavbar />
-      {currentTreeNote ? <DisplayTree key={currentTreeNote.id} />
-      : <div className="w-full h-full flex justify-center items-center text-2xl bg-gray-900 text-gray-200">＞﹏＜</div>  
-    }
+      {currentTreeNote ? (
+        <DisplayTree key={currentTreeNote.id} />
+      ) : (
+        <div className="w-full h-full flex justify-center items-center text-2xl bg-gray-900 text-gray-200">
+          ＞﹏＜
+        </div>
+      )}
       <AddEditNode />
     </div>
   );

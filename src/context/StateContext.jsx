@@ -20,6 +20,11 @@ export function StateProvider({ children }) {
     type: "add",
   });
   const [update, setUpdate] = useState(0)
+  const [markdownEditor, setMarkdownEditor] = useState({
+    show: false,
+    markdown: "",
+  })
+
   const values = {
     db,
     setDb,
@@ -32,7 +37,9 @@ export function StateProvider({ children }) {
     update,
     setUpdate,
     currentExpanded,
-    setCurrentExpanded
+    setCurrentExpanded,
+    markdownEditor,
+    setMarkdownEditor
   };
   return (
     <StateContext.Provider value={values}>{children}</StateContext.Provider>
