@@ -16,7 +16,7 @@ const imports = {
       return realloc.buffer;
     },
     strdup: function (ptr) {
-      return strdup(ptr);
+      return ptr
     },
   },
 };

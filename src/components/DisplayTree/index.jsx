@@ -272,14 +272,14 @@ const DisplayTree = ({ node }) => {
         />
         <button
           onClick={() => hanldeZoom(1)}
-          className="w-9 h-9 flex justify-center items-center bottom-12 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100"
+          className="w-9 h-9 flex justify-center items-center bottom-12 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-in"
         >
           <span className="absolute block w-1 rounded-md h-6 bg-gray-200"></span>
           <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
         </button>
         <button
           onClick={() => hanldeZoom(-1)}
-          className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100"
+          className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-out"
         >
           <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
         </button>

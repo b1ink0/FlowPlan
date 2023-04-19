@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import BackIcon from "../../assets/Icons/BackIcon";
-import { TreeNode, addChild } from "../../hooks/useTree";
+import { TreeNode, addChild, updateNode } from "../../hooks/useTree";
 import { v4 } from "uuid";
 
 const AddEditNode = () => {
@@ -88,12 +88,69 @@ const AddEditNode = () => {
         });
         setAddEditNode((prev) => ({ ...prev, location: null, show: false }));
       }
+    } else {
+      if (addEditNode.location.length === 0) {
+        const parentNode = currentTreeNote.root;
+        console.log("parentNode", parentNode);
+        updateNode(
+          parentNode,
+          node.title,
+          node.description,
+          node.markdown,
+          node.html
+        );
+        console.log("parentNode", parentNode);
+        setCurrentTreeNote((prev) => ({ ...prev, root: parentNode }));
+        await handleUpdateDb(parentNode, currentTreeNote.refId);
+        setNode({
+          title: "",
+          description: "",
+          markdown: "",
+          html: "",
+        });
+        setAddEditNode((prev) => ({ ...prev, location: null, show: false }));
+      } else {
+        let root = currentTreeNote.root;
+        let parentNode = currentTreeNote.root;
+        addEditNode.location.forEach((index) => {
+          parentNode = parentNode.children[index];
+        });
+        updateNode(
+          parentNode,
+          node.title,
+          node.description,
+          node.markdown,
+          node.html
+        );
+        console.log("parentNode", parentNode);
+        setCurrentTreeNote((prev) => ({ ...prev, root: root }));
+        await handleUpdateDb(root, currentTreeNote.refId);
+        setNode({
+          title: "",
+          description: "",
+          markdown: "",
+          html: "",
+        });
+        setAddEditNode((prev) => ({ ...prev, location: null, show: false }));
+      }
     }
   };
 
   useEffect(() => {
     if (!addEditNode.show) return;
     if (!inputRef.current) return;
+    if (addEditNode.type === "edit") {
+      let parentNode = currentTreeNote.root;
+      addEditNode.location.forEach((index) => {
+        parentNode = parentNode.children[index];
+      });
+      setNode({
+        title: parentNode.title,
+        description: parentNode.description,
+        markdown: parentNode.markdown,
+        html: parentNode.html,
+      });
+    }
     setTimeout(() => {
       inputRef.current.focus();
     }, 200);

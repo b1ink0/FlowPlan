@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import BackIcon from "../../assets/Icons/BackIcon";
+import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 
 const DisplayNode = ({
   update,
@@ -29,15 +30,16 @@ const DisplayNode = ({
     left: 0,
     top: 0,
   });
+  const [showAll, setShowAll] = useState(false)
   const nodeRef = useRef(null);
   const currentRef = useRef(null);
   const currentParentRef = useRef(null);
 
-  const handleAddNode = () => {
+  const handleNode = (type) => {
     setAddEditNode({
       show: true,
       location: location,
-      type: "add",
+      type: type,
     });
   };
 
@@ -141,12 +143,6 @@ const DisplayNode = ({
       }
     });
     return () => {
-      if (parentCurrentRef.current) {
-        parentCurrentRef.current.classList.add("width-fade-in");
-        setTimeout(() => {
-          parentCurrentRef.current.classList.remove("width-fade-in");
-        }, 0);
-      }
       setPaths((prev) => {
         let node = currentTreeNote.root;
         let currentNode = currentTreeNote.root;
@@ -167,7 +163,7 @@ const DisplayNode = ({
       });
     };
     // console.log(parentRef, nodeRef);
-  }, []);
+  }, [currentTreeNote.root]);
 
   useEffect(() => {
     console.log("update", update);
@@ -185,21 +181,28 @@ const DisplayNode = ({
         ref={currentParentRef}
         className={`${
           isExpanded ? "cursor-default" : "cursor-pointer"
-        } spread scale-0 w-fit min-w-[150px] max-w-[500px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 py-2 text-gray-200 rounded-md gap-1`}
+        } spread scale-0 ${showAll ? "w-fit max-w-[500px]" : "w-[150px]"} min-w-[150px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 text-gray-200 rounded-md gap-1`}
       >
         <span
           style={{ top: position.top + "px", left: position.left + "px" }}
           className="absolute block w-0 h-0 bg-red-500"
         ></span>
         <span ref={nodeRef} className="absolute w-0 h-0 bg-red-400"></span>
-        <h3 className="w-full text-center text-2xl truncate border-b border-gray-500 pb-2 px-2">
+        <h3 onClick={() =>{ setShowAll(showAll => !showAll); setUpdate(update + 1)}} className="w-full text-center text-2xl truncate border-b border-gray-500 py-2 px-2 hover:bg-gray-700 transition-colors duration-300 cursor-pointer">
           {node?.title}
         </h3>
         {node?.description !== "" && (
-          <p className="text-center p-2">{node?.description}</p>
+          <p className="w-full text-center p-2 truncate">{node?.description}</p>
         )}
         <div dangerouslySetInnerHTML={{ __html: node?.html }} />
-        <div className="w-full flex justify-center items-center gap-2">
+        <div className="w-full flex justify-center items-center gap-2 pb-2">
+          <button
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-600 transition-colors duration-300"
+            onClick={() => handleNode("add")}
+          >
+            <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-[3px] rounded-md h-4 bg-gray-200"></span>
+            <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-4 rounded-md h-[3px] bg-gray-200"></span>
+          </button>
           {node?.children.length > 0 && (
             <button
               className="w-8 h-8 group text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-600 transition-colors duration-300"
@@ -224,12 +227,11 @@ const DisplayNode = ({
               </span>
             </button>
           )}
-          <button
+            <button
             className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-600 transition-colors duration-300"
-            onClick={handleAddNode}
+            onClick={() => handleNode("edit")}
           >
-            <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-1 rounded-md h-6 bg-gray-200"></span>
-            <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-6 rounded-md h-1 bg-gray-200"></span>
+            <EditBtnIcon/>
           </button>
         </div>
       </div>
