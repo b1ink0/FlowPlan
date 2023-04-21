@@ -20,6 +20,7 @@ export function StateProvider({ children }) {
     type: "add",
   });
   const [update, setUpdate] = useState(0)
+  const [deleteUpdate, setDeleteUpdate] = useState(null)
   const [markdownEditor, setMarkdownEditor] = useState({
     show: false,
     markdown: "",
@@ -39,7 +40,9 @@ export function StateProvider({ children }) {
     currentExpanded,
     setCurrentExpanded,
     markdownEditor,
-    setMarkdownEditor
+    setMarkdownEditor,
+    deleteUpdate,
+    setDeleteUpdate
   };
   return (
     <StateContext.Provider value={values}>{children}</StateContext.Provider>

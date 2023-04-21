@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import BackIcon from "../../assets/Icons/BackIcon";
 import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
+import { traverseTree } from "../../hooks/useTree";
+import DeleteIcon from "../../assets/Icons/DeleteIcon";
+import MoveIcon from "../../assets/Icons/MoveIcon";
+import { useFunctions } from "../../hooks/useFunctions";
 
 const DisplayNode = ({
   update,
@@ -15,6 +19,7 @@ const DisplayNode = ({
   setPaths,
   parentCurrentRef,
   currentIsExpanded,
+  setParentIsExpanded,
 }) => {
   const {
     db,
@@ -23,6 +28,7 @@ const DisplayNode = ({
     currentExpanded,
     setCurrentExpanded,
   } = useStateContext();
+  const { handleDelete } = useFunctions();
   const [node, setNode] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [collapse, setCollapse] = useState(false);
@@ -30,17 +36,42 @@ const DisplayNode = ({
     left: 0,
     top: 0,
   });
-  const [showAll, setShowAll] = useState(false)
+  const [showAll, setShowAll] = useState(false);
   const nodeRef = useRef(null);
   const currentRef = useRef(null);
   const currentParentRef = useRef(null);
+  const [deleteMenu, setDeleteMenu] = useState(false);
 
   const handleNode = (type) => {
-    setAddEditNode({
-      show: true,
-      location: location,
-      type: type,
-    });
+    switch (type) {
+      case "add":
+        setAddEditNode({
+          show: true,
+          location: location,
+          type: type,
+        });
+        break;
+      case "edit":
+        setAddEditNode({
+          show: true,
+          location: location,
+          type: type,
+        });
+        break;
+      case "delete":
+        handleDelete(
+          node,
+          setParentIsExpanded,
+          location[location.length - 1],
+          setPaths
+        );
+        break;
+      case "move":
+        handleMove();
+        break;
+      default:
+        break;
+    }
   };
 
   const getDistanceBetweenDivs = (parentRef, nodeRef, containerRef, id) => {
@@ -127,6 +158,7 @@ const DisplayNode = ({
     }
     location.forEach((loc, i) => {
       if (i === location.length - 1) {
+        if (!currentNode?.children[loc]) return;
         setNode(currentNode?.children[loc]);
         setIsExpanded(currentExpanded[currentNode?.children[loc].id] || false);
         setTimeout(() => {
@@ -170,69 +202,146 @@ const DisplayNode = ({
     setTimeout(() => {
       getDistanceBetweenDivs(parentRef, nodeRef, containerRef, node?.id);
     }, 0);
+    let node = currentTreeNote.root;
+    let currentNode = currentTreeNote.root;
+    location.forEach((loc, i) => {
+      if (i === location.length - 1) {
+        node = currentNode?.children[loc];
+      } else {
+        currentNode = currentNode?.children[loc];
+      }
+    });
+    console.log("updateupdate", currentNode?.id === node?.id);
   }, [update, parentPosition, currentTreeNote]);
 
   return (
     <div
       ref={currentRef}
-      className=" flex flex-col justify-start items-center pt-28"
+      className={`flex flex-col justify-start items-center pt-28`}
     >
       <div
         ref={currentParentRef}
         className={`${
           isExpanded ? "cursor-default" : "cursor-pointer"
-        } spread scale-0 ${showAll ? "w-fit max-w-[500px]" : "w-[150px]"} min-w-[150px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 text-gray-200 rounded-md gap-1`}
+        } spread scale-0 ${
+          showAll ? "w-fit max-w-[500px]" : "w-[270px]"
+        }  min-w-[270px] min-h-[150px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 text-gray-200 rounded-md gap-1`}
       >
         <span
           style={{ top: position.top + "px", left: position.left + "px" }}
           className="absolute block w-0 h-0 bg-red-500"
         ></span>
         <span ref={nodeRef} className="absolute w-0 h-0 bg-red-400"></span>
-        <h3 onClick={() =>{ setShowAll(showAll => !showAll); setUpdate(update + 1)}} className="w-full text-center text-2xl truncate border-b border-gray-500 py-2 px-2 hover:bg-gray-700 transition-colors duration-300 cursor-pointer">
-          {node?.title}
-        </h3>
-        {node?.description !== "" && (
-          <p className="w-full text-center p-2 truncate">{node?.description}</p>
-        )}
-        <div dangerouslySetInnerHTML={{ __html: node?.html }} />
-        <div className="w-full flex justify-center items-center gap-2 pb-2">
-          <button
-            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-600 transition-colors duration-300"
-            onClick={() => handleNode("add")}
+        <div className="w-full h-full flex flex-col justify-between items-center">
+          <h3
+            onClick={() => {
+              setShowAll((showAll) => !showAll);
+              setUpdate(update + 1);
+            }}
+            className="w-full text-center text-2xl truncate border-b border-gray-500 py-2 px-2 hover:bg-gray-700 transition-colors duration-300 cursor-pointer"
           >
-            <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-[3px] rounded-md h-4 bg-gray-200"></span>
-            <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-4 rounded-md h-[3px] bg-gray-200"></span>
-          </button>
-          {node?.children.length > 0 && (
-            <button
-              className="w-8 h-8 group text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-600 transition-colors duration-300"
-              onClick={async () => {
-                setIsExpanded(!isExpanded);
-                setUpdate(update + 1);
-                const newPrev = { ...currentExpanded, [node?.id]: !isExpanded };
-                await db.treeNotesExpanded
-                  .where("refId")
-                  .equals(currentTreeNote.refId)
-                  .modify((expanded) => {
-                    expanded.expanded = newPrev;
-                  });
-              }}
-            >
-              <span
-                className={`w-full h-full ${
-                  isExpanded ? "-rotate-90" : "rotate-90"
-                } flex justify-center items-center transition-all duration-300 transform group-hover:scale-125`}
-              >
-                <BackIcon />
-              </span>
-            </button>
+            {node?.title}
+          </h3>
+          {node?.description !== "" && (
+            <p className="w-full text-center p-2 truncate">
+              {node?.description}
+            </p>
           )}
+          <div dangerouslySetInnerHTML={{ __html: node?.html }} />
+          {deleteMenu && (
+            <div className="spread absolute w-full h-full bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2">
+              <div className="w-max-[250px] p-2 bg-gray-800 rounded-md h-max-[150px] flex flex-col justify-center items-center gap-3">
+                <div className="w-full flex justify-between items-center">
+                  <button
+                    onClick={() => handleNode("delete")}
+                    title="Deleting a node will make its children become children of the node's parent."
+                    className="w-full h-8 px-2 flex justify-center items-center relative text-xs bg-slate-700 py-1 rounded-md hover:bg-red-500 transition-colors duration-300"
+                  >
+                    <h3 className="text-sm w-full text-start">
+                      Delete Only Node
+                    </h3>
+                    <div className="w-8 h-5">
+                      <DeleteIcon />
+                    </div>
+                  </button>
+                </div>
+                <div className="w-full flex justify-between items-center">
+                  <button className="w-full h-8 px-2 flex justify-between items-center relative text-xs bg-slate-700 py-1 rounded-md hover:bg-red-500 transition-colors duration-300">
+                    <h3 className="text-sm text-start w-full">
+                      Delete Node & Its Children
+                    </h3>
+                    <div className="w-8 h-5">
+                      <DeleteIcon />
+                    </div>
+                  </button>
+                </div>
+                <button
+                  onClick={() => setDeleteMenu(false)}
+                  className="w-full h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-green-700 transition-colors duration-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="w-full flex justify-center items-center gap-2 p-2">
+            {showAll && (
+              <button
+                className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-orange-600 transition-colors duration-300"
+                onClick={() => handleNode("move")}
+              >
+                <MoveIcon />
+              </button>
+            )}
             <button
-            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-slate-600 transition-colors duration-300"
-            onClick={() => handleNode("edit")}
-          >
-            <EditBtnIcon/>
-          </button>
+              className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-purple-600 transition-colors duration-300"
+              onClick={() => handleNode("add")}
+            >
+              <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-[3px] rounded-md h-4 bg-gray-200"></span>
+              <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-4 rounded-md h-[3px] bg-gray-200"></span>
+            </button>
+            {node?.children.length > 0 && (
+              <button
+                className="w-8 h-8 group text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-blue-600 transition-colors duration-300"
+                onClick={async () => {
+                  setIsExpanded(!isExpanded);
+                  setUpdate(update + 1);
+                  const newPrev = {
+                    ...currentExpanded,
+                    [node?.id]: !isExpanded,
+                  };
+                  await db.treeNotesExpanded
+                    .where("refId")
+                    .equals(currentTreeNote.refId)
+                    .modify((expanded) => {
+                      expanded.expanded = newPrev;
+                    });
+                }}
+              >
+                <span
+                  className={`w-full h-full ${
+                    isExpanded ? "-rotate-90" : "rotate-90"
+                  } flex justify-center items-center transition-all duration-300 transform group-hover:scale-125`}
+                >
+                  <BackIcon />
+                </span>
+              </button>
+            )}
+            <button
+              className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-green-700 transition-colors duration-300"
+              onClick={() => handleNode("edit")}
+            >
+              <EditBtnIcon />
+            </button>
+            {showAll && (
+              <button
+                className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-red-500 transition-colors duration-300"
+                onClick={() => setDeleteMenu(true)}
+              >
+                <DeleteIcon />
+              </button>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex gap-10">
@@ -253,6 +362,7 @@ const DisplayNode = ({
               paths={paths}
               setPaths={setPaths}
               parentIsExpanded={isExpanded}
+              setParentIsExpanded={setIsExpanded}
               parentCurrentRef={currentRef}
               currentIsExpanded={currentExpanded[child.id]}
             />
