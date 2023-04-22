@@ -27,8 +27,14 @@ const DisplayNode = ({
     setAddEditNode,
     currentExpanded,
     setCurrentExpanded,
+    move,
+    setMove,
   } = useStateContext();
-  const { handleDelete } = useFunctions();
+  const {
+    handleDeleteNodeWithoutItsChildren,
+    handleDeleteNodeWithItsChildren,
+    handleMoveNode,
+  } = useFunctions();
   const [node, setNode] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [collapse, setCollapse] = useState(false);
@@ -59,15 +65,22 @@ const DisplayNode = ({
         });
         break;
       case "delete":
-        handleDelete(
+        handleDeleteNodeWithoutItsChildren(
           node,
           setParentIsExpanded,
           location[location.length - 1],
           setPaths
         );
         break;
+      case "deleteAll":
+        handleDeleteNodeWithItsChildren(
+          node,
+          setParentIsExpanded,
+          location[location.length - 1],
+          setPaths
+        );
       case "move":
-        handleMove();
+        handleMoveNode(node);
         break;
       default:
         break;
@@ -225,7 +238,7 @@ const DisplayNode = ({
           isExpanded ? "cursor-default" : "cursor-pointer"
         } spread scale-0 ${
           showAll ? "w-fit max-w-[500px]" : "w-[270px]"
-        }  min-w-[270px] min-h-[150px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 text-gray-200 rounded-md gap-1`}
+        } overflow-hidden  min-w-[270px] min-h-[150px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 text-gray-200 rounded-md gap-1`}
       >
         <span
           style={{ top: position.top + "px", left: position.left + "px" }}
@@ -248,6 +261,35 @@ const DisplayNode = ({
             </p>
           )}
           <div dangerouslySetInnerHTML={{ __html: node?.html }} />
+          {move.node &&
+            (move.node.id === node.id ? (
+              <div className="w-full h-full absolute top-0 left-0 bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2">
+                <div className="w-max-[250px] p-2 bg-gray-800 rounded-md h-max-[150px] flex flex-col justify-center items-center gap-3">
+                  <div className="w-full flex flex-col justify-between items-center gap-2">
+                    <div className="w-full h-fit px-2 flex justify-center items-center relative text-xs bg-slate-700 py-1 rounded-md transition-colors duration-300">
+                      <h3 className="text-sm w-full text-start">
+                        Click on the node you want to move this node to
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => setMove({ enable: false, node: null })}
+                      className="w-full h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-green-700 transition-colors duration-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full h-full opacity-0 hover:opacity-100 transition-opacity duration-300  absolute top-0 left-0 bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2">
+                <button
+                  onClick={() => handleNode("move")}
+                  className="w-fit h-8 px-2 flex justify-center items-center relative text-xs bg-slate-700 py-1 rounded-md hover:bg-green-700 transition-colors duration-300"
+                >
+                  Move Node
+                </button>
+              </div>
+            ))}
           {deleteMenu && (
             <div className="spread absolute w-full h-full bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2">
               <div className="w-max-[250px] p-2 bg-gray-800 rounded-md h-max-[150px] flex flex-col justify-center items-center gap-3">
@@ -266,7 +308,10 @@ const DisplayNode = ({
                   </button>
                 </div>
                 <div className="w-full flex justify-between items-center">
-                  <button className="w-full h-8 px-2 flex justify-between items-center relative text-xs bg-slate-700 py-1 rounded-md hover:bg-red-500 transition-colors duration-300">
+                  <button
+                    onClick={() => handleNode("deleteAll")}
+                    className="w-full h-8 px-2 flex justify-between items-center relative text-xs bg-slate-700 py-1 rounded-md hover:bg-red-500 transition-colors duration-300"
+                  >
                     <h3 className="text-sm text-start w-full">
                       Delete Node & Its Children
                     </h3>
@@ -287,8 +332,8 @@ const DisplayNode = ({
           <div className="w-full flex justify-center items-center gap-2 p-2">
             {showAll && (
               <button
-                className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-orange-600 transition-colors duration-300"
-                onClick={() => handleNode("move")}
+                className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-cyan-600 transition-colors duration-300"
+                onClick={() => setMove({ enable: true, node })}
               >
                 <MoveIcon />
               </button>

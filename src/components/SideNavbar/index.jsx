@@ -129,7 +129,7 @@ function SideNavbar() {
           <div
             key={treeNote?.createdAt}
             onClick={() => handleSetCurrentTreeNote(treeNote?.refId)}
-            className="w-full p-3 relative group hover:bg-slate-700 transition-colors duration-200 cursor-pointer rounded-md bg-slate-800 flex justify-between items-center shrink-0 gap-2"
+            className={`${currentTreeNote?.refId === treeNote?.refId ? "bg-slate-700" : "bg-slate-800"} w-full p-3 relative group hover:bg-slate-700 transition-colors duration-200 cursor-pointer rounded-md flex justify-between items-center shrink-0 gap-2`}
           >
             <h4 title="Note 1" className="truncate">
               {treeNote?.title}
