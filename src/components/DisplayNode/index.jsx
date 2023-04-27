@@ -20,6 +20,7 @@ const DisplayNode = ({
   parentCurrentRef,
   currentIsExpanded,
   setParentIsExpanded,
+  setRootExpanded,
 }) => {
   const {
     db,
@@ -43,6 +44,12 @@ const DisplayNode = ({
     top: 0,
   });
   const [showAll, setShowAll] = useState(false);
+  const [pathPosition, setPathPosition] = useState({
+    p1x: null,
+    p1y: null,
+    p2x: null,
+    p2y: null,
+  });
   const nodeRef = useRef(null);
   const currentRef = useRef(null);
   const currentParentRef = useRef(null);
@@ -80,7 +87,7 @@ const DisplayNode = ({
           setPaths
         );
       case "move":
-        handleMoveNode(node);
+        handleMoveNode(node, location, setIsExpanded, setRootExpanded);
         break;
       default:
         break;
@@ -132,6 +139,13 @@ const DisplayNode = ({
 
     const c1x = mpx + offsetX * Math.cos(theta);
     const c1y = mpy + offsetY * Math.sin(theta);
+
+    setPathPosition({
+      p1x: p2x,
+      p1y: p2y,
+      p2x: p2x,
+      p2y: p2y + currentParentRef.current.offsetHeight,
+    });
 
     const path = {
       id: id,
@@ -198,7 +212,7 @@ const DisplayNode = ({
             currentNode = currentNode?.children[loc];
           }
         });
-        console.log("unmout", node, prev);
+        console.log("unmout", node, currentTreeNote, prev);
         const indexToReplace = prev.findIndex((path) => path.id === node?.id);
         if (indexToReplace === -1) return prev;
         const newPaths = [...prev];
@@ -226,6 +240,56 @@ const DisplayNode = ({
     });
     console.log("updateupdate", currentNode?.id === node?.id);
   }, [update, parentPosition, currentTreeNote]);
+
+  useEffect(() => {
+    if (
+      !currentParentRef.current ||
+      !move?.node ||
+      move?.node?.id === node?.id ||
+      (location.length > move.location?.length &&
+        move.location?.every((value, index) => value === location[index])) ||
+      move?.node?.parent?.id === node?.id
+    )
+      return;
+
+    const handleMouseEnter = () => {
+      setMove((prev) => ({
+        ...prev,
+        position: {
+          ...prev.position,
+          p2x: pathPosition.p2x,
+          p2y: pathPosition.p2y,
+        },
+      }));
+      console.log("enter");
+    };
+
+    const handleMouseLeave = () => {
+      setMove((prev) => ({
+        ...prev,
+        position: {
+          ...prev.position,
+          p2x: prev.position.p1x,
+          p2y: prev.position.p1y,
+        },
+      }));
+      console.log("leave");
+    };
+
+    currentParentRef.current.addEventListener("mouseenter", handleMouseEnter);
+    currentParentRef.current.addEventListener("mouseleave", handleMouseLeave);
+
+    return () => {
+      currentParentRef?.current?.removeEventListener(
+        "mouseenter",
+        handleMouseEnter
+      );
+      currentParentRef?.current?.removeEventListener(
+        "mouseleave",
+        handleMouseLeave
+      );
+    };
+  }, [move.node]);
 
   return (
     <div
@@ -272,7 +336,15 @@ const DisplayNode = ({
                       </h3>
                     </div>
                     <button
-                      onClick={() => setMove({ enable: false, node: null })}
+                      onClick={() =>
+                        setMove({
+                          enable: false,
+                          node: null,
+                          location: null,
+                          position: null,
+                          parentPosition: null,
+                        })
+                      }
                       className="w-full h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-green-700 transition-colors duration-300"
                     >
                       Cancel
@@ -282,12 +354,25 @@ const DisplayNode = ({
               </div>
             ) : (
               <div className="w-full h-full opacity-0 hover:opacity-100 transition-opacity duration-300  absolute top-0 left-0 bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2">
-                <button
-                  onClick={() => handleNode("move")}
-                  className="w-fit h-8 px-2 flex justify-center items-center relative text-xs bg-slate-700 py-1 rounded-md hover:bg-green-700 transition-colors duration-300"
-                >
-                  Move Node
-                </button>
+                {(location.length > move.location?.length &&
+                  move.location?.every(
+                    (value, index) => value === location[index]
+                  )) ||
+                move?.node?.parent?.id === node?.id ? (
+                  <button
+                    // onClick={() => handleNode("move")}
+                    className="w-fit h-8 px-2 flex justify-center items-center relative text-xs bg-slate-700 py-1 rounded-md hover:bg-green-700 transition-colors duration-300"
+                  >
+                    X
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleNode("move")}
+                    className="w-fit h-8 px-2 flex justify-center items-center relative text-xs bg-slate-700 py-1 rounded-md hover:bg-green-700 transition-colors duration-300"
+                  >
+                    Move Node
+                  </button>
+                )}
               </div>
             ))}
           {deleteMenu && (
@@ -332,8 +417,25 @@ const DisplayNode = ({
           <div className="w-full flex justify-center items-center gap-2 p-2">
             {showAll && (
               <button
-                className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-cyan-600 transition-colors duration-300"
-                onClick={() => setMove({ enable: true, node })}
+                className={`${
+                  location.length === 0
+                    ? "cursor-not-allowed"
+                    : "cursor-pointer"
+                } w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-cyan-600 transition-colors duration-300`}
+                onClick={() => {
+                  if (location.length > 0) {
+                    setMove({
+                      enable: true,
+                      node: node,
+                      location: location,
+                      position: {
+                        p1x: pathPosition.p1x,
+                        p1y: pathPosition.p1y,
+                      },
+                    });
+                  } else {
+                  }
+                }}
               >
                 <MoveIcon />
               </button>
@@ -410,6 +512,9 @@ const DisplayNode = ({
               setParentIsExpanded={setIsExpanded}
               parentCurrentRef={currentRef}
               currentIsExpanded={currentExpanded[child.id]}
+              setRootExpanded={
+                node.parent === null ? setIsExpanded : setRootExpanded
+              }
             />
           ))}
       </div>

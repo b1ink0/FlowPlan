@@ -11,6 +11,7 @@ const DisplayTree = ({ node }) => {
     update,
     setUpdate,
     currentExpanded,
+    move,
   } = useStateContext();
   const containerRef = useRef(null);
   const treeRef = useRef(null);
@@ -258,8 +259,9 @@ const DisplayTree = ({ node }) => {
                 currentIsExpanded={currentExpanded[currentTreeNote.refId]}
               />
             )}
-          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible">
             <Paths paths={paths} />
+            {move?.node && <LivePath move={move} rootRef={treeRef} />}
           </svg>
         </div>
       </div>
@@ -303,10 +305,63 @@ const Paths = ({ paths }) => {
       key={v4()}
       id="curve"
       d={path?.path}
-      className="fade-in-path opacity-0 stroke-current text-gray-600"
+      className={`${path?.show ? "hidden": ""} fade-in-path opacity-0 stroke-current text-gray-600`}
       strokeWidth="4"
       strokeLinecap="round"
       fill="transparent"
     ></path>
   ));
+};
+
+const LivePath = ({ move, rootRef }) => {
+  const [path, setPath] = useState("");
+
+  useEffect(() => {
+    try {
+      const { p1x, p1y, p2x, p2y } = move.position;
+      if (p1x === p2x && p1y === p2y) {
+        setPath(
+          `M${p1x} ${p1y} C ${p1x} ${p1y}, ${p2x} ${
+            p2y 
+          }, ${p2x} ${p2y}`
+
+        );
+      } else if (p2y <= p1y) {
+        setPath(
+          `M${p1x} ${p1y} C ${p1x} ${p2y + 30}, ${p2x} ${
+            p2y + 150
+          }, ${p2x} ${p2y}`
+        );
+      } else {
+        setPath(
+          `M${p1x} ${p1y} C ${p1x} ${p1y - 200}, ${p2x} ${
+            p2y + 200
+          }, ${p2x} ${p2y}`
+        );
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }, [move.position]);
+
+  useEffect(() => {
+    if (move?.node === null) {
+      setPath("");
+    }
+  }, [move.node]);
+
+  return (
+    <>
+      {path !== "" && (
+        <path
+          id="curve"
+          d={path}
+          className="fade-in-path opacity-0 stroke-current text-green-600 transition-all duration-200"
+          strokeWidth="4"
+          strokeLinecap="round"
+          fill="transparent"
+        ></path>
+      )}
+    </>
+  );
 };

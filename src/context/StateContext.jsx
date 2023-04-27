@@ -23,6 +23,9 @@ export function StateProvider({ children }) {
   const [move, setMove] = useState({
     enable: false,
     node: null,
+    location: null,
+    positon: null,
+    parentPosition: null,
   })
   const [deleteUpdate, setDeleteUpdate] = useState(null)
   const [markdownEditor, setMarkdownEditor] = useState({
