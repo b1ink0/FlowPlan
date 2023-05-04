@@ -130,11 +130,20 @@ export const useFunctions = () => {
     }, 100);
   };
 
-  const handleMoveNode = (node, location, setIsExpanded, setRootExpanded) => {
+  const handleMoveNode = async (
+    node,
+    location,
+    setIsExpanded,
+    setRootExpanded
+  ) => {
     if (node.parent === null) {
       moveNode(move.node, node);
       setCurrentTreeNote((prev) => ({ ...prev, root: node }));
       setMove((prev) => ({ enable: false, node: null }));
+      await db.treeNotes
+        .where("refId")
+        .equals(currentTreeNote.refId)
+        .modify({ root: root });
       // setDeleted(true);
       setTimeout(() => {
         setUpdate(update + 1);
@@ -147,7 +156,13 @@ export const useFunctions = () => {
         root = root.parent;
       }
       setCurrentTreeNote((prev) => ({ ...prev, root: root }));
-      setMove((prev) => ({ enable: false, node: null, location: null, position: null, parentPosition: null }));
+      setMove((prev) => ({
+        enable: false,
+        node: null,
+        location: null,
+        position: null,
+        parentPosition: null,
+      }));
       // setCurrentExpanded((prev) => ({...prev, [currentTreeNote.root.refId]: false}));
       setRootExpanded(false);
 
@@ -157,6 +172,10 @@ export const useFunctions = () => {
           ...currentExpanded,
           [node?.id]: true,
         };
+        await db.treeNotes
+          .where("refId")
+          .equals(currentTreeNote.refId)
+          .modify({ root: root });
         await db.treeNotesExpanded
           .where("refId")
           .equals(currentTreeNote.refId)

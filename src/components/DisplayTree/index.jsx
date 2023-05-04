@@ -302,10 +302,12 @@ const Paths = ({ paths }) => {
   if (paths.length === 0) return null;
   return paths.map((path, i) => (
     <path
-      key={v4()}
+      key={path.id}
       id="curve"
       d={path?.path}
-      className={`${path?.show ? "hidden": ""} fade-in-path opacity-0 stroke-current text-gray-600`}
+      className={`${
+        path?.show ? "hidden" : ""
+      } fade-in-path opacity-0 stroke-current text-gray-600`}
       strokeWidth="4"
       strokeLinecap="round"
       fill="transparent"
@@ -319,13 +321,11 @@ const LivePath = ({ move, rootRef }) => {
   useEffect(() => {
     try {
       const { p1x, p1y, p2x, p2y } = move.position;
-      if (p1x === p2x && p1y === p2y) {
-        setPath(
-          `M${p1x} ${p1y} C ${p1x} ${p1y}, ${p2x} ${
-            p2y 
-          }, ${p2x} ${p2y}`
-
-        );
+      console.log(p1x, p1y, p2x, p2y);
+      if (p1x === p2x) {
+        setPath(`M${p1x} ${p1y} ${p2x} ${p2y}`);
+      } else if (p1x === p2x && p1y === p2y) {
+        setPath(`M${p1x} ${p1y} C ${p1x} ${p1y}, ${p2x} ${p2y}, ${p2x} ${p2y}`);
       } else if (p2y <= p1y) {
         setPath(
           `M${p1x} ${p1y} C ${p1x} ${p2y + 30}, ${p2x} ${
@@ -353,14 +353,26 @@ const LivePath = ({ move, rootRef }) => {
   return (
     <>
       {path !== "" && (
-        <path
-          id="curve"
-          d={path}
-          className="fade-in-path opacity-0 stroke-current text-green-600 transition-all duration-200"
-          strokeWidth="4"
-          strokeLinecap="round"
-          fill="transparent"
-        ></path>
+        <>
+          <path
+            id="curve"
+            d={path}
+            style={{ stroke: move?.position?.color }}
+            className="neon-path-1 fade-in-path opacity-0 stroke-current transition-all duration-200"
+            strokeWidth="4"
+            strokeLinecap="round"
+            fill="transparent"
+          ></path>
+          <path
+            id="curve"
+            style={{ stroke: move?.position?.color }}
+            d={path}
+            className="neon-path-2 fade-in-path opacity-0 stroke-current transition-all duration-200"
+            strokeWidth="4"
+            strokeLinecap="round"
+            fill="transparent"
+          ></path>
+        </>
       )}
     </>
   );

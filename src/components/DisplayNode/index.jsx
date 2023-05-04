@@ -6,6 +6,8 @@ import { traverseTree } from "../../hooks/useTree";
 import DeleteIcon from "../../assets/Icons/DeleteIcon";
 import MoveIcon from "../../assets/Icons/MoveIcon";
 import { useFunctions } from "../../hooks/useFunctions";
+import MovedIcon from "../../assets/Icons/MovedIcon";
+import CloseIcon from "../../assets/Icons/CloseIcon";
 
 const DisplayNode = ({
   update,
@@ -115,7 +117,14 @@ const DisplayNode = ({
       left: offsetLeft,
       top: offsetTop,
     });
-    if (parentPosition === undefined) return;
+    if (parentPosition === undefined) {
+      setPathPosition((prev) => ({
+        ...prev,
+        p2x: offsetLeft,
+        p2y: offsetTop + currentParentRef.current.offsetHeight / 2,
+      }));
+      return;
+    }
     if (id === undefined) return;
     console.log("parentPosition", parentPosition);
     const p1x = parentPosition.left;
@@ -245,22 +254,37 @@ const DisplayNode = ({
     if (
       !currentParentRef.current ||
       !move?.node ||
-      move?.node?.id === node?.id ||
-      (location.length > move.location?.length &&
-        move.location?.every((value, index) => value === location[index])) ||
-      move?.node?.parent?.id === node?.id
-    )
+      move?.node?.id === node?.id
+    ) {
       return;
+    }
 
     const handleMouseEnter = () => {
       setMove((prev) => ({
         ...prev,
         position: {
           ...prev.position,
-          p2x: pathPosition.p2x,
-          p2y: pathPosition.p2y,
+          p2x: pathPosition.p2x ? pathPosition.p2x : position.left,
+          p2y: pathPosition.p2y ? pathPosition.p2y : position.top,
+          color:
+            (location.length > move.location?.length &&
+              move.location?.every(
+                (value, index) => value === location[index]
+              )) ||
+            move?.node?.parent?.id === node?.id
+              ? "red"
+              : "#19bdd6",
         },
       }));
+      if (
+        (location.length > move.location?.length &&
+          move.location?.every((value, index) => value === location[index])) ||
+        move?.node?.parent?.id === node?.id
+      ) {
+        currentParentRef.current.classList.toggle("neon-red-border");
+        return;
+      }
+      currentParentRef.current.classList.toggle("neon-border");
       console.log("enter");
     };
 
@@ -271,9 +295,19 @@ const DisplayNode = ({
           ...prev.position,
           p2x: prev.position.p1x,
           p2y: prev.position.p1y,
+          color: "#19bdd6",
         },
       }));
-      console.log("leave");
+      if (
+        (location.length > move.location?.length &&
+          move.location?.every((value, index) => value === location[index])) ||
+        move?.node?.parent?.id === node?.id
+      ) {
+        currentParentRef.current.classList.toggle("neon-red-border");
+        return;
+      }
+      currentParentRef.current.classList.toggle("neon-border");
+      console.log("leave", pathPosition, position);
     };
 
     currentParentRef.current.addEventListener("mouseenter", handleMouseEnter);
@@ -300,8 +334,8 @@ const DisplayNode = ({
         ref={currentParentRef}
         className={`${
           isExpanded ? "cursor-default" : "cursor-pointer"
-        } spread scale-0 ${
-          showAll ? "w-fit max-w-[500px]" : "w-[270px]"
+        } spread scale-0 ${showAll ? "w-fit max-w-[500px]" : "w-[270px]"} ${
+          move.node ? (move.node.id === node.id ? "neon-border" : "") : ""
         } overflow-hidden  min-w-[270px] min-h-[150px] flex flex-col justify-center items-center border-2 border-gray-700 bg-gray-800 text-gray-200 rounded-md gap-1`}
       >
         <span
@@ -327,51 +361,59 @@ const DisplayNode = ({
           <div dangerouslySetInnerHTML={{ __html: node?.html }} />
           {move.node &&
             (move.node.id === node.id ? (
-              <div className="w-full h-full absolute top-0 left-0 bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2">
-                <div className="w-max-[250px] p-2 bg-gray-800 rounded-md h-max-[150px] flex flex-col justify-center items-center gap-3">
-                  <div className="w-full flex flex-col justify-between items-center gap-2">
-                    <div className="w-full h-fit px-2 flex justify-center items-center relative text-xs bg-slate-700 py-1 rounded-md transition-colors duration-300">
-                      <h3 className="text-sm w-full text-start">
-                        Click on the node you want to move this node to
-                      </h3>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setMove({
-                          enable: false,
-                          node: null,
-                          location: null,
-                          position: null,
-                          parentPosition: null,
-                        })
-                      }
-                      className="w-full h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-green-700 transition-colors duration-300"
-                    >
-                      Cancel
-                    </button>
+              <div
+                onClick={() =>
+                  setMove({
+                    enable: false,
+                    node: null,
+                    location: null,
+                    position: null,
+                    parentPosition: null,
+                  })
+                }
+                className="w-full h-full absolute top-0 left-0 bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2 hover:cursor-pointer"
+              >
+                <div className="w-max-[250px] p-2 rounded-md h-max-[150px] flex flex-col justify-center items-center gap-3">
+                  <div className="w-full flex flex-col justify-between items-center gap-2 hover:cursor-pointer">
+                    <CloseIcon
+                      stylePath={{ fill: "#15b952" }}
+                      styleSvg={{ rotate: "45deg" }}
+                    />
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="w-full h-full opacity-0 hover:opacity-100 transition-opacity duration-300  absolute top-0 left-0 bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2">
+              <div
+                className={`w-full h-full group opacity-0 hover:opacity-100 transition-opacity duration-300  absolute top-0 left-0 bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2 ${
+                  !(
+                    (location.length > move.location?.length &&
+                      move.location?.every(
+                        (value, index) => value === location[index]
+                      )) ||
+                    move?.node?.parent?.id === node?.id
+                  )
+                    ? "hover:cursor-pointer"
+                    : "hover:cursor-not-allowed"
+                }`}
+                onClick={() => {
+                  !(
+                    location.length > move.location?.length &&
+                    move.location?.every(
+                      (value, index) => value === location[index]
+                    )
+                  ) || move?.node?.parent?.id === node?.id
+                    ? handleNode("move")
+                    : {};
+                }}
+              >
                 {(location.length > move.location?.length &&
                   move.location?.every(
                     (value, index) => value === location[index]
                   )) ||
                 move?.node?.parent?.id === node?.id ? (
-                  <button
-                    // onClick={() => handleNode("move")}
-                    className="w-fit h-8 px-2 flex justify-center items-center relative text-xs bg-slate-700 py-1 rounded-md hover:bg-green-700 transition-colors duration-300"
-                  >
-                    X
-                  </button>
+                  <CloseIcon />
                 ) : (
-                  <button
-                    onClick={() => handleNode("move")}
-                    className="w-fit h-8 px-2 flex justify-center items-center relative text-xs bg-slate-700 py-1 rounded-md hover:bg-green-700 transition-colors duration-300"
-                  >
-                    Move Node
-                  </button>
+                  <MovedIcon />
                 )}
               </div>
             ))}
