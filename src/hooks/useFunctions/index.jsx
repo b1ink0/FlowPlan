@@ -1,5 +1,7 @@
+import { v4 } from "uuid";
 import { useStateContext } from "../../context/StateContext";
 import { deleteNode, moveNode, removeChild } from "../useTree";
+import { toJSON, fromJSON } from "flatted";
 
 export const useFunctions = () => {
   const {
@@ -192,9 +194,94 @@ export const useFunctions = () => {
     }
   };
 
+  const handleExportTreeNote = async (refIds) => {
+    const treeNotes = [];
+    const treeNotesIndex = [];
+    const treeNotesExpanded = [];
+    for (let refId of refIds) {
+      const treeNote = await db.treeNotes.where("refId").equals(refId).first();
+      const treeNoteIndex = await db.treeNotesIndex
+        .where("refId")
+        .equals(refId)
+        .first();
+      const treeNoteExpanded = await db.treeNotesExpanded
+        .where("refId")
+        .equals(refId)
+        .first();
+      treeNotes.push(treeNote);
+      treeNotesIndex.push(treeNoteIndex);
+      treeNotesExpanded.push(treeNoteExpanded);
+    }
+    const result = {
+      treeNotes,
+      treeNotesIndex,
+      treeNotesExpanded,
+    };
+    const json = toJSON(result);
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(json));
+    const downloadAnchorNode = document.createElement("a");
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `TreeNote.json`);
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const handleImportTreeNote = async (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const result = JSON.parse(e.target.result);
+      const cjson = fromJSON(result);
+      const { treeNotes, treeNotesIndex, treeNotesExpanded } = cjson;
+      const refIds = {};
+      for (let treeNote of treeNotes) {
+        refIds[treeNote.refId] = v4();
+      }
+      for (let treeNote of treeNotes) {
+        console.log(treeNote);
+        await db.treeNotes.add({
+          refId: refIds[treeNote.refId],
+          title: treeNote.title,
+          root: {
+            ...treeNote.root,
+            id: refIds[treeNote.root.id],
+          },
+          createdAt: new Date(treeNote.createdAt),
+          updatedAt: new Date(treeNote.updatedAt),
+        });
+      }
+      for (let treeNoteIndex of treeNotesIndex) {
+        await db.treeNotesIndex.add({
+          refId: refIds[treeNoteIndex.refId],
+          title: treeNoteIndex.title,
+          createdAt: new Date(treeNoteIndex.createdAt),
+          updatedAt: new Date(treeNoteIndex.updatedAt),
+        });
+      }
+      for (let treeNoteExpanded of treeNotesExpanded) {
+        await db.treeNotesExpanded.add({
+          refId: refIds[treeNoteExpanded.refId],
+          expanded: {
+            ...treeNoteExpanded.expanded,
+            [refIds[treeNoteExpanded.refId]]: treeNoteExpanded.expanded[
+              treeNoteExpanded.refId
+            ],
+          },
+        });
+      }
+      setUpdate(update + 1);
+    };
+    reader.readAsText(file);
+  };
+
   return {
     handleDeleteNodeWithoutItsChildren,
     handleDeleteNodeWithItsChildren,
     handleMoveNode,
+    handleExportTreeNote,
+    handleImportTreeNote,
   };
 };

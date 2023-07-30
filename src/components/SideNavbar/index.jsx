@@ -5,6 +5,8 @@ import { useStateContext } from "../../context/StateContext";
 import BackIcon from "../../assets/Icons/BackIcon";
 import { TreeNode, addChild } from "../../hooks/useTree";
 import { v4 } from "uuid";
+import { useFunctions } from "../../hooks/useFunctions";
+import ExportIcon from "../../assets/Icons/ExportIcon";
 
 function SideNavbar() {
   const {
@@ -16,8 +18,11 @@ function SideNavbar() {
     setCurrentTreeNote,
     setCurrentExpanded,
   } = useStateContext();
+  const { handleExportTreeNote, handleImportTreeNote } = useFunctions();
   const [showSideNavbar, setShowSideNavbar] = useState(true);
   const [noteTitle, setNoteTitle] = useState("");
+  const [exportSelect, setExportSelect] = useState(false);
+  const [selected, setSelected] = useState([]);
 
   const handleAddNewNote = async (e) => {
     e.preventDefault();
@@ -60,6 +65,23 @@ function SideNavbar() {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const handleChecked = (refId) => {
+    if (selected.includes(refId)) {
+      setSelected((prev) => prev.filter((item) => item !== refId));
+    } else {
+      setSelected((prev) => [...prev, refId]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    setSelected(treeNotes.map((treeNote) => treeNote.refId));
+  };
+
+  const handleSelectCancel = () => {
+    setSelected([]);
+    setExportSelect(false);
   };
 
   useLiveQuery(async () => {
@@ -125,16 +147,66 @@ function SideNavbar() {
         </form>
       </div>
       <div className="grow w-full overflow-x-auto flex flex-col justify-start items-center gap-2 py-2 px-2">
+        {exportSelect && (
+          <div className="w-full flex gap-2">
+            <button
+              onClick={() =>
+                selected.length === treeNotes.length
+                  ? setSelected([])
+                  : handleSelectAll()
+              }
+              className="w-full flex-1 bg-slate-800 py-1 rounded-md hover:bg-slate-700 transition-colors duration-300"
+            >
+              {selected.length === treeNotes.length
+                ? "Deselect All"
+                : "Select All"}
+            </button>
+            {selected.length > 0 && (
+              <button
+                onClick={() => handleExportTreeNote(selected)}
+                className="w-3 h-8 flex-1 bg-slate-800 py-1 rounded-md hover:bg-slate-700 transition-colors duration-300"
+              >
+                {/* <ExportIcon/> */}
+                Export
+              </button>
+            )}
+            <button
+              className="w-full flex-1 bg-slate-800 py-1 rounded-md hover:bg-slate-700 transition-colors duration-300"
+              onClick={handleSelectCancel}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
         {treeNotes?.map((treeNote) => (
           <div
-            key={treeNote?.createdAt}
-            onClick={() => handleSetCurrentTreeNote(treeNote?.refId)}
-            className={`${currentTreeNote?.refId === treeNote?.refId ? "bg-slate-700" : "bg-slate-800"} w-full p-3 relative group hover:bg-slate-700 transition-colors duration-200 cursor-pointer rounded-md flex justify-between items-center shrink-0 gap-2`}
+            key={treeNote?.refId}
+            onClick={() =>
+              exportSelect
+                ? handleChecked(treeNote?.refId)
+                : handleSetCurrentTreeNote(treeNote?.refId)
+            }
+            className={`${
+              currentTreeNote?.refId === treeNote?.refId
+                ? "bg-slate-700"
+                : "bg-slate-800"
+            } w-full p-3 relative group hover:bg-slate-700 transition-colors duration-200 cursor-pointer rounded-md flex items-center shrink-0 gap-2`}
           >
+            {exportSelect && (
+              <div className="w-5 h-5 flex justify-center items-center">
+                <span
+                  className={`${
+                    selected.includes(treeNote?.refId)
+                      ? "bg-gray-400"
+                      : "bg-gray-900"
+                  } w-3 h-3 rounded-full transition-all duration-200`}
+                ></span>
+              </div>
+            )}
             <h4 title="Note 1" className="truncate">
               {treeNote?.title}
             </h4>
-            <button className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
+            <button className="absolute right-5 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
               <EditIcon />
             </button>
             <span className="absolute text-[10px] group-hover:opacity-0 transition-opacity text-gray-400 right-2 bottom-[1px]">
@@ -152,6 +224,22 @@ function SideNavbar() {
             </span>
           </div>
         ))}
+      </div>
+      <div className="w-full p-3 px-2 h-fit flex gap-2">
+        <div className="relative w-full flex justify-center items-center cursor-pointer flex-1 bg-slate-800 py-1 rounded-md hover:bg-slate-700 transition-colors duration-300">
+          <span className="cursor-pointer">Import</span>
+          <input
+            type="file"
+            className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+            onChange={handleImportTreeNote}
+          />
+        </div>
+        <button
+          className="w-full flex-1 bg-slate-800 py-1 rounded-md hover:bg-slate-700 transition-colors duration-300"
+          onClick={() => setExportSelect((prev) => !prev)}
+        >
+          Export
+        </button>
       </div>
     </div>
   );

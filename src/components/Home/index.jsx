@@ -1,7 +1,7 @@
 import React from "react";
 import SideNavbar from "../SideNavbar";
 import DisplayTree from "../DisplayTree";
-import AddEditNode from "../AddEditNode.jsx";
+import AddEditNode from "../AddEditNode";
 import { v4 } from "uuid";
 import { useStateContext } from "../../context/StateContext";
 

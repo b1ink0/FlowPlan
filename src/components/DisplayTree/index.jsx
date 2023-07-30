@@ -61,7 +61,7 @@ const DisplayTree = ({ node }) => {
       <TransformWrapper
         minScale={0.1}
         limitToBounds={false}
-        wheel={{ step: scaleMultiplier}}
+        wheel={{ step: scaleMultiplier }}
       >
         {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
           <Fragment>
@@ -158,10 +158,10 @@ const LivePath = ({ move, rootRef }) => {
     try {
       const { p1x, p1y, p2x, p2y } = move.position;
       console.log(p1x, p1y, p2x, p2y);
-      if (p1x === p2x) {
-        setPath(`M${p1x} ${p1y} ${p2x} ${p2y}`);
-      } else if (p1x === p2x && p1y === p2y) {
+      if (p1x === p2x && p1y === p2y) {
         setPath(`M${p1x} ${p1y} C ${p1x} ${p1y}, ${p2x} ${p2y}, ${p2x} ${p2y}`);
+      } else if (p1x === p2x) {
+        setPath(`M${p1x} ${p1y} ${p2x} ${p2y}`);
       } else if (p2y <= p1y) {
         setPath(
           `M${p1x} ${p1y} C ${p1x} ${p2y + 30}, ${p2x} ${
@@ -182,7 +182,7 @@ const LivePath = ({ move, rootRef }) => {
 
   useEffect(() => {
     if (move?.node === null) {
-      setPath("");
+      // setPath("");
     }
   }, [move.node]);
 
@@ -191,7 +191,7 @@ const LivePath = ({ move, rootRef }) => {
       {path !== "" && (
         <>
           <path
-            id="curve"
+            id="curvee"
             d={path}
             style={{ stroke: move?.position?.color }}
             className="neon-path-1 fade-in-path opacity-0 stroke-current transition-all duration-200"
