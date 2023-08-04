@@ -7,6 +7,11 @@ import { TreeNode, addChild } from "../../hooks/useTree";
 import { v4 } from "uuid";
 import { useFunctions } from "../../hooks/useFunctions";
 import ExportIcon from "../../assets/Icons/ExportIcon";
+import DeleteIcon from "../../assets/Icons/DeleteIcon";
+import ShareIcon from "../../assets/Icons/ShareIcon";
+import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
+import CloseIcon from "../../assets/Icons/CloseIcon";
+import CloseBtnIcon from "../../assets/Icons/CloseBtnIcon";
 
 function SideNavbar() {
   const {
@@ -18,11 +23,22 @@ function SideNavbar() {
     setCurrentTreeNote,
     setCurrentExpanded,
   } = useStateContext();
-  const { handleExportTreeNote, handleImportTreeNote } = useFunctions();
+  const {
+    handleExportTreeNote,
+    handleImportTreeNote,
+    handleShareTreeNote,
+    handleDeleteTreeNote,
+  } = useFunctions();
   const [showSideNavbar, setShowSideNavbar] = useState(true);
   const [noteTitle, setNoteTitle] = useState("");
   const [exportSelect, setExportSelect] = useState(false);
+  const [editNote, setEditNote] = useState(false);
+  const [subMenu, setSubMenu] = useState({
+    refId: "",
+    show: false,
+  });
   const [selected, setSelected] = useState([]);
+  const [copied, setCopied] = useState(false);
 
   const handleAddNewNote = async (e) => {
     e.preventDefault();
@@ -49,6 +65,30 @@ function SideNavbar() {
       expanded: { [newRefId]: false },
     });
 
+    setNoteTitle("");
+  };
+
+  const handleEditNote = async (e) => {
+    e.preventDefault();
+    if (db === null) return;
+    const newNoteIndex = {
+      refId: currentTreeNote.refId,
+      title: noteTitle,
+      updatedAt: new Date(),
+    };
+    await db?.treeNotesIndex
+      .where("refId")
+      .equals(currentTreeNote.refId)
+      .modify({
+        title: noteTitle,
+        updatedAt: new Date(),
+      });
+    await db?.treeNotes.where("refId").equals(currentTreeNote.refId).modify({
+      title: noteTitle,
+      updatedAt: new Date(),
+    });
+
+    setEditNote(false);
     setNoteTitle("");
   };
 
@@ -102,6 +142,7 @@ function SideNavbar() {
       .equals(currentTreeNote.refId)
       .first();
     console.log("expanded", expanded);
+    if (expanded === undefined) return;
     setCurrentExpanded(expanded.expanded);
   }, [currentTreeNote]);
 
@@ -128,7 +169,7 @@ function SideNavbar() {
         <h3 className="text-lg font-medium tracking-wider ">TreeNote</h3>
         <form
           className="w-full flex flex-col mt-1 gap-2"
-          onSubmit={handleAddNewNote}
+          onSubmit={editNote ? handleEditNote : handleAddNewNote}
         >
           <input
             type="text"
@@ -142,7 +183,7 @@ function SideNavbar() {
             type="submit"
             className="flex-1 bg-slate-800 py-1 rounded-md hover:bg-slate-700 transition-colors duration-300"
           >
-            Add
+            {editNote ? "Save" : "Add"}
           </button>
         </form>
       </div>
@@ -192,6 +233,63 @@ function SideNavbar() {
                 : "bg-slate-800"
             } w-full p-3 relative group hover:bg-slate-700 transition-colors duration-200 cursor-pointer rounded-md flex items-center shrink-0 gap-2`}
           >
+            {subMenu.show && subMenu.refId === treeNote?.refId && (
+              <span
+                onClick={(e) => e.stopPropagation()}
+                className="flex justify-between items-center w-full h-full bg-slate-800 absolute right-0 shrink-0 gap-2 cursor-default z-10 spread"
+              >
+                <span className="flex justify-center items-center">
+                  <button
+                    title="Share"
+                    onClick={() => handleShareTreeNote(treeNote?.refId, setCopied)}
+                    className="w-10 h-10 flex justify-center items-center hover:bg-slate-700 transition-colors duration-300 rounded-sm"
+                  >
+                    <span className="absolute w-5 h-5 rounded-full flex justify-center items-center gap-2">
+                      {/* <span>Share</span> */}
+                      <ShareIcon />
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditNote(true);
+                      setNoteTitle(treeNote?.title);
+                    }}
+                    className="w-10 h-10 flex justify-center items-center hover:bg-slate-700 transition-colors duration-300 rounded-sm"
+                  >
+                    <span className="absolute w-5 h-5 rounded-full flex justify-center items-center gap-2">
+                      {/* <span>Edit</span> */}
+                      <EditBtnIcon />
+                    </span>
+                  </button>
+                  <button
+                    className="w-10 h-10 flex justify-center items-center hover:bg-slate-700 transition-colors duration-300 rounded-sm"
+                    onClick={() => handleDeleteTreeNote(treeNote?.refId)}
+                  >
+                    <span className="absolute w-5 h-5 rounded-full flex justify-center items-center gap-2">
+                      {/* <span>Delete</span> */}
+                      <DeleteIcon />
+                    </span>
+                  </button>
+                </span>
+                {copied && (
+                  <span className="text-sm text-gray-400 spread">Copied!</span>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSubMenu({
+                      refId: treeNote?.refId,
+                      show: false,
+                    });
+                  }}
+                  className="w-8 h-8 flex justify-center items-center mr-4"
+                >
+                  <span className="absolute w-8 h-8 rounded-full flex justify-center items-center gap-2">
+                    <CloseBtnIcon />
+                  </span>
+                </button>
+              </span>
+            )}
             {exportSelect && (
               <div className="w-5 h-5 flex justify-center items-center">
                 <span
@@ -206,8 +304,19 @@ function SideNavbar() {
             <h4 title="Note 1" className="truncate">
               {treeNote?.title}
             </h4>
-            <button className="absolute right-5 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
-              <EditIcon />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSubMenu({
+                  refId: treeNote?.refId,
+                  show: true,
+                });
+              }}
+              className="absolute flex justify-center items-center right-0 h-full w-12 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0"
+            >
+              <span className="absolute w-7 h-7 rounded-full flex justify-center items-center gap-2">
+                <EditIcon />
+              </span>
             </button>
             <span className="absolute text-[10px] group-hover:opacity-0 transition-opacity text-gray-400 right-2 bottom-[1px]">
               {treeNote?.createdAt
