@@ -338,7 +338,7 @@ export const useFunctions = () => {
     const jsonStr = JSON.stringify(json);
     const jsonb64 = btoa(jsonStr);
 
-    const url = `${window.location.origin}/share?name=${treeNote.title}&note=${jsonb64}`;
+    const url = `${window.location.origin}?name=${treeNote.title}&note=${jsonb64}`;
     copyToClipboard(url);
     setCopied(true);
     setTimeout(() => {
