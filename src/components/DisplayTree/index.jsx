@@ -4,6 +4,7 @@ import { v4 } from "uuid";
 import DisplayNode from "../DisplayNode";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import ResetIcon from "../../assets/Icons/ResetIcon";
+import TestDisplayNode from "../TestDisplayNode";
 
 const DisplayTree = ({ node }) => {
   const {
@@ -21,6 +22,7 @@ const DisplayTree = ({ node }) => {
 
   const [paths, setPaths] = useState([]);
   const [scaleMultiplier, setScaleMultiplier] = useState(0.1);
+  const [testTree, setTestTree] = useState(null);
 
   useEffect(() => {
     const handleExpanded = async () => {
@@ -53,6 +55,95 @@ const DisplayTree = ({ node }) => {
     handleExpanded();
   }, [currentTreeNote]);
 
+  const handleNumberOfAllChildrenForThatParent = (node, i) => {
+    if (node?.children?.length === 0) {
+      node.numberOfAllChildren = 1;
+      return 1;
+    }
+    let count = 0;
+    node?.children?.forEach((child, i) => {
+      console.log("test357", i);
+      count += handleNumberOfAllChildrenForThatParent(child, i);
+    });
+    node.numberOfAllChildren = count;
+    console.log("test357", node, count);
+    return count;
+  };
+
+  const handleFinalPositionOfNodes = (node, p = 0, flag = true) => {
+    let currentP = p;
+    if (flag) {
+      currentP = p + node.numberOfAllChildren;
+    }
+    let avg = node.numberOfAllChildren / 2;
+    if (flag) {
+      avg = (p + currentP) / 2;
+    }
+    // console.log("test357", node, avg, currentP);
+    if (node?.children?.length === 0) {
+      console.log("test357", "THIS");
+      node.finalPosition = avg;
+      return 0;
+    }
+
+    node?.children?.forEach((child) => {
+      console.log("test357", child.numberOfAllChildren, currentP);
+
+      handleFinalPositionOfNodes(child, currentP, true);
+
+      currentP = currentP + child.numberOfAllChildren;
+    });
+    node.finalPosition = avg;
+    // console.log("test357", node, avg);
+    return node.numberOfAllChildren;
+  };
+
+  const handleFP = (node, i) => {
+    let count = i;
+    node.fp = node.numberOfAllChildren / 2 + i;
+    node?.children?.forEach((child) => {
+      count = count + handleFP(child, count);
+    });
+    return node.numberOfAllChildren;
+  };
+
+  const handleFinalPositionOfNodes2 = (node, i) => {
+    // if (node?.children?.length === 0) {
+    //   node.finalPosition = 1;
+    //   return 1;
+    // }
+    node?.children?.forEach((child, i) => {
+      handleFinalPositionOfNodes2(child, i);
+    });
+    if (i === 0) {
+      console.log("test357", node.id, node?.parent?.parent?.children[0].fp);
+      node.finalPosition = node.numberOfAllChildren / 2;
+      // +
+      // (node?.parent?.fp || 0);
+      node.fp = node.numberOfAllChildren;
+    } else {
+      if (node?.parent?.children[i - 1]) {
+        node.finalPosition =
+          node.numberOfAllChildren / 2 + node.parent.children[i - 1].fp;
+        node.fp = node.numberOfAllChildren + node.parent.children[i - 1].fp;
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!currentTreeNote?.refId) return;
+    const result = handleNumberOfAllChildrenForThatParent(currentTreeNote.root);
+    console.log("test357", result);
+    console.log("test357", currentTreeNote);
+    // const result2 = handleFinalPositionOfNodes(currentTreeNote.root, 0, false);
+    // console.log("test357", currentTreeNote);
+    // handleFinalPositionOfNodes2(currentTreeNote.root, 0);
+    // console.log("test357", currentTreeNote);
+    handleFP(currentTreeNote.root, 0);
+    setTestTree(currentTreeNote);
+    console.log("test357", currentTreeNote);
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -70,6 +161,8 @@ const DisplayTree = ({ node }) => {
                 ref={treeRef}
                 className="active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative bg-gray-900 flex justify-center items-start  transition-all duration-100 p-2"
               >
+                {/* <TestDisplayNode node={testTree?.root} /> */}
+
                 <div ref={parentRef} className="w-fit h-fit flex relative">
                   {currentTreeNote &&
                     currentExpanded[currentTreeNote.refId] !== undefined && (
