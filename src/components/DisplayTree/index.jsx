@@ -55,47 +55,19 @@ const DisplayTree = ({ node }) => {
     handleExpanded();
   }, [currentTreeNote]);
 
-  const handleNumberOfAllChildrenForThatParent = (node, i) => {
+  const handleNumberOfAllChildrenForThatParent = (node, i = 1, root) => {
     if (node?.children?.length === 0) {
       node.numberOfAllChildren = 1;
+      if (i > root.numberOfLevels || !root?.numberOfLevels)
+        root.numberOfLevels = i;
       return 1;
     }
     let count = 0;
-    node?.children?.forEach((child, i) => {
-      console.log("test357", i);
-      count += handleNumberOfAllChildrenForThatParent(child, i);
+    node?.children?.forEach((child) => {
+      count += handleNumberOfAllChildrenForThatParent(child, i + 1, root);
     });
     node.numberOfAllChildren = count;
-    console.log("test357", node, count);
     return count;
-  };
-
-  const handleFinalPositionOfNodes = (node, p = 0, flag = true) => {
-    let currentP = p;
-    if (flag) {
-      currentP = p + node.numberOfAllChildren;
-    }
-    let avg = node.numberOfAllChildren / 2;
-    if (flag) {
-      avg = (p + currentP) / 2;
-    }
-    // console.log("test357", node, avg, currentP);
-    if (node?.children?.length === 0) {
-      console.log("test357", "THIS");
-      node.finalPosition = avg;
-      return 0;
-    }
-
-    node?.children?.forEach((child) => {
-      console.log("test357", child.numberOfAllChildren, currentP);
-
-      handleFinalPositionOfNodes(child, currentP, true);
-
-      currentP = currentP + child.numberOfAllChildren;
-    });
-    node.finalPosition = avg;
-    // console.log("test357", node, avg);
-    return node.numberOfAllChildren;
   };
 
   const handleFP = (node, i) => {
@@ -107,41 +79,16 @@ const DisplayTree = ({ node }) => {
     return node.numberOfAllChildren;
   };
 
-  const handleFinalPositionOfNodes2 = (node, i) => {
-    // if (node?.children?.length === 0) {
-    //   node.finalPosition = 1;
-    //   return 1;
-    // }
-    node?.children?.forEach((child, i) => {
-      handleFinalPositionOfNodes2(child, i);
-    });
-    if (i === 0) {
-      console.log("test357", node.id, node?.parent?.parent?.children[0].fp);
-      node.finalPosition = node.numberOfAllChildren / 2;
-      // +
-      // (node?.parent?.fp || 0);
-      node.fp = node.numberOfAllChildren;
-    } else {
-      if (node?.parent?.children[i - 1]) {
-        node.finalPosition =
-          node.numberOfAllChildren / 2 + node.parent.children[i - 1].fp;
-        node.fp = node.numberOfAllChildren + node.parent.children[i - 1].fp;
-      }
-    }
-  };
-
   useEffect(() => {
     if (!currentTreeNote?.refId) return;
-    const result = handleNumberOfAllChildrenForThatParent(currentTreeNote.root);
-    console.log("test357", result);
-    console.log("test357", currentTreeNote);
-    // const result2 = handleFinalPositionOfNodes(currentTreeNote.root, 0, false);
-    // console.log("test357", currentTreeNote);
-    // handleFinalPositionOfNodes2(currentTreeNote.root, 0);
-    // console.log("test357", currentTreeNote);
+    handleNumberOfAllChildrenForThatParent(
+      currentTreeNote.root,
+      1,
+      currentTreeNote.root
+    );
     handleFP(currentTreeNote.root, 0);
+    console.log(currentTreeNote.root);
     setTestTree(currentTreeNote);
-    console.log("test357", currentTreeNote);
   }, []);
 
   return (
@@ -161,9 +108,22 @@ const DisplayTree = ({ node }) => {
                 ref={treeRef}
                 className="active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative bg-gray-900 flex justify-center items-start  transition-all duration-100 p-2"
               >
-                {/* <TestDisplayNode node={testTree?.root} /> */}
-
-                <div ref={parentRef} className="w-fit h-fit flex relative">
+                <svg
+                  style={{
+                    width: testTree?.root?.fp * 250 * 2 - 30 + "px",
+                    height: testTree?.root?.numberOfLevels * 200 - 100 + "px",
+                  }}
+                  className="absolute overflow-visible"
+                >
+                  <Paths
+                    paths={paths}
+                    node={testTree?.root}
+                    r={testTree?.root?.fp}
+                  />
+                  {move?.node && <LivePath move={move} rootRef={treeRef} />}
+                </svg>
+                <TestDisplayNode node={testTree?.root} />
+                {/* <div ref={parentRef} className="w-fit h-fit flex relative">
                   {currentTreeNote &&
                     currentExpanded[currentTreeNote.refId] !== undefined && (
                       <DisplayNode
@@ -178,11 +138,7 @@ const DisplayTree = ({ node }) => {
                         }
                       />
                     )}
-                  <svg className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible">
-                    <Paths paths={paths} />
-                    {move?.node && <LivePath move={move} rootRef={treeRef} />}
-                  </svg>
-                </div>
+                </div> */}
               </div>
             </TransformComponent>
             <div className="absolute bottom-2 right-2 flex flex-col justify-center items-end gap-2">
@@ -216,32 +172,35 @@ const DisplayTree = ({ node }) => {
         )}
       </TransformWrapper>
     </div>
-    // <div className="border-l border-gray-500 pl-4">
-    //   <h3>{node?.title}</h3>
-    //   <p>{node?.description}</p>
-    //   <div dangerouslySetInnerHTML={{ __html: node?.html }} />
-    //   {node?.children.map(child => <DisplayTree node={child} key={child?.title} />)}
-    // </div>
   );
 };
 
 export default DisplayTree;
 
-const Paths = ({ paths }) => {
-  if (paths.length === 0) return null;
-  return paths.map((path, i) => (
-    <path
-      key={path.id}
-      id="curve"
-      d={path?.path}
-      className={`${
-        path?.show ? "hidden" : ""
-      } fade-in-path opacity-0 stroke-current text-gray-600`}
-      strokeWidth="4"
-      strokeLinecap="round"
-      fill="transparent"
-    ></path>
-  ));
+const Paths = ({ node, i = 0, d = 0, c = 1 }) => {
+  return (
+    <>
+      {d !== 0 && (
+        <path
+          // key={path.id}
+          id="curve"
+          d={`M${i - 15} ${d} 
+              C ${i - 15} ${d + 100 - 20}, ${node?.fp * 250 - 15} ${d}, 
+              ${node?.fp * 250 - 15} ${d + 100 + 30}
+            `}
+          className={`fade-in-path opacity-0 stroke-current text-gray-600 hover:text-red-700 transition-all duration-200`}
+          strokeWidth="4"
+          strokeLinecap="round"
+          fill="transparent"
+        ></path>
+      )}
+      {node?.children?.map((child, i) => {
+        return (
+          <Paths node={child} i={node?.fp * 250} d={200 * c - 100} c={c + 1} />
+        );
+      })}
+    </>
+  );
 };
 
 const LivePath = ({ move, rootRef }) => {
