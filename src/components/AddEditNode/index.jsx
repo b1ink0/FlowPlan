@@ -3,6 +3,7 @@ import { useStateContext } from "../../context/StateContext";
 import BackIcon from "../../assets/Icons/BackIcon";
 import { TreeNode, addChild, updateNode } from "../../hooks/useTree";
 import { v4 } from "uuid";
+import { useFunctions } from "../../hooks/useFunctions";
 
 const AddEditNode = () => {
   const {
@@ -16,6 +17,9 @@ const AddEditNode = () => {
     markdownEditor,
     setMarkdownEditor,
   } = useStateContext();
+
+  const { handlePositionCalculation } = useFunctions();
+
   const [node, setNode] = useState({
     title: "",
     description: "",
@@ -25,7 +29,10 @@ const AddEditNode = () => {
   const inputRef = useRef(null);
 
   const handleUpdateDb = async (node, refId) => {
-    await db.treeNotes.where("refId").equals(refId).modify({ root: node });
+    await db.treeNotes
+      .where("refId")
+      .equals(refId)
+      .modify({ root: node, updatedAt: new Date() });
   };
 
   const handleAddEditNode = async (e) => {
@@ -44,6 +51,7 @@ const AddEditNode = () => {
         console.log("parentNode", parentNode);
         addChild(parentNode, newChildNode);
         console.log("parentNode", parentNode);
+        handlePositionCalculation(parentNode);
         setCurrentTreeNote((prev) => ({ ...prev, root: parentNode }));
         await handleUpdateDb(parentNode, currentTreeNote.refId);
         const expanded = await db.treeNotesExpanded
@@ -77,7 +85,9 @@ const AddEditNode = () => {
           node.html
         );
         addChild(parentNode, newChildNode);
-        console.log("parentNode", parentNode);
+        console.log("parentNode", parentNode, newChildNode, root);
+        handlePositionCalculation(root);
+        console.log(root);
         setCurrentTreeNote((prev) => ({ ...prev, root: root }));
         await handleUpdateDb(root, currentTreeNote.refId);
         setNode({

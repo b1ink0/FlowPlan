@@ -22,7 +22,6 @@ const DisplayTree = ({ node }) => {
 
   const [paths, setPaths] = useState([]);
   const [scaleMultiplier, setScaleMultiplier] = useState(0.1);
-  const [testTree, setTestTree] = useState(null);
 
   useEffect(() => {
     const handleExpanded = async () => {
@@ -55,42 +54,6 @@ const DisplayTree = ({ node }) => {
     handleExpanded();
   }, [currentTreeNote]);
 
-  const handleNumberOfAllChildrenForThatParent = (node, i = 1, root) => {
-    if (node?.children?.length === 0) {
-      node.numberOfAllChildren = 1;
-      if (i > root.numberOfLevels || !root?.numberOfLevels)
-        root.numberOfLevels = i;
-      return 1;
-    }
-    let count = 0;
-    node?.children?.forEach((child) => {
-      count += handleNumberOfAllChildrenForThatParent(child, i + 1, root);
-    });
-    node.numberOfAllChildren = count;
-    return count;
-  };
-
-  const handleFP = (node, i) => {
-    let count = i;
-    node.fp = node.numberOfAllChildren / 2 + i;
-    node?.children?.forEach((child) => {
-      count = count + handleFP(child, count);
-    });
-    return node.numberOfAllChildren;
-  };
-
-  useEffect(() => {
-    if (!currentTreeNote?.refId) return;
-    handleNumberOfAllChildrenForThatParent(
-      currentTreeNote.root,
-      1,
-      currentTreeNote.root
-    );
-    handleFP(currentTreeNote.root, 0);
-    console.log(currentTreeNote.root);
-    setTestTree(currentTreeNote);
-  }, []);
-
   return (
     <div
       ref={containerRef}
@@ -110,19 +73,19 @@ const DisplayTree = ({ node }) => {
               >
                 <svg
                   style={{
-                    width: testTree?.root?.fp * 250 * 2 - 30 + "px",
-                    height: testTree?.root?.numberOfLevels * 200 - 100 + "px",
+                    width: currentTreeNote?.root?.fp * 250 * 2 - 30 + "px",
+                    height: currentTreeNote?.root?.numberOfLevels * 200 - 100 + "px",
                   }}
                   className="absolute overflow-visible"
                 >
                   <Paths
                     paths={paths}
-                    node={testTree?.root}
-                    r={testTree?.root?.fp}
+                    node={currentTreeNote?.root}
+                    r={currentTreeNote?.root?.fp}
                   />
                   {move?.node && <LivePath move={move} rootRef={treeRef} />}
                 </svg>
-                <TestDisplayNode node={testTree?.root} />
+                <TestDisplayNode node={currentTreeNote?.root} />
                 {/* <div ref={parentRef} className="w-fit h-fit flex relative">
                   {currentTreeNote &&
                     currentExpanded[currentTreeNote.refId] !== undefined && (
@@ -182,13 +145,13 @@ const Paths = ({ node, i = 0, d = 0, c = 1 }) => {
     <>
       {d !== 0 && (
         <path
-          // key={path.id}
+          key={"path-" + node.id}
           id="curve"
           d={`M${i - 15} ${d} 
               C ${i - 15} ${d + 100 - 20}, ${node?.fp * 250 - 15} ${d}, 
               ${node?.fp * 250 - 15} ${d + 100 + 30}
             `}
-          className={`fade-in-path opacity-0 stroke-current text-gray-600 hover:text-red-700 transition-all duration-200`}
+          className={`fade-in-path opacity-0 stroke-current text-gray-600`}
           strokeWidth="4"
           strokeLinecap="round"
           fill="transparent"

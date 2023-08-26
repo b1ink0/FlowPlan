@@ -28,6 +28,7 @@ function SideNavbar() {
     handleImportTreeNote,
     handleShareTreeNote,
     handleDeleteTreeNote,
+    handlePositionCalculation
   } = useFunctions();
   const [showSideNavbar, setShowSideNavbar] = useState(true);
   const [noteTitle, setNoteTitle] = useState("");
@@ -95,6 +96,8 @@ function SideNavbar() {
   const handleSetCurrentTreeNote = async (refId) => {
     try {
       const result = await db.treeNotes.where("refId").equals(refId).first();
+      handlePositionCalculation(result.root);
+      // setTestTree(currentTreeNote);
       setCurrentTreeNote(result);
       const expanded = await db.treeNotesExpanded
         .where("refId")
@@ -319,7 +322,7 @@ function SideNavbar() {
               </span>
             </button>
             <span className="absolute text-[10px] group-hover:opacity-0 transition-opacity text-gray-400 right-2 bottom-[1px]">
-              {treeNote?.createdAt
+              {treeNote?.updatedAt
                 ?.toTimeString()
                 .split(" ")[0]
                 .split(":")
