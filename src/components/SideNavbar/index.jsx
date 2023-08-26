@@ -45,13 +45,7 @@ function SideNavbar() {
     e.preventDefault();
     if (db === null) return;
     const newRefId = v4();
-    const newRootTreeNode = new TreeNode(newRefId, noteTitle, "", "", "");
-    const newNoteIndex = {
-      refId: newRefId,
-      title: noteTitle,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    const newRootTreeNode = new TreeNode(newRefId, noteTitle);
     const newNote = {
       refId: newRefId,
       title: noteTitle,
@@ -60,30 +54,12 @@ function SideNavbar() {
       updatedAt: new Date(),
     };
     await db?.treeNotes.add(newNote);
-    await db?.treeNotesIndex.add(newNoteIndex);
-    await db?.treeNotesExpanded.add({
-      refId: newRefId,
-      expanded: { [newRefId]: false },
-    });
-
     setNoteTitle("");
   };
 
   const handleEditNote = async (e) => {
     e.preventDefault();
     if (db === null) return;
-    const newNoteIndex = {
-      refId: currentTreeNote.refId,
-      title: noteTitle,
-      updatedAt: new Date(),
-    };
-    await db?.treeNotesIndex
-      .where("refId")
-      .equals(currentTreeNote.refId)
-      .modify({
-        title: noteTitle,
-        updatedAt: new Date(),
-      });
     await db?.treeNotes.where("refId").equals(currentTreeNote.refId).modify({
       title: noteTitle,
       updatedAt: new Date(),
@@ -97,14 +73,7 @@ function SideNavbar() {
     try {
       const result = await db.treeNotes.where("refId").equals(refId).first();
       handlePositionCalculation(result.root);
-      // setTestTree(currentTreeNote);
       setCurrentTreeNote(result);
-      const expanded = await db.treeNotesExpanded
-        .where("refId")
-        .equals(refId)
-        .first();
-      console.log("expanded", expanded);
-      setCurrentExpanded(expanded.expanded);
     } catch (error) {
       console.error(error);
     }
@@ -130,24 +99,10 @@ function SideNavbar() {
   useLiveQuery(async () => {
     console.log("db", db);
     if (db === null) return;
-    const allTreeNote = await db?.treeNotesIndex?.toArray();
+    const allTreeNote = await db?.treeNotes?.toArray();
     setTreeNotes(allTreeNote);
     if (allTreeNote.length === 0) return;
-
-    // handleSetCurrentTreeNote(allTreeNote[0].refId);
   }, [db]);
-
-  useLiveQuery(async () => {
-    if (db === null) return;
-    if (currentTreeNote === null) return;
-    const expanded = await db.treeNotesExpanded
-      .where("refId")
-      .equals(currentTreeNote.refId)
-      .first();
-    console.log("expanded", expanded);
-    if (expanded === undefined) return;
-    setCurrentExpanded(expanded.expanded);
-  }, [currentTreeNote]);
 
   useEffect(() => {
     if (treeNotes.length === 0) return;

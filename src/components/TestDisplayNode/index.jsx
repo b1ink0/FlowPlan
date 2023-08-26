@@ -10,12 +10,6 @@ import { useStateContext } from "../../context/StateContext";
 import { useFunctions } from "../../hooks/useFunctions";
 
 function TestDisplayNode({ node }) {
-  const { currentTreeNote } = useStateContext();
-  const [key, setKey] = useState(0);
-  useEffect(() => {
-    console.log("node", node);
-    setKey(key + 1);
-  }, [currentTreeNote]);
   return (
     <div className="w-0 h-0 relative flex justify-center items-start">
       <DisplayNode node={node} t={0} r={node?.fp} location={[]} />
