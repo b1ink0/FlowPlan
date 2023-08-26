@@ -1,12 +1,10 @@
 // Define the tree node structure
 class TreeNode {
-  constructor(id, title, description = "", markdown = "", html = "") {
+  constructor(id, title, data) {
     this.id = id;
     this.title = title;
-    this.description = description;
-    this.markdown = markdown;
-    this.html = html;
-    this.parent = null;
+    this.data = data || [];
+    this.expanded = true;
     this.children = [];
   }
 }
@@ -23,17 +21,16 @@ function removeChild(parent, child) {
 }
 
 // Define a function for updating a node's properties
-function updateNode(node, title, description, markdown, html) {
-  node.title = title;
-  node.description = description;
-  node.markdown = markdown;
-  node.html = html;
+function updateNode(node, title, data, expanded) {
+  node.title = title || node.title;
+  node.data = data || node.data;
+  node.expanded = expanded || node.expanded;
 }
 
 function deleteNode(node, location) {
   // Transfer child nodes to parent in reverse order
   let parent = node.parent;
-  for (let i = 0; node.children.length > i ; i++) {
+  for (let i = 0; node.children.length > i; i++) {
     let child = node.children[i];
     // Insert child node at the current node's position in parent's children array
     parent.children.splice(location + 1 + i, 0, child);
@@ -43,7 +40,6 @@ function deleteNode(node, location) {
   // Remove node from parent's children array
   removeChild(parent, node);
 }
-
 
 function destroyNode(node) {
   // Remove node from parent's children array
@@ -62,10 +58,6 @@ function moveNode(node, newParent) {
 // Define a function for traversing the tree and printing each node's properties
 function traverseTree(node, level = 0) {
   console.log(" ".repeat(level * 2) + node.id);
-  console.log(" ".repeat(level * 2) + node.title);
-  console.log(" ".repeat(level * 2) + node.description);
-  console.log(" ".repeat(level * 2) + node.markdown);
-  console.log(" ".repeat(level * 2) + node.html);
   for (let child of node.children) {
     traverseTree(child, level + 1);
   }

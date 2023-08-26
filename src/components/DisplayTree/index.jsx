@@ -10,53 +10,13 @@ const DisplayTree = ({ node }) => {
   const {
     db,
     currentTreeNote,
-    setCurrentTreeNode,
-    update,
-    setUpdate,
-    currentExpanded,
     move,
   } = useStateContext();
-  const containerRef = useRef(null);
-  const treeRef = useRef(null);
-  const parentRef = useRef(null);
 
-  const [paths, setPaths] = useState([]);
   const [scaleMultiplier, setScaleMultiplier] = useState(0.1);
-
-  useEffect(() => {
-    const handleExpanded = async () => {
-      try {
-        if (!currentTreeNote?.refId) return;
-        const result = await db.treeNotesExpanded
-          .where("refId")
-          .equals(currentTreeNote.refId)
-          .first();
-        if (result === undefined) {
-          await db.treeNotesExpanded.add({
-            refId: currentTreeNote.refId,
-            expanded: {
-              [location.length > 0 ? location.join("-") : "root"]: false,
-            },
-          });
-        } else {
-          console.log(result);
-          // const { expanded } = result;
-          // if (expanded[location.length > 0 ? location.join("-") : "root"]) {
-          //   setExpanded(true);
-          // } else {
-          //   setExpanded(false);
-          // }
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    handleExpanded();
-  }, [currentTreeNote]);
 
   return (
     <div
-      ref={containerRef}
       className="hide-scroll-bar relative h-full grow bg-gray-900 flex justify-center items-center overflow-hidden cursor-grab"
     >
       <TransformWrapper
@@ -68,7 +28,6 @@ const DisplayTree = ({ node }) => {
           <Fragment>
             <TransformComponent>
               <div
-                ref={treeRef}
                 className="active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative bg-gray-900 flex justify-center items-start  transition-all duration-100 p-2"
               >
                 <svg
@@ -79,29 +38,13 @@ const DisplayTree = ({ node }) => {
                   className="absolute overflow-visible"
                 >
                   <Paths
-                    paths={paths}
+                    key={"path-" + currentTreeNote?.root?.id}
                     node={currentTreeNote?.root}
                     r={currentTreeNote?.root?.fp}
                   />
                   {move?.node && <LivePath move={move} rootRef={treeRef} />}
                 </svg>
                 <TestDisplayNode node={currentTreeNote?.root} />
-                {/* <div ref={parentRef} className="w-fit h-fit flex relative">
-                  {currentTreeNote &&
-                    currentExpanded[currentTreeNote.refId] !== undefined && (
-                      <DisplayNode
-                        update={update}
-                        setUpdate={setUpdate}
-                        location={[]}
-                        containerRef={parentRef}
-                        paths={paths}
-                        setPaths={setPaths}
-                        currentIsExpanded={
-                          currentExpanded[currentTreeNote.refId]
-                        }
-                      />
-                    )}
-                </div> */}
               </div>
             </TransformComponent>
             <div className="absolute bottom-2 right-2 flex flex-col justify-center items-end gap-2">
@@ -145,7 +88,7 @@ const Paths = ({ node, i = 0, d = 0, c = 1 }) => {
     <>
       {d !== 0 && (
         <path
-          key={"path-" + node.id}
+          
           id="curve"
           d={`M${i - 15} ${d} 
               C ${i - 15} ${d + 100 - 20}, ${node?.fp * 250 - 15} ${d}, 
@@ -159,7 +102,7 @@ const Paths = ({ node, i = 0, d = 0, c = 1 }) => {
       )}
       {node?.children?.map((child, i) => {
         return (
-          <Paths node={child} i={node?.fp * 250} d={200 * c - 100} c={c + 1} />
+          <Paths key={"path-" + child.id} node={child} i={node?.fp * 250} d={200 * c - 100} c={c + 1} />
         );
       })}
     </>

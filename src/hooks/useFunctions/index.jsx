@@ -10,8 +10,6 @@ export const useFunctions = () => {
     setCurrentTreeNote,
     update,
     setUpdate,
-    currentExpanded,
-    setCurrentExpanded,
     move,
     setMove,
   } = useStateContext();
@@ -19,8 +17,7 @@ export const useFunctions = () => {
   const handleDeleteNodeWithoutItsChildren = async (
     node,
     setDeleted,
-    location,
-    setPaths
+    location
   ) => {
     let root = node.parent;
     deleteNode(node, location);
@@ -33,66 +30,9 @@ export const useFunctions = () => {
       .equals(currentTreeNote.refId)
       .modify({ root: root });
     setDeleted(false);
-    let newExpanded = currentExpanded;
-    if (newExpanded.hasOwnProperty(node.id)) {
-      delete newExpanded[node.id];
-    }
-    setPaths((paths) => {
-      const indexToDelete = paths.findIndex(
-        (element) => element.id === node.id
-      );
-      if (indexToDelete !== -1) {
-        paths.splice(indexToDelete, 1);
-      }
-      return paths;
-    });
-    await db.treeNotesExpanded
-      .where("refId")
-      .equals(currentTreeNote.refId)
-      .modify((expanded) => {
-        expanded.expanded = newExpanded;
-      });
-
-    setTimeout(() => {
-      setDeleted(true);
-      setTimeout(() => {
-        setUpdate(update + 1);
-      }, 100);
-    }, 100);
   };
 
-  const handleDeletePathAndExpanded = async (node, setPaths) => {
-    if (node.children.length > 0) {
-      for (let child of node.children) {
-        handleDeletePathAndExpanded(child, setPaths);
-      }
-    }
-
-    setPaths((paths) => {
-      const indexToDelete = paths.findIndex(
-        (element) => element.id === node.id
-      );
-      if (indexToDelete !== -1) {
-        paths.splice(indexToDelete, 1);
-      }
-      return paths;
-    });
-    await db.treeNotesExpanded
-      .where("refId")
-      .equals(currentTreeNote.refId)
-      .modify((expanded) => {
-        delete expanded.expanded[node.id];
-      });
-  };
-
-  const handleDeleteNodeWithItsChildren = async (
-    node,
-    setDeleted,
-    location,
-    setPaths
-  ) => {
-    handleDeletePathAndExpanded(node, setPaths);
-
+  const handleDeleteNodeWithItsChildren = async (node, setDeleted) => {
     let root = node.parent;
     removeChild(root, node);
     while (root.parent) {
@@ -104,40 +44,9 @@ export const useFunctions = () => {
       .equals(currentTreeNote.refId)
       .modify({ root: root });
     setDeleted(false);
-    let newExpanded = currentExpanded;
-    if (newExpanded.hasOwnProperty(node.id)) {
-      delete newExpanded[node.id];
-    }
-    setPaths((paths) => {
-      const indexToDelete = paths.findIndex(
-        (element) => element.id === node.id
-      );
-      if (indexToDelete !== -1) {
-        paths.splice(indexToDelete, 1);
-      }
-      return paths;
-    });
-    await db.treeNotesExpanded
-      .where("refId")
-      .equals(currentTreeNote.refId)
-      .modify((expanded) => {
-        expanded.expanded = newExpanded;
-      });
-
-    setTimeout(() => {
-      setDeleted(true);
-      setTimeout(() => {
-        setUpdate(update + 1);
-      }, 100);
-    }, 100);
   };
 
-  const handleMoveNode = async (
-    node,
-    location,
-    setIsExpanded,
-    setRootExpanded
-  ) => {
+  const handleMoveNode = async (node) => {
     if (node.parent === null) {
       moveNode(move.node, node);
       setCurrentTreeNote((prev) => ({ ...prev, root: node }));
@@ -147,9 +56,6 @@ export const useFunctions = () => {
         .equals(currentTreeNote.refId)
         .modify({ root: root });
       // setDeleted(true);
-      setTimeout(() => {
-        setUpdate(update + 1);
-      }, 100);
     } else {
       let root = node.parent;
 
@@ -165,57 +71,23 @@ export const useFunctions = () => {
         position: null,
         parentPosition: null,
       }));
-      // setCurrentExpanded((prev) => ({...prev, [currentTreeNote.root.refId]: false}));
-      setRootExpanded(false);
 
-      setTimeout(async () => {
-        setIsExpanded(true);
-        const newPrev = {
-          ...currentExpanded,
-          [node?.id]: true,
-        };
-        await db.treeNotes
-          .where("refId")
-          .equals(currentTreeNote.refId)
-          .modify({ root: root });
-        await db.treeNotesExpanded
-          .where("refId")
-          .equals(currentTreeNote.refId)
-          .modify((expanded) => {
-            expanded.expanded = newPrev;
-          });
-        setTimeout(() => {
-          setRootExpanded(true);
-          setTimeout(() => {
-            setUpdate(update + 1);
-          }, 100);
-        }, 100);
-      }, 100);
+      await db.treeNotes
+        .where("refId")
+        .equals(currentTreeNote.refId)
+        .modify({ root: root });
     }
   };
 
   const handleExportTreeNote = async (refIds) => {
     const treeNotes = [];
-    const treeNotesIndex = [];
-    const treeNotesExpanded = [];
     for (let refId of refIds) {
       const treeNote = await db.treeNotes.where("refId").equals(refId).first();
-      const treeNoteIndex = await db.treeNotesIndex
-        .where("refId")
-        .equals(refId)
-        .first();
-      const treeNoteExpanded = await db.treeNotesExpanded
-        .where("refId")
-        .equals(refId)
-        .first();
+
       treeNotes.push(treeNote);
-      treeNotesIndex.push(treeNoteIndex);
-      treeNotesExpanded.push(treeNoteExpanded);
     }
     const result = {
-      treeNotes,
-      treeNotesIndex,
-      treeNotesExpanded,
+      treeNotes
     };
     const json = toJSON(result);
     const dataStr =
@@ -231,33 +103,18 @@ export const useFunctions = () => {
 
   const handleDeleteTreeNote = async (refId) => {
     await db.treeNotes.where("refId").equals(refId).delete();
-    await db.treeNotesIndex.where("refId").equals(refId).delete();
-    await db.treeNotesExpanded.where("refId").equals(refId).delete();
-    setUpdate(update + 1);
   };
 
   const handleImport = async (result) => {
     try {
       const cjson = fromJSON(result);
-      const { treeNotes, treeNotesIndex, treeNotesExpanded } = cjson;
+      const { treeNotes } = cjson;
       const refIds = {};
       console.log(cjson);
       for (let treeNote of treeNotes) {
         refIds[treeNote.refId] = v4();
       }
       let promises = [];
-      for (let treeNoteExpanded of treeNotesExpanded) {
-        console.log(treeNoteExpanded);
-        const treeNotesExpandedPromise = db.treeNotesExpanded.add({
-          refId: refIds[treeNoteExpanded.refId],
-          expanded: {
-            ...treeNoteExpanded.expanded,
-            [refIds[treeNoteExpanded.refId]]:
-              treeNoteExpanded.expanded[treeNoteExpanded.refId],
-          },
-        });
-        promises.push(treeNotesExpandedPromise);
-      }
 
       for (let treeNote of treeNotes) {
         console.log(treeNote);
@@ -274,15 +131,6 @@ export const useFunctions = () => {
         promises.push(treeNotesPromise);
       }
 
-      for (let treeNoteIndex of treeNotesIndex) {
-        const treeNotesIndexPromise = db.treeNotesIndex.add({
-          refId: refIds[treeNoteIndex.refId],
-          title: treeNoteIndex.title,
-          createdAt: new Date(treeNoteIndex.createdAt),
-          updatedAt: new Date(treeNoteIndex.updatedAt),
-        });
-        promises.push(treeNotesIndexPromise);
-      }
       promises = await Promise.all(promises);
       setUpdate(update + 1);
       return promises;
@@ -315,24 +163,10 @@ export const useFunctions = () => {
 
   const handleShareTreeNote = async (refId, setCopied) => {
     const treeNotes = [];
-    const treeNotesIndex = [];
-    const treeNotesExpanded = [];
     const treeNote = await db.treeNotes.where("refId").equals(refId).first();
-    const treeNoteIndex = await db.treeNotesIndex
-      .where("refId")
-      .equals(refId)
-      .first();
-    const treeNoteExpanded = await db.treeNotesExpanded
-      .where("refId")
-      .equals(refId)
-      .first();
     treeNotes.push(treeNote);
-    treeNotesIndex.push(treeNoteIndex);
-    treeNotesExpanded.push(treeNoteExpanded);
     const result = {
       treeNotes,
-      treeNotesIndex,
-      treeNotesExpanded,
     };
     const json = toJSON(result);
     const jsonStr = JSON.stringify(json);
@@ -404,6 +238,6 @@ export const useFunctions = () => {
     handleImportTreeNote,
     handleShareTreeNote,
     handleDeleteTreeNote,
-    handlePositionCalculation
+    handlePositionCalculation,
   };
 };

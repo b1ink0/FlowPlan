@@ -10,21 +10,15 @@ const AddEditNode = () => {
     db,
     currentTreeNote,
     setCurrentTreeNote,
-    currentTreeNode,
     addEditNode,
     setAddEditNode,
-    setUpdate,
-    markdownEditor,
-    setMarkdownEditor,
   } = useStateContext();
 
   const { handlePositionCalculation } = useFunctions();
 
   const [node, setNode] = useState({
     title: "",
-    description: "",
-    markdown: "",
-    html: "",
+    data: [],
   });
   const inputRef = useRef(null);
 
@@ -40,13 +34,10 @@ const AddEditNode = () => {
     if (addEditNode.type === "add") {
       if (addEditNode.location.length === 0) {
         const parentNode = currentTreeNote.root;
-        const id = v4();
         const newChildNode = new TreeNode(
-          id,
+          v4(),
           node.title,
-          node.description,
-          node.markdown,
-          node.html
+          node.data
         );
         console.log("parentNode", parentNode);
         addChild(parentNode, newChildNode);
@@ -54,21 +45,9 @@ const AddEditNode = () => {
         handlePositionCalculation(parentNode);
         setCurrentTreeNote((prev) => ({ ...prev, root: parentNode }));
         await handleUpdateDb(parentNode, currentTreeNote.refId);
-        const expanded = await db.treeNotesExpanded
-          .where("refId")
-          .equals(currentTreeNote.refId)
-          .first();
-        console.log("expanded", expanded);
-        await db.treeNotesExpanded
-          .where("refId")
-          .equals(currentTreeNote.refId)
-          .modify({ expanded: { ...expanded.expanded, [id]: false } });
-
         setNode({
           title: "",
-          description: "",
-          markdown: "",
-          html: "",
+          data: []
         });
         setAddEditNode((prev) => ({ ...prev, location: null, show: false }));
       } else {
@@ -80,9 +59,7 @@ const AddEditNode = () => {
         const newChildNode = new TreeNode(
           v4(),
           node.title,
-          node.description,
-          node.markdown,
-          node.html
+          node.data
         );
         addChild(parentNode, newChildNode);
         console.log("parentNode", parentNode, newChildNode, root);
@@ -92,9 +69,7 @@ const AddEditNode = () => {
         await handleUpdateDb(root, currentTreeNote.refId);
         setNode({
           title: "",
-          description: "",
-          markdown: "",
-          html: "",
+          data: []
         });
         setAddEditNode((prev) => ({ ...prev, location: null, show: false }));
       }
@@ -105,18 +80,14 @@ const AddEditNode = () => {
         updateNode(
           parentNode,
           node.title,
-          node.description,
-          node.markdown,
-          node.html
+          node.data
         );
         console.log("parentNode", parentNode);
         setCurrentTreeNote((prev) => ({ ...prev, root: parentNode }));
         await handleUpdateDb(parentNode, currentTreeNote.refId);
         setNode({
           title: "",
-          description: "",
-          markdown: "",
-          html: "",
+          data: []
         });
         setAddEditNode((prev) => ({ ...prev, location: null, show: false }));
       } else {
@@ -128,18 +99,14 @@ const AddEditNode = () => {
         updateNode(
           parentNode,
           node.title,
-          node.description,
-          node.markdown,
-          node.html
+          node.data
         );
         console.log("parentNode", parentNode);
         setCurrentTreeNote((prev) => ({ ...prev, root: root }));
         await handleUpdateDb(root, currentTreeNote.refId);
         setNode({
           title: "",
-          description: "",
-          markdown: "",
-          html: "",
+          data: []
         });
         setAddEditNode((prev) => ({ ...prev, location: null, show: false }));
       }
@@ -156,9 +123,7 @@ const AddEditNode = () => {
       });
       setNode({
         title: parentNode.title,
-        description: parentNode.description,
-        markdown: parentNode.markdown,
-        html: parentNode.html,
+        data: parentNode.data,
       });
     }
     setTimeout(() => {
@@ -206,20 +171,6 @@ const AddEditNode = () => {
                   placeholder="Enter note title..."
                   required
                   className="w-full px-2 py-1 rounded-md bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
-                />
-              </div>
-              <div className="w-full flex-1 flex flex-col justify-center items-start gap-1">
-                <label htmlFor="description" className="text-sm font-medium">
-                  Description:
-                </label>
-                <textarea
-                  type="text"
-                  value={node.description}
-                  onChange={(e) =>
-                    setNode({ ...node, description: e.target.value })
-                  }
-                  placeholder="Enter note description..."
-                  className="w-full resize-none flex-1 px-2 py-1 rounded-md bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
                 />
               </div>
             </div>
