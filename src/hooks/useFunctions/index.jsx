@@ -367,6 +367,35 @@ export const useFunctions = () => {
     console.log("copied", str);
   };
 
+  const handleNumberOfAllChildrenForThatParent = (node, i = 1, root) => {
+    if (node?.children?.length === 0) {
+      node.numberOfAllChildren = 1;
+      if (i > root.numberOfLevels || !root?.numberOfLevels)
+        root.numberOfLevels = i;
+      return 1;
+    }
+    let count = 0;
+    node?.children?.forEach((child) => {
+      count += handleNumberOfAllChildrenForThatParent(child, i + 1, root);
+    });
+    node.numberOfAllChildren = count;
+    return count;
+  };
+
+  const handleFinalPositionCalculation = (node, i) => {
+    let count = i;
+    node.fp = node.numberOfAllChildren / 2 + i;
+    node?.children?.forEach((child) => {
+      count = count + handleFinalPositionCalculation(child, count);
+    });
+    return node.numberOfAllChildren;
+  };
+
+  const handlePositionCalculation = (root) => {
+    handleNumberOfAllChildrenForThatParent(root, 1, root);
+    handleFinalPositionCalculation(root, 0);
+  };
+
   return {
     handleDeleteNodeWithoutItsChildren,
     handleDeleteNodeWithItsChildren,
@@ -375,5 +404,6 @@ export const useFunctions = () => {
     handleImportTreeNote,
     handleShareTreeNote,
     handleDeleteTreeNote,
+    handlePositionCalculation
   };
 };

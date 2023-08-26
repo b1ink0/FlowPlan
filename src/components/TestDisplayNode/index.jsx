@@ -1,36 +1,94 @@
 // @ts-check
-import React from "react";
+import React, { useEffect, useState } from "react";
 import CloseIcon from "../../assets/Icons/CloseIcon";
 import MovedIcon from "../../assets/Icons/MovedIcon";
 import DeleteIcon from "../../assets/Icons/DeleteIcon";
 import MoveIcon from "../../assets/Icons/MoveIcon";
 import BackIcon from "../../assets/Icons/BackIcon";
 import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
+import { useStateContext } from "../../context/StateContext";
+import { useFunctions } from "../../hooks/useFunctions";
 
-function TestDisplayNode({ node,  }) {
+function TestDisplayNode({ node }) {
+  const { currentTreeNote } = useStateContext();
+  const [key, setKey] = useState(0);
+  useEffect(() => {
+    console.log("node", node);
+    setKey(key + 1);
+  }, [currentTreeNote]);
   return (
     <div className="w-0 h-0 relative flex justify-center items-start">
-      <DisplayNode node={node} t={0} r={node?.fp}  />
+      <DisplayNode node={node} t={0} r={node?.fp} location={[]} />
     </div>
   );
 }
 
-function DisplayNode({ node, t, r }) {
+function DisplayNode({ node, t, r, location }) {
+  const {
+    db,
+    currentTreeNote,
+    setAddEditNode,
+    currentExpanded,
+    setCurrentExpanded,
+    move,
+    setMove,
+  } = useStateContext();
+  const {
+    handleDeleteNodeWithoutItsChildren,
+    handleDeleteNodeWithItsChildren,
+    handleMoveNode,
+  } = useFunctions();
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showAll, setShowAll] = React.useState(false);
   const [deleteMenu, setDeleteMenu] = React.useState(false);
   const [update, setUpdate] = React.useState(0);
-  const [move, setMove] = React.useState({
-    enable: false,
-    node: null,
-    location: null,
-    position: null,
-    parentPosition: null,
-  });
+
+  const handleNode = (type) => {
+    switch (type) {
+      case "add":
+        setAddEditNode({
+          show: true,
+          location: location,
+          type: type,
+        });
+        break;
+      case "edit":
+        setAddEditNode({
+          show: true,
+          location: location,
+          type: type,
+        });
+        break;
+      case "delete":
+        // handleDeleteNodeWithoutItsChildren(
+        //   node,
+        //   setParentIsExpanded,
+        //   location[location.length - 1],
+        //   setPaths
+        // );
+        break;
+      case "deleteAll":
+      // handleDeleteNodeWithItsChildren(
+      //   node,
+      //   setParentIsExpanded,
+      //   location[location.length - 1],
+      //   setPaths
+      // );
+      case "move":
+        // handleMoveNode(node, location, setIsExpanded, setRootExpanded);
+        break;
+      default:
+        break;
+    }
+  };
+
+  useEffect(() => {
+    console.log("node", node);
+  }, [currentTreeNote]);
   return (
     <>
       <div
-        className="absolute"
+        className="absolute transition-transform duration-500"
         style={{ transform: `translate(${(node?.fp - r) * 250}px,  ${t}px)` }}
       >
         <div
@@ -56,15 +114,14 @@ function DisplayNode({ node, t, r }) {
               }}
               className="w-full text-center text-2xl truncate border-b border-gray-500 py-2 px-2 hover:bg-gray-700 transition-colors duration-300 cursor-pointer"
             >
-              {/* {node?.title} */}
-              {node?.fp * 250}
+              {node?.title}
+              {/* {node?.fp * 250} */}
             </h3>
             {/* {node?.description !== "" && (
               <p className="w-full text-center p-2 truncate">
                 {node?.description}
               </p>
             )} */}
-            {/* <div dangerouslySetInnerHTML={{ __html: node?.html }} /> */}
             {/* {move.node &&
               (move.node.id === node.id ? (
                 <div
@@ -190,7 +247,7 @@ function DisplayNode({ node, t, r }) {
               )}
               <button
                 className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-purple-600 transition-colors duration-300"
-                // onClick={() => handleNode("add")}
+                onClick={() => handleNode("add")}
               >
                 <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-[3px] rounded-md h-4 bg-gray-200"></span>
                 <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-4 rounded-md h-[3px] bg-gray-200"></span>
@@ -224,7 +281,7 @@ function DisplayNode({ node, t, r }) {
               )}
               <button
                 className="w-8 h-8 group flex justify-center items-center relative text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-green-700 transition-colors duration-300"
-                // onClick={() => handleNode("edit")}
+                onClick={() => handleNode("edit")}
               >
                 <EditBtnIcon />
               </button>
@@ -240,8 +297,16 @@ function DisplayNode({ node, t, r }) {
           </div>
         </div>
       </div>
-      {node?.children?.map((child) => {
-        return <DisplayNode key={child.id} node={child} t={t + 200} r={r} />;
+      {node?.children?.map((child, i) => {
+        return (
+          <DisplayNode
+            key={child.id}
+            node={child}
+            t={t + 200}
+            r={r}
+            location={location.concat([i])}
+          />
+        );
       })}
     </>
   );
