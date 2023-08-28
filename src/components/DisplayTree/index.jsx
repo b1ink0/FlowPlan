@@ -138,19 +138,20 @@ const Paths = ({ node, i = 0, d = 0, c = 1, init, animation }) => {
           fill="transparent"
         ></path>
       )}
-      {node?.children?.map((child, i) => {
-        return (
-          <Paths
-            key={"path-" + child.id}
-            node={child}
-            i={node?.fp * 250}
-            d={200 * c - 100}
-            c={c + 1}
-            init={init}
-            animation={animation}
-          />
-        );
-      })}
+      {node?.expanded &&
+        node?.children?.map((child, i) => {
+          return (
+            <Paths
+              key={"path-" + child.id}
+              node={child}
+              i={node?.fp * 250}
+              d={200 * c - 100}
+              c={c + 1}
+              init={init}
+              animation={animation}
+            />
+          );
+        })}
     </>
   );
 };
