@@ -32,6 +32,7 @@ export function StateProvider({ children }) {
     show: false,
     markdown: "",
   })
+  const [animation, setAnimation] = useState(true)
 
   const values = {
     db,
@@ -51,7 +52,9 @@ export function StateProvider({ children }) {
     deleteUpdate,
     setDeleteUpdate,
     move,
-    setMove
+    setMove,
+    animation,
+    setAnimation
   };
   return (
     <StateContext.Provider value={values}>{children}</StateContext.Provider>

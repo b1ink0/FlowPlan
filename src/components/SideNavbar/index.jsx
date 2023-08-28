@@ -28,7 +28,7 @@ function SideNavbar() {
     handleImportTreeNote,
     handleShareTreeNote,
     handleDeleteTreeNote,
-    handlePositionCalculation
+    handlePositionCalculation,
   } = useFunctions();
   const [showSideNavbar, setShowSideNavbar] = useState(true);
   const [noteTitle, setNoteTitle] = useState("");
@@ -100,13 +100,19 @@ function SideNavbar() {
     console.log("db", db);
     if (db === null) return;
     const allTreeNote = await db?.treeNotes?.toArray();
-    setTreeNotes(allTreeNote);
     if (allTreeNote.length === 0) return;
+    setTreeNotes((prev) => {
+      if (prev.length === allTreeNote.length) return prev;
+      return allTreeNote;
+    });
   }, [db]);
 
   useEffect(() => {
     if (treeNotes.length === 0) return;
-    handleSetCurrentTreeNote(treeNotes[0].refId);
+    handleSetCurrentTreeNote((prev) => {
+      if (prev === null) return treeNotes[0].refId;
+      return prev;
+    });
   }, [treeNotes]);
 
   return (
@@ -199,7 +205,9 @@ function SideNavbar() {
                 <span className="flex justify-center items-center">
                   <button
                     title="Share"
-                    onClick={() => handleShareTreeNote(treeNote?.refId, setCopied)}
+                    onClick={() =>
+                      handleShareTreeNote(treeNote?.refId, setCopied)
+                    }
                     className="w-10 h-10 flex justify-center items-center hover:bg-slate-700 transition-colors duration-300 rounded-sm"
                   >
                     <span className="absolute w-5 h-5 rounded-full flex justify-center items-center gap-2">

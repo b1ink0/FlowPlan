@@ -101,7 +101,7 @@ body {
 @keyframes spread {
   0% {
     opacity: 0;
-    translate: 0 -20px;
+    translate: 0 -50px;
     transform: scale(1);
   }
   100% {
