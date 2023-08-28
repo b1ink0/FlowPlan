@@ -10,14 +10,22 @@ import { useStateContext } from "../../context/StateContext";
 import { useFunctions } from "../../hooks/useFunctions";
 
 function TestDisplayNode({ node }) {
+  const { animation } = useStateContext();
+  const [init, setInit] = useState(animation ? true : false);
+  useEffect(() => {
+    if (!animation) return;
+    setTimeout(() => {
+      setInit(false);
+    }, 1000);
+  }, []);
   return (
     <div className="w-0 h-0 relative flex justify-center items-start">
-      <DisplayNode node={node} t={0} r={node?.fp} location={[]} />
+      <DisplayNode init={init} node={node} t={0} r={node?.fp} location={[]} />
     </div>
   );
 }
 
-function DisplayNode({ node, t, r, location }) {
+function DisplayNode({ node, t, r, location, ptranslate, init }) {
   const {
     db,
     currentTreeNote,
@@ -25,7 +33,10 @@ function DisplayNode({ node, t, r, location }) {
     currentExpanded,
     setCurrentExpanded,
     move,
+    update,
+    setUpdate,
     setMove,
+    animation,
   } = useStateContext();
   const {
     handleDeleteNodeWithoutItsChildren,
@@ -35,7 +46,10 @@ function DisplayNode({ node, t, r, location }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showAll, setShowAll] = React.useState(false);
   const [deleteMenu, setDeleteMenu] = React.useState(false);
-  const [update, setUpdate] = React.useState(0);
+  const [translate, setTranslate] = useState({
+    x: !animation || init ? (node?.fp - r) * 250 : ptranslate?.x || 0,
+    y: !animation || init ? t : ptranslate?.y + 100 || 0,
+  });
 
   const handleNode = (type) => {
     switch (type) {
@@ -78,12 +92,22 @@ function DisplayNode({ node, t, r, location }) {
 
   useEffect(() => {
     console.log("node", node);
-  }, [currentTreeNote]);
+    // if (init) return;
+    setTimeout(
+      () => {
+        setTranslate({ x: (node?.fp - r) * 250, y: t });
+      },
+      !animation || !init ? 0 : 400
+    );
+  }, [update]);
   return (
     <>
       <div
-        className="absolute transition-transform duration-500"
-        style={{ transform: `translate(${(node?.fp - r) * 250}px,  ${t}px)` }}
+        className="absolute duration-500"
+        style={{
+          transform: `translate(${translate.x}px,  ${translate.y}px)`,
+          transition: animation ? "transform 0.5s ease-in-out" : "none",
+        }}
       >
         <div
           //   ref={currentParentRef}
@@ -104,7 +128,7 @@ function DisplayNode({ node, t, r, location }) {
             <h3
               onClick={() => {
                 setShowAll((showAll) => !showAll);
-                setUpdate(update + 1);
+                // setUpdate(update + 1);
               }}
               className="w-full text-center text-2xl truncate border-b border-gray-500 py-2 px-2 hover:bg-gray-700 transition-colors duration-300 cursor-pointer"
             >
@@ -295,9 +319,11 @@ function DisplayNode({ node, t, r, location }) {
         return (
           <DisplayNode
             key={child.id}
+            init={init}
             node={child}
             t={t + 200}
             r={r}
+            ptranslate={{ x: (node?.fp - r) * 250, y: t }}
             location={location.concat([i])}
           />
         );

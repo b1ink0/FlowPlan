@@ -12,6 +12,7 @@ const AddEditNode = () => {
     setCurrentTreeNote,
     addEditNode,
     setAddEditNode,
+    setUpdate,
   } = useStateContext();
 
   const { handlePositionCalculation } = useFunctions();
@@ -111,6 +112,7 @@ const AddEditNode = () => {
         setAddEditNode((prev) => ({ ...prev, location: null, show: false }));
       }
     }
+    setUpdate((prev) => prev + 1);
   };
 
   useEffect(() => {
