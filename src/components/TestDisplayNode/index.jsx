@@ -28,6 +28,7 @@ function TestDisplayNode({ node }) {
 function DisplayNode({ node, t, r, location, ptranslate, init }) {
   const {
     db,
+    setCurrentTreeNote,
     currentTreeNote,
     setAddEditNode,
     currentExpanded,
@@ -42,6 +43,7 @@ function DisplayNode({ node, t, r, location, ptranslate, init }) {
     handleDeleteNodeWithoutItsChildren,
     handleDeleteNodeWithItsChildren,
     handleMoveNode,
+    handleExpanded,
   } = useFunctions();
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showAll, setShowAll] = React.useState(false);
@@ -273,24 +275,11 @@ function DisplayNode({ node, t, r, location, ptranslate, init }) {
               {node?.children.length > 0 && (
                 <button
                   className="w-8 h-8 group text-xs bg-slate-700 py-1 px-2 rounded-md hover:bg-blue-600 transition-colors duration-300"
-                  //   onClick={async () => {
-                  //     setIsExpanded(!isExpanded);
-                  //     setUpdate(update + 1);
-                  //     const newPrev = {
-                  //       ...currentExpanded,
-                  //       [node?.id]: !isExpanded,
-                  //     };
-                  //     await db.treeNotesExpanded
-                  //       .where("refId")
-                  //       .equals(currentTreeNote.refId)
-                  //       .modify((expanded) => {
-                  //         expanded.expanded = newPrev;
-                  //       });
-                  //   }}
+                  onClick={() => handleExpanded(node)}
                 >
                   <span
                     className={`w-full h-full ${
-                      isExpanded ? "-rotate-90" : "rotate-90"
+                      node?.expanded ? "-rotate-90" : "rotate-90"
                     } flex justify-center items-center transition-all duration-300 transform group-hover:scale-125`}
                   >
                     <BackIcon />
@@ -315,19 +304,20 @@ function DisplayNode({ node, t, r, location, ptranslate, init }) {
           </div>
         </div>
       </div>
-      {node?.children?.map((child, i) => {
-        return (
-          <DisplayNode
-            key={child.id}
-            init={init}
-            node={child}
-            t={t + 200}
-            r={r}
-            ptranslate={{ x: (node?.fp - r) * 250, y: t }}
-            location={location.concat([i])}
-          />
-        );
-      })}
+      {node?.expanded &&
+        node?.children?.map((child, i) => {
+          return (
+            <DisplayNode
+              key={child.id}
+              init={init}
+              node={child}
+              t={t + 200}
+              r={r}
+              ptranslate={{ x: (node?.fp - r) * 250, y: t }}
+              location={location.concat([i])}
+            />
+          );
+        })}
     </>
   );
 }

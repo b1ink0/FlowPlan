@@ -87,7 +87,7 @@ export const useFunctions = () => {
       treeNotes.push(treeNote);
     }
     const result = {
-      treeNotes
+      treeNotes,
     };
     const json = toJSON(result);
     const dataStr =
@@ -202,7 +202,7 @@ export const useFunctions = () => {
   };
 
   const handleNumberOfAllChildrenForThatParent = (node, i = 1, root) => {
-    if (node?.children?.length === 0) {
+    if (node?.children?.length === 0 || node?.expanded === false) {
       node.numberOfAllChildren = 1;
       if (i > root.numberOfLevels || !root?.numberOfLevels)
         root.numberOfLevels = i;
@@ -212,11 +212,13 @@ export const useFunctions = () => {
     node?.children?.forEach((child) => {
       count += handleNumberOfAllChildrenForThatParent(child, i + 1, root);
     });
+
     node.numberOfAllChildren = count;
     return count;
   };
 
   const handleFinalPositionCalculation = (node, i) => {
+    // if (node?.expanded === false) return 1;
     let count = i;
     node.fp = node.numberOfAllChildren / 2 + i;
     node?.children?.forEach((child) => {
@@ -230,6 +232,19 @@ export const useFunctions = () => {
     handleFinalPositionCalculation(root, 0);
   };
 
+  const handleExpanded = (node) => {
+    node.expanded = !node.expanded;
+    setCurrentTreeNote((prev) => {
+      db.treeNotes
+        .where("refId")
+        .equals(prev.refId)
+        .modify({ root: prev.root });
+      handlePositionCalculation(prev.root);
+      return { ...prev };
+    });
+    setUpdate(update + 1);
+  };
+
   return {
     handleDeleteNodeWithoutItsChildren,
     handleDeleteNodeWithItsChildren,
@@ -239,5 +254,6 @@ export const useFunctions = () => {
     handleShareTreeNote,
     handleDeleteTreeNote,
     handlePositionCalculation,
+    handleExpanded,
   };
 };

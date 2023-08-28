@@ -103,16 +103,29 @@ function SideNavbar() {
     if (allTreeNote.length === 0) return;
     setTreeNotes((prev) => {
       if (prev.length === allTreeNote.length) return prev;
-      return allTreeNote;
+      let tempTreeNotes = [];
+      allTreeNote.forEach((treeNote) => {
+        let tempTreeNote = {
+          refId: treeNote.refId,
+          title: treeNote.title,
+          createdAt: treeNote.createdAt,
+          updatedAt: treeNote.updatedAt,
+        };
+        tempTreeNotes.push(tempTreeNote);
+      });
+      tempTreeNotes.sort(function (a, b) {
+        var c = new Date(a.updatedAt);
+        var d = new Date(b.updatedAt);
+        return c - d;
+      }).reverse()
+      return tempTreeNotes;
     });
   }, [db]);
 
   useEffect(() => {
-    if (treeNotes.length === 0) return;
-    handleSetCurrentTreeNote((prev) => {
-      if (prev === null) return treeNotes[0].refId;
-      return prev;
-    });
+    if (treeNotes?.length === 0) return;
+    console.log("treeNotes", treeNotes);
+    handleSetCurrentTreeNote(treeNotes[0]?.refId);
   }, [treeNotes]);
 
   return (
