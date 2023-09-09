@@ -7,32 +7,6 @@ import TestDisplayNode from "../TestDisplayNode";
 const DisplayTree = ({ node }) => {
   const { db, currentTreeNote, move, update, animation } = useStateContext();
   const [scaleMultiplier, setScaleMultiplier] = useState(0.1);
-  const [init, setInit] = useState(animation ? false : true);
-  const [svgSize, setSvgSize] = useState({
-    width: init ? 0 : currentTreeNote?.root?.fp * 250 * 2 - 30,
-    height: init ? 0 : currentTreeNote?.root?.numberOfLevels * 200 - 100,
-  });
-
-  useEffect(() => {
-    if (currentTreeNote?.root) {
-      setTimeout(
-        () => {
-          setSvgSize({
-            width: currentTreeNote?.root?.fp * 250 * 2 - 30,
-            height: currentTreeNote?.root?.numberOfLevels * 200 - 100,
-          });
-        },
-        !animation || init ? 0 : 1000
-      );
-    }
-  }, [update]);
-
-  useEffect(() => {
-    if (!animation) return;
-    setTimeout(() => {
-      setInit(true);
-    }, 1000);
-  }, []);
 
   return (
     <div className="hide-scroll-bar relative h-full grow bg-gray-900 flex justify-center items-center overflow-hidden cursor-grab">
@@ -45,23 +19,12 @@ const DisplayTree = ({ node }) => {
           <Fragment>
             <TransformComponent>
               <div className="active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative bg-gray-900 flex justify-center items-start  transition-all duration-100 p-2">
-                <svg
-                  style={{
-                    width: svgSize.width + "px",
-                    height: svgSize.height + "px",
-                    transition: animation ? "all 1s ease-in-out" : "none",
-                  }}
-                  className="absolute overflow-visible duration-500"
-                >
-                  <Paths
-                    key={"path-" + currentTreeNote?.root?.id}
-                    node={currentTreeNote?.root}
-                    r={currentTreeNote?.root?.fp}
-                    init={init}
-                    animation={animation}
-                  />
-                  {move?.node && <LivePath move={move} rootRef={treeRef} />}
-                </svg>
+                <Svg
+                  currentTreeNote={currentTreeNote}
+                  update={update}
+                  animation={animation}
+                  move={move}
+                />
                 <TestDisplayNode node={currentTreeNote?.root} />
               </div>
             </TransformComponent>
@@ -101,28 +64,67 @@ const DisplayTree = ({ node }) => {
 
 export default DisplayTree;
 
-const Paths = ({ node, i = 0, d = 0, c = 1, init, animation }) => {
+const Svg = ({ currentTreeNote, update, move }) => {
+  const [svgSize, setSvgSize] = useState(null);
+  const [showPaths, setShowPaths] = useState(true);
+
+  useEffect(() => {
+    if (currentTreeNote?.root) {
+      setSvgSize({
+        width: currentTreeNote?.root?.fp * 250 * 2 - 30,
+        height: currentTreeNote?.root?.numberOfLevels * 200 - 100,
+      });
+    }
+  }, [update]);
+
+  useEffect(() => {
+    setShowPaths(false);
+    setTimeout(() => {
+      setShowPaths(true);
+    }, 500);
+  }, [svgSize]);
+
+  if (!showPaths || !svgSize) return <></>;
+
+  return (
+    <svg
+      style={{
+        width: svgSize?.width + "px",
+        height: svgSize?.height + "px",
+        transition: "all 0.5s ease-in-out",
+      }}
+      className="absolute overflow-visible duration-500"
+    >
+      <Paths
+        key={"path-" + currentTreeNote?.root?.id}
+        node={currentTreeNote?.root}
+        r={currentTreeNote?.root?.fp}
+        delay={0}
+      />
+      {move?.node && <LivePath move={move} />}
+    </svg>
+  );
+};
+
+const Paths = ({ node, i = 0, d = 0, c = 1, animation, delay = 0 }) => {
   const { update } = useStateContext();
   const [path, setPath] = useState(
-    animation && init
-      ? `M${i - 15} ${d} 
-      C ${i - 15} ${d}, ${i - 15} ${d}, 
-      ${i - 15} ${d}
-     `
-      : `M${i - 15} ${d}
-         C ${i - 15} ${d + 100 - 20}, ${node?.fp * 250 - 15} ${d},
-         ${node?.fp * 250 - 15} ${d + 100 + 30}
-        `
+    `M${i - 15} ${d}
+     C ${i - 15} ${d + 100 - 20}, ${node?.fp * 250 - 15} ${d},
+     ${node?.fp * 250 - 15} ${d + 100 + 30}
+    `
   );
   useEffect(() => {
-    if (!init) return;
-    setPath(
-      `M${i - 15} ${d}
+    setTimeout(() => {
+      setPath(
+        `M${i - 15} ${d}
           C ${i - 15} ${d + 100 - 20}, ${node?.fp * 250 - 15} ${d},
           ${node?.fp * 250 - 15} ${d + 100 + 30}
         `
-    );
+      );
+    }, 500);
   }, [update]);
+
   return (
     <>
       {d !== 0 && (
@@ -130,7 +132,7 @@ const Paths = ({ node, i = 0, d = 0, c = 1, init, animation }) => {
           id="curve"
           d={path}
           style={{
-            transition: animation ? "all 1s ease-in-out" : "none",
+            transition: "all 0.5s ease-in-out",
           }}
           className={`fade-in-path opacity-0 stroke-current text-gray-600 duration-500 delay-1000`}
           strokeWidth="4"
@@ -147,8 +149,7 @@ const Paths = ({ node, i = 0, d = 0, c = 1, init, animation }) => {
               i={node?.fp * 250}
               d={200 * c - 100}
               c={c + 1}
-              init={init}
-              animation={animation}
+              delay={delay + 500}
             />
           );
         })}
@@ -156,34 +157,30 @@ const Paths = ({ node, i = 0, d = 0, c = 1, init, animation }) => {
   );
 };
 
-const LivePath = ({ move, rootRef }) => {
+const LivePath = ({ move }) => {
   const [path, setPath] = useState("");
 
   useEffect(() => {
     try {
-      const { p1x, p1y, p2x, p2y } = move.position;
-      console.log(p1x, p1y, p2x, p2y);
-      if (p1x === p2x && p1y === p2y) {
-        setPath(`M${p1x} ${p1y} C ${p1x} ${p1y}, ${p2x} ${p2y}, ${p2x} ${p2y}`);
-      } else if (p1x === p2x) {
-        setPath(`M${p1x} ${p1y} ${p2x} ${p2y}`);
-      } else if (p2y <= p1y) {
+      const { x1, y1, x2, y2 } = move.translate;
+      console.log(x1, y1, x2, y2);
+      if (x1 === x2 && y1 === y2) {
+        setPath(`M${x1} ${y1} C ${x1} ${y1}, ${x2} ${y2}, ${x2} ${y2}`);
+      } else if (x1 === x2) {
+        setPath(`M${x1} ${y1} ${x2} ${y2}`);
+      } else if (y2 <= y1) {
         setPath(
-          `M${p1x} ${p1y} C ${p1x} ${p2y + 30}, ${p2x} ${
-            p2y + 150
-          }, ${p2x} ${p2y}`
+          `M${x1} ${y1} C ${x1} ${y2 + 30}, ${x2} ${y2 + 150}, ${x2} ${y2}`
         );
       } else {
         setPath(
-          `M${p1x} ${p1y} C ${p1x} ${p1y - 200}, ${p2x} ${
-            p2y + 200
-          }, ${p2x} ${p2y}`
+          `M${x1} ${y1} C ${x1} ${y1 - 200}, ${x2} ${y2 + 200}, ${x2} ${y2}`
         );
       }
     } catch (error) {
       console.log(error);
     }
-  }, [move.position]);
+  }, [move.translate]);
 
   useEffect(() => {
     if (move?.node === null) {
@@ -198,7 +195,7 @@ const LivePath = ({ move, rootRef }) => {
           <path
             id="curvee"
             d={path}
-            style={{ stroke: move?.position?.color }}
+            style={{ stroke: move?.color }}
             className="neon-path-1 fade-in-path opacity-0 stroke-current transition-all duration-200"
             strokeWidth="4"
             strokeLinecap="round"
@@ -206,7 +203,7 @@ const LivePath = ({ move, rootRef }) => {
           ></path>
           <path
             id="curve"
-            style={{ stroke: move?.position?.color }}
+            style={{ stroke: move?.color }}
             d={path}
             className="neon-path-2 fade-in-path opacity-0 stroke-current transition-all duration-200"
             strokeWidth="4"

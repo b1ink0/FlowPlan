@@ -13,26 +13,26 @@ export function StateProvider({ children }) {
   const [db, setDb] = useState(null);
   const [treeNotes, setTreeNotes] = useState([]);
   const [currentTreeNote, setCurrentTreeNote] = useState(null);
-  const [currentExpanded, setCurrentExpanded] = useState({})
+  const [currentExpanded, setCurrentExpanded] = useState({});
   const [addEditNode, setAddEditNode] = useState({
     show: false,
     location: null,
     type: "add",
   });
-  const [update, setUpdate] = useState(0)
+  const [update, setUpdate] = useState(0);
   const [move, setMove] = useState({
     enable: false,
     node: null,
     location: null,
     positon: null,
     parentPosition: null,
-  })
-  const [deleteUpdate, setDeleteUpdate] = useState(null)
+  });
+  const [deleteUpdate, setDeleteUpdate] = useState(null);
   const [markdownEditor, setMarkdownEditor] = useState({
     show: false,
     markdown: "",
-  })
-  const [animation, setAnimation] = useState(true)
+  });
+  const [animation, setAnimation] = useState(true);
 
   const values = {
     db,
@@ -54,7 +54,7 @@ export function StateProvider({ children }) {
     move,
     setMove,
     animation,
-    setAnimation
+    setAnimation,
   };
   return (
     <StateContext.Provider value={values}>{children}</StateContext.Provider>

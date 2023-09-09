@@ -14,69 +14,44 @@ export const useFunctions = () => {
     setMove,
   } = useStateContext();
 
-  const handleDeleteNodeWithoutItsChildren = async (
-    node,
-    setDeleted,
-    location
-  ) => {
-    let root = node.parent;
-    deleteNode(node, location);
-    while (root.parent) {
-      root = root.parent;
-    }
+  const handleDeleteNodeWithoutItsChildren = async (parent, node, location) => {
+    deleteNode(parent, node, location);
+    let root = currentTreeNote?.root;
     setCurrentTreeNote((prev) => ({ ...prev, root: root }));
     await db.treeNotes
       .where("refId")
       .equals(currentTreeNote.refId)
       .modify({ root: root });
-    setDeleted(false);
+    handlePositionCalculation(root);
+    setUpdate(update + 1);
   };
 
-  const handleDeleteNodeWithItsChildren = async (node, setDeleted) => {
-    let root = node.parent;
-    removeChild(root, node);
-    while (root.parent) {
-      root = root.parent;
-    }
+  const handleDeleteNodeWithItsChildren = async (parent, node) => {
+    let root = currentTreeNote.root;
+    removeChild(parent, node);
     setCurrentTreeNote((prev) => ({ ...prev, root: root }));
     await db.treeNotes
       .where("refId")
       .equals(currentTreeNote.refId)
       .modify({ root: root });
-    setDeleted(false);
+    handlePositionCalculation(root);
+    setUpdate(update + 1);
   };
 
   const handleMoveNode = async (node) => {
-    if (node.parent === null) {
-      moveNode(move.node, node);
-      setCurrentTreeNote((prev) => ({ ...prev, root: node }));
-      setMove((prev) => ({ enable: false, node: null }));
-      await db.treeNotes
-        .where("refId")
-        .equals(currentTreeNote.refId)
-        .modify({ root: root });
-      // setDeleted(true);
-    } else {
-      let root = node.parent;
-
-      moveNode(move.node, node);
-      while (root.parent) {
-        root = root.parent;
-      }
-      setCurrentTreeNote((prev) => ({ ...prev, root: root }));
-      setMove((prev) => ({
-        enable: false,
-        node: null,
-        location: null,
-        position: null,
-        parentPosition: null,
-      }));
-
-      await db.treeNotes
-        .where("refId")
-        .equals(currentTreeNote.refId)
-        .modify({ root: root });
-    }
+    let root = currentTreeNote.root;
+    moveNode(move.parent, move.node, node);
+    setCurrentTreeNote((prev) => ({ ...prev, root: root }));
+    setMove((prev) => ({
+      enable: false,
+      node: null,
+    }));
+    await db.treeNotes
+      .where("refId")
+      .equals(currentTreeNote.refId)
+      .modify({ root: root });
+    handlePositionCalculation(root);
+    setUpdate(update + 1);
   };
 
   const handleExportTreeNote = async (refIds) => {

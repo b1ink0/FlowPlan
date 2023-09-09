@@ -1,22 +1,18 @@
-// Define the tree node structure
-class TreeNode {
-  constructor(id, title, data) {
-    this.id = id;
-    this.title = title;
-    this.data = data || [];
-    this.expanded = true;
-    this.children = [];
+function createNode(id, title, data = []) {
+  return {
+    id,
+    title,
+    data,
+    expanded: true,
+    children: [],
   }
 }
-
 // Define functions for adding and removing child nodes from a parent node
 function addChild(parent, child) {
-  child.parent = parent;
   parent.children.push(child);
 }
 
 function removeChild(parent, child) {
-  child.parent = null;
   parent.children = parent.children.filter((c) => c !== child);
 }
 
@@ -27,30 +23,28 @@ function updateNode(node, title, data, expanded) {
   node.expanded = expanded || node.expanded;
 }
 
-function deleteNode(node, location) {
+function deleteNode(parent, node, location) {
   // Transfer child nodes to parent in reverse order
-  let parent = node.parent;
   for (let i = 0; node.children.length > i; i++) {
     let child = node.children[i];
     // Insert child node at the current node's position in parent's children array
     parent.children.splice(location + 1 + i, 0, child);
     // Update child node's parent and indexInParent properties
-    child.parent = parent;
   }
   // Remove node from parent's children array
   removeChild(parent, node);
 }
 
-function destroyNode(node) {
+function destroyNode(parent,node, ) {
   // Remove node from parent's children array
-  removeChild(node.parent, node);
+  removeChild(parent, node);
   // Remove node from tree
   node = null;
 }
 
-function moveNode(node, newParent) {
+function moveNode(parent,node, newParent) {
   // Remove node from current parent's children array
-  removeChild(node.parent, node);
+  removeChild(parent, node);
   // Add node to new parent's children array
   addChild(newParent, node);
 }
@@ -64,7 +58,7 @@ function traverseTree(node, level = 0) {
 }
 
 export {
-  TreeNode,
+  createNode,
   addChild,
   removeChild,
   updateNode,

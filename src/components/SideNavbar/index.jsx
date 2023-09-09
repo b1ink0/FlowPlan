@@ -3,7 +3,7 @@ import EditIcon from "../../assets/Icons/EditIcon";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useStateContext } from "../../context/StateContext";
 import BackIcon from "../../assets/Icons/BackIcon";
-import { TreeNode, addChild } from "../../hooks/useTree";
+import { createNode, addChild } from "../../hooks/useTree";
 import { v4 } from "uuid";
 import { useFunctions } from "../../hooks/useFunctions";
 import ExportIcon from "../../assets/Icons/ExportIcon";
@@ -45,7 +45,7 @@ function SideNavbar() {
     e.preventDefault();
     if (db === null) return;
     const newRefId = v4();
-    const newRootTreeNode = new TreeNode(newRefId, noteTitle);
+    const newRootTreeNode = createNode(newRefId, noteTitle);
     const newNote = {
       refId: newRefId,
       title: noteTitle,
@@ -143,7 +143,7 @@ function SideNavbar() {
         <BackIcon />
       </button>
       <div className="w-full flex flex-col justify-center items-center p-3 px-2 gap-1 border-b-2 border-slate-700">
-        <h3 className="text-lg font-medium tracking-wider ">TreeNote</h3>
+        <h3 className="text-lg font-medium tracking-wider ">FlowPlan</h3>
         <form
           className="w-full flex flex-col mt-1 gap-2"
           onSubmit={editNote ? handleEditNote : handleAddNewNote}
