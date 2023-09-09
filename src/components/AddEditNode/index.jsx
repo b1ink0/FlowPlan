@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import BackIcon from "../../assets/Icons/BackIcon";
-import { TreeNode, addChild, updateNode } from "../../hooks/useTree";
+import {createNode , addChild, updateNode } from "../../hooks/useTree";
 import { v4 } from "uuid";
 import { useFunctions } from "../../hooks/useFunctions";
 
@@ -35,7 +35,7 @@ const AddEditNode = () => {
     if (addEditNode.type === "add") {
       if (addEditNode.location.length === 0) {
         const parentNode = currentTreeNote.root;
-        const newChildNode = new TreeNode(
+        const newChildNode = createNode(
           v4(),
           node.title,
           node.data
@@ -57,7 +57,7 @@ const AddEditNode = () => {
         addEditNode.location.forEach((index) => {
           parentNode = parentNode.children[index];
         });
-        const newChildNode = new TreeNode(
+        const newChildNode = createNode(
           v4(),
           node.title,
           node.data
