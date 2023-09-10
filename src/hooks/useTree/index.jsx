@@ -5,7 +5,7 @@ function createNode(id, title, data = []) {
     data,
     expanded: true,
     children: [],
-  }
+  };
 }
 // Define functions for adding and removing child nodes from a parent node
 function addChild(parent, child) {
@@ -35,18 +35,30 @@ function deleteNode(parent, node, location) {
   removeChild(parent, node);
 }
 
-function destroyNode(parent,node, ) {
+function destroyNode(parent, node) {
   // Remove node from parent's children array
   removeChild(parent, node);
   // Remove node from tree
   node = null;
 }
 
-function moveNode(parent,node, newParent) {
+function moveNode(parent, node, newParent) {
   // Remove node from current parent's children array
   removeChild(parent, node);
   // Add node to new parent's children array
   addChild(newParent, node);
+}
+
+function reorderNode(oldParent, newParent, oldNode, newlocation, oldLocation) {
+  if (oldParent.id === newParent.id) {
+    newParent.children.splice(oldLocation, 1);
+    if (newlocation > oldLocation) {
+      newlocation = newlocation - 1;
+    }
+  } else {
+    removeChild(oldParent, oldNode);
+  }
+  newParent.children.splice(newlocation, 0, oldNode);
 }
 
 // Define a function for traversing the tree and printing each node's properties
@@ -65,5 +77,6 @@ export {
   deleteNode,
   destroyNode,
   moveNode,
+  reorderNode,
   traverseTree,
 };

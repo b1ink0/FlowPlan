@@ -2,10 +2,10 @@ import React, { Fragment, useEffect, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import ResetIcon from "../../assets/Icons/ResetIcon";
-import TestDisplayNode from "../TestDisplayNode";
+import DisplayNode from "../DisplayNode";
 
 const DisplayTree = ({ node }) => {
-  const { db, currentTreeNote, move, update, animation } = useStateContext();
+  const { currentTreeNote, move, update, animation } = useStateContext();
   const [scaleMultiplier, setScaleMultiplier] = useState(0.1);
 
   return (
@@ -25,7 +25,7 @@ const DisplayTree = ({ node }) => {
                   animation={animation}
                   move={move}
                 />
-                <TestDisplayNode node={currentTreeNote?.root} />
+                <DisplayNode node={currentTreeNote?.root} />
               </div>
             </TransformComponent>
             <div className="absolute bottom-2 right-2 flex flex-col justify-center items-end gap-2">
