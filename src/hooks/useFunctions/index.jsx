@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 import { useStateContext } from "../../context/StateContext";
-import { deleteNode, moveNode, removeChild } from "../useTree";
+import { deleteNode, moveNode, removeChild, reorderNode } from "../useTree";
 import { toJSON, fromJSON } from "flatted";
 
 export const useFunctions = () => {
@@ -42,14 +42,42 @@ export const useFunctions = () => {
     let root = currentTreeNote.root;
     moveNode(move.parent, move.node, node);
     setCurrentTreeNote((prev) => ({ ...prev, root: root }));
-    setMove((prev) => ({
+    setMove({
       enable: false,
       node: null,
-    }));
-    await db.treeNotes
-      .where("refId")
-      .equals(currentTreeNote.refId)
-      .modify({ root: root });
+    });
+    await db.treeNotes.where("refId").equals(currentTreeNote.refId).modify({
+      updatedAt: new Date(),
+      root: root,
+    });
+    handlePositionCalculation(root);
+    setUpdate(update + 1);
+  };
+
+  const handleReorderNode = async (parent, type, location) => {
+    let root = currentTreeNote.root;
+    reorderNode(
+      move.parent,
+      parent,
+      move.node,
+      type === "first"
+        ? 0
+        : type === "middle"
+        ? location + 1
+        : type === "last"
+        ? parent.children.length
+        : 0,
+      move.location[move.location.length - 1]
+    );
+    setCurrentTreeNote((prev) => ({ ...prev, root: root }));
+    setMove({
+      enable: false,
+      node: null,
+    });
+    await db.treeNotes.where("refId").equals(currentTreeNote.refId).modify({
+      updatedAt: new Date(),
+      root: root,
+    });
     handlePositionCalculation(root);
     setUpdate(update + 1);
   };
@@ -224,6 +252,7 @@ export const useFunctions = () => {
     handleDeleteNodeWithoutItsChildren,
     handleDeleteNodeWithItsChildren,
     handleMoveNode,
+    handleReorderNode,
     handleExportTreeNote,
     handleImportTreeNote,
     handleShareTreeNote,

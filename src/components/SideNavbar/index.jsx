@@ -16,12 +16,11 @@ import CloseBtnIcon from "../../assets/Icons/CloseBtnIcon";
 function SideNavbar() {
   const {
     db,
-    setDb,
+    setMove,
     treeNotes,
     setTreeNotes,
     currentTreeNote,
     setCurrentTreeNote,
-    setCurrentExpanded,
   } = useStateContext();
   const {
     handleExportTreeNote,
@@ -74,6 +73,10 @@ function SideNavbar() {
       const result = await db.treeNotes.where("refId").equals(refId).first();
       handlePositionCalculation(result.root);
       setCurrentTreeNote(result);
+      setMove((prev) => ({
+        enable: false,
+        node: null,
+      }));
     } catch (error) {
       console.error(error);
     }
@@ -113,11 +116,13 @@ function SideNavbar() {
         };
         tempTreeNotes.push(tempTreeNote);
       });
-      tempTreeNotes.sort(function (a, b) {
-        var c = new Date(a.updatedAt);
-        var d = new Date(b.updatedAt);
-        return c - d;
-      }).reverse()
+      tempTreeNotes
+        .sort(function (a, b) {
+          var c = new Date(a.updatedAt);
+          var d = new Date(b.updatedAt);
+          return c - d;
+        })
+        .reverse();
       return tempTreeNotes;
     });
   }, [db]);
