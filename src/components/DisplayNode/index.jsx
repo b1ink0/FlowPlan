@@ -33,15 +33,7 @@ function DisplayNode({ node }) {
   );
 }
 
-function Node({
-  node,
-  t,
-  r,
-  location,
-  ptranslate,
-  init,
-  parent = null,
-}) {
+function Node({ node, t, r, location, ptranslate, init, parent = null }) {
   const { setAddEditNode, move, setMove, update, animation } =
     useStateContext();
   const {
@@ -148,13 +140,8 @@ function Node({
         `}
         >
           <div className="w-full h-full flex flex-col justify-between items-center">
-            <h3
-              onClick={() => {
-                setShowAll((showAll) => !showAll);
-              }}
-              className="w-full text-center text-2xl truncate border-b border-gray-500 py-2 px-2 hover:bg-gray-700 transition-colors duration-300 cursor-pointer"
-            >
-              {node?.id}
+            <h3 className="w-full text-center text-2xl truncate border-b border-gray-500 py-2 px-2 hover:bg-gray-700 transition-colors duration-300 cursor-pointer">
+              {node?.title}
             </h3>
             {move.node &&
               (move.node.id === node.id ? (
