@@ -10,6 +10,17 @@ export function useStateContext() {
 
 // Creating Provider
 export function StateProvider({ children }) {
+  const [settings, setSettings] = useState({
+    nodeConfig: {
+      nodeWidth: 220,
+      nodeHeight: 100,
+      nodeWidthMargin: 250, 
+      nodeHeightMargin: 100,
+    },
+    treeConfig: {
+      scaleMultiplier: 0.1
+    }
+  })
   const [db, setDb] = useState(null);
   const [treeNotes, setTreeNotes] = useState([]);
   const [currentTreeNote, setCurrentTreeNote] = useState(null);
@@ -35,6 +46,8 @@ export function StateProvider({ children }) {
   const [animation, setAnimation] = useState(true);
 
   const values = {
+    settings,
+    setSettings,
     db,
     setDb,
     treeNotes,
