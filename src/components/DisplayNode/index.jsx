@@ -12,6 +12,7 @@ import ReorderNode from "../ReorderNode";
 
 function DisplayNode({ node }) {
   const { animation } = useStateContext();
+
   const [init, setInit] = useState(animation ? true : false);
   useEffect(() => {
     if (!animation) return;
@@ -34,8 +35,9 @@ function DisplayNode({ node }) {
 }
 
 function Node({ node, t, r, location, ptranslate, init, parent = null }) {
-  const { setAddEditNode, move, setMove, update, animation } =
+  const { settings, setAddEditNode, move, setMove, update, animation } =
     useStateContext();
+  const { nodeConfig } = settings;
   const {
     handleDeleteNodeWithoutItsChildren,
     handleDeleteNodeWithItsChildren,
@@ -44,11 +46,14 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
     handleExpanded,
   } = useFunctions();
   const [isExpanded, setIsExpanded] = React.useState(false);
-  const [showAll, setShowAll] = React.useState(false);
   const [deleteMenu, setDeleteMenu] = React.useState(false);
   const [translate, setTranslate] = useState({
-    x: !animation || init ? (node?.fp - r) * 250 : ptranslate?.x || 0,
-    y: !animation || init ? t : ptranslate?.y + 100 || 0,
+    x:
+      !animation || init
+        ? (node?.fp - r) * nodeConfig.nodeWidthMargin
+        : ptranslate?.x || 0,
+    y:
+      !animation || init ? t : ptranslate?.y + nodeConfig.nodeHeightMargin || 0,
   });
 
   const handleNode = (type, data) => {
@@ -88,7 +93,7 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
   };
 
   useEffect(() => {
-    setTranslate({ x: (node?.fp - r) * 250, y: t });
+    setTranslate({ x: (node?.fp - r) * nodeConfig.nodeWidthMargin, y: t });
   }, [update]);
   return (
     <>
@@ -121,7 +126,6 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
           className={`
           ${isExpanded ? "cursor-default" : "cursor-pointer"}
             spread scale-0 
-          ${showAll ? "w-fit max-w-[220px]" : "w-[220px]"} 
           ${move.node ? (move.node.id === node.id ? "neon-border" : "") : ""}
           ${
             move.node
@@ -136,8 +140,12 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
                 : "neon-red-border"
               : ""
           }
-            overflow-hidden  min-w-[220px] h-[100px] flex flex-col justify-between items-center border-2 border-gray-700 bg-gray-800 text-gray-200 rounded-md gap-1
+            overflow-hidden flex flex-col justify-between items-center border-2 border-gray-700 bg-gray-800 text-gray-200 rounded-md gap-1
         `}
+          style={{
+            width: nodeConfig.nodeWidth + "px",
+            height: nodeConfig.nodeHeigth + "px",
+          }}
         >
           <div className="w-full h-full flex flex-col justify-between items-center">
             <h3 className="w-full text-center text-2xl truncate border-b border-gray-500 py-2 px-2 hover:bg-gray-700 transition-colors duration-300 cursor-pointer">
@@ -182,8 +190,12 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
                         : "#ff0000",
                       translate: {
                         ...prev.translate,
-                        x2: translate.x + r * 250 - 15,
-                        y2: translate.y + 100,
+                        x2:
+                          translate.x +
+                          r * nodeConfig.nodeWidthMargin -
+                          (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) /
+                            2,
+                        y2: translate.y + nodeConfig.nodeHeightMargin,
                       },
                     }));
                   }}
@@ -285,9 +297,17 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
                       color: "#19bdd6",
                       location: location,
                       translate: {
-                        x1: translate.x + r * 250 - 15,
+                        x1:
+                          translate.x +
+                          r * nodeConfig.nodeWidthMargin -
+                          (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) /
+                            2,
                         y1: translate.y,
-                        x2: translate.x + r * 250 - 15,
+                        x2:
+                          translate.x +
+                          r * nodeConfig.nodeWidthMargin -
+                          (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) /
+                            2,
                         y2: translate.y,
                       },
                     });
@@ -344,9 +364,12 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
               init={init}
               node={child}
               parent={node}
-              t={t + 200}
+              t={t + nodeConfig.nodeHeightMargin * 2}
               r={r}
-              ptranslate={{ x: (node?.fp - r) * 250, y: t }}
+              ptranslate={{
+                x: (node?.fp - r) * nodeConfig.nodeWidthMargin,
+                y: t,
+              }}
               location={location.concat([i])}
             />
           );
