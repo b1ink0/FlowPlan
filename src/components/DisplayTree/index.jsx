@@ -1,80 +1,112 @@
-import React, { Fragment, useEffect, useState } from "react";
+// @ts-check
+import React, { useEffect, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import ResetIcon from "../../assets/Icons/ResetIcon";
 import DisplayNode from "../DisplayNode";
 
 const DisplayTree = ({ node }) => {
+  // destructure state from context
   const { currentTreeNote, move, update, animation } = useStateContext();
+  // local state
   const [scaleMultiplier, setScaleMultiplier] = useState(0.1);
 
   return (
     <div className="hide-scroll-bar relative h-full grow bg-gray-900 flex justify-center items-center overflow-hidden cursor-grab">
+      {/* Transform component for zoom and drag */}
       <TransformWrapper
         minScale={0.1}
         limitToBounds={false}
         wheel={{ step: scaleMultiplier }}
       >
         {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
-          <Fragment>
+          <>
             <TransformComponent>
+              {/* Wrapper for svg and node */}
               <div className="active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative bg-gray-900 flex justify-center items-start  transition-all duration-100 p-2">
+                {/* Svg for paths */}
                 <Svg
                   currentTreeNote={currentTreeNote}
                   update={update}
                   animation={animation}
                   move={move}
                 />
+                {/* Node for displaying tree */}
                 <DisplayNode node={currentTreeNote?.root} />
               </div>
             </TransformComponent>
-            <div className="absolute bottom-2 right-2 flex flex-col justify-center items-end gap-2">
-              <input
-                value={scaleMultiplier}
-                onChange={(e) => setScaleMultiplier(e.target.value)}
-                type="number"
-                className="w-9 h-9 outline-none border-none flex justify-center text-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100"
-              />
-              <button
-                onClick={() => zoomIn(scaleMultiplier)}
-                className="w-9 h-9 flex justify-center items-center bottom-12 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-in"
-              >
-                <span className="absolute block w-1 rounded-md h-6 bg-gray-200"></span>
-                <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
-              </button>
-              <button
-                onClick={() => zoomOut(scaleMultiplier)}
-                className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-out"
-              >
-                <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
-              </button>
-              <button
-                onClick={() => resetTransform()}
-                className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-progress"
-              >
-                <ResetIcon />
-              </button>
-            </div>
-          </Fragment>
+            {/* Zoom helper for zoom in, zoom out and reset transform */}
+            <ZoomHelper
+              scaleMultiplier={scaleMultiplier}
+              setScaleMultiplier={setScaleMultiplier}
+              zoomIn={zoomIn}
+              zoomOut={zoomOut}
+              resetTransform={resetTransform}
+            />
+          </>
         )}
       </TransformWrapper>
     </div>
   );
 };
 
-export default DisplayTree;
+const ZoomHelper = ({
+  scaleMultiplier,
+  setScaleMultiplier,
+  zoomIn,
+  zoomOut,
+  resetTransform,
+}) => {
+  return (
+    <div className="absolute bottom-2 right-2 flex flex-col justify-center items-end gap-2">
+      {/* Input for scaleMultiplier */}
+      <input
+        value={scaleMultiplier}
+        onChange={(e) => setScaleMultiplier(e.target.value)}
+        type="number"
+        className="w-9 h-9 outline-none border-none flex justify-center text-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100"
+      />
+      {/* Buttons for zoom in */}
+      <button
+        onClick={() => zoomIn(scaleMultiplier)}
+        className="w-9 h-9 flex justify-center items-center bottom-12 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-in"
+      >
+        <span className="absolute block w-1 rounded-md h-6 bg-gray-200"></span>
+        <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
+      </button>
+      {/* Buttons for zoom out */}
+      <button
+        onClick={() => zoomOut(scaleMultiplier)}
+        className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-out"
+      >
+        <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
+      </button>
+      {/* Buttons for reset transform */}
+      <button
+        onClick={() => resetTransform()}
+        className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-progress"
+      >
+        <ResetIcon />
+      </button>
+    </div>
+  );
+};
 
 const Svg = ({ currentTreeNote, update, move }) => {
+  // local state
+  // svgSize is used to set width and height of svg
   const [svgSize, setSvgSize] = useState(null);
+  // showPaths is used to show paths after svgSize is set
   const [showPaths, setShowPaths] = useState(true);
 
+  // set svgSize after tree is updated is set
   useEffect(() => {
-    if (currentTreeNote?.root) {
-      setSvgSize({
-        width: currentTreeNote?.root?.fp * 250 * 2 - 30,
-        height: currentTreeNote?.root?.numberOfLevels * 200 - 100,
-      });
-    }
+    // if currentTreeNote is null then return
+    if (!currentTreeNote?.root) return;
+    setSvgSize({
+      width: currentTreeNote?.root?.fp * 250 * 2 - 30,
+      height: currentTreeNote?.root?.numberOfLevels * 200 - 100,
+    });
   }, [update]);
 
   useEffect(() => {
@@ -215,3 +247,5 @@ const LivePath = ({ move }) => {
     </>
   );
 };
+
+export default DisplayTree;

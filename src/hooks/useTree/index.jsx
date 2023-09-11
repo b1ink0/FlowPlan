@@ -50,14 +50,21 @@ function moveNode(parent, node, newParent) {
 }
 
 function reorderNode(oldParent, newParent, oldNode, newlocation, oldLocation) {
+  // if nodes are on the same level
   if (oldParent.id === newParent.id) {
+    // remove node from old location
     newParent.children.splice(oldLocation, 1);
+    // update new location if old location is less than new location
     if (newlocation > oldLocation) {
       newlocation = newlocation - 1;
     }
-  } else {
+  }
+  // if nodes are on different levels
+  else {
+    // remove node from old location
     removeChild(oldParent, oldNode);
   }
+  // insert node at new location
   newParent.children.splice(newlocation, 0, oldNode);
 }
 
