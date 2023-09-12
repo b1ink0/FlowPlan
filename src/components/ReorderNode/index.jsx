@@ -1,10 +1,17 @@
 // @ts-check
 import React, { useEffect, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
-import CloseIcon from "../../assets/Icons/CloseIcon";
 import MovedIcon from "../../assets/Icons/MovedIcon";
 
-function ReorderNode({ location, node, parent, handleNode, translate, r }) {
+function ReorderNode({
+  location,
+  node,
+  parent,
+  handleNode,
+  translate,
+  r,
+  handleIfNodeIsChildOfMoveNode,
+}) {
   const { move, setMove } = useStateContext();
   const [reorder, setReorder] = useState({
     w: 0,
@@ -69,6 +76,17 @@ function ReorderNode({ location, node, parent, handleNode, translate, r }) {
   useEffect(() => {
     setReorder(handleReorderCalculation());
   }, []);
+
+  // if move node is null then return null
+  if (!move?.node) return null;
+  // if move node is same as current node then return null
+  if (move?.node?.id === node?.id) return null;
+  // if move node is child or parent of current node then return null
+  if (!handleIfNodeIsChildOfMoveNode()) return null;
+  // parent is null then return null
+  if (!parent) return null;
+  // if parent has no children then return null
+  if (parent?.children?.length < 1) return null;
 
   return (
     <>
