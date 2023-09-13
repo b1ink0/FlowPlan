@@ -1,3 +1,4 @@
+// Define a function for creating a new node
 function createNode(id, title, data = []) {
   return {
     id,
@@ -23,6 +24,7 @@ function updateNode(node, title, data, expanded) {
   node.expanded = expanded || node.expanded;
 }
 
+// Define a function for deleting a node
 function deleteNode(parent, node, location) {
   // Transfer child nodes to parent in reverse order
   for (let i = 0; node.children.length > i; i++) {
@@ -35,6 +37,7 @@ function deleteNode(parent, node, location) {
   removeChild(parent, node);
 }
 
+// Define a function for destroying a node
 function destroyNode(parent, node) {
   // Remove node from parent's children array
   removeChild(parent, node);
@@ -42,6 +45,7 @@ function destroyNode(parent, node) {
   node = null;
 }
 
+// Define a function for moving a node
 function moveNode(parent, node, newParent) {
   // Remove node from current parent's children array
   removeChild(parent, node);
@@ -49,6 +53,7 @@ function moveNode(parent, node, newParent) {
   addChild(newParent, node);
 }
 
+// Define a function for reordering a node
 function reorderNode(oldParent, newParent, oldNode, newlocation, oldLocation) {
   // if nodes are on the same level
   if (oldParent.id === newParent.id) {
