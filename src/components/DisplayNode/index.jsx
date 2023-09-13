@@ -34,8 +34,8 @@ function DisplayNode({ node }) {
       <Node
         init={init}
         node={node}
-        t={0}
-        r={node?.fp}
+        yTranslateMargin={0}
+        rootNodeFp={node?.fp}
         location={[]}
         ptranslate={{ x: 0, y: 0 }}
       />
@@ -43,7 +43,15 @@ function DisplayNode({ node }) {
   );
 }
 
-function Node({ node, t, r, location, ptranslate, init, parent = null }) {
+function Node({
+  node,
+  yTranslateMargin,
+  rootNodeFp,
+  location,
+  ptranslate,
+  init,
+  parent = null,
+}) {
   // destructure state from context
   const { settings, setAddEditNode, move, setMove, update, animation } =
     useStateContext();
@@ -71,8 +79,8 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
       y = 0;
     // if animation is disabled or init is true then set x and y to the calculated value
     if (!animation || init) {
-      x = (node?.fp - r) * nodeConfig.nodeWidthMargin;
-      y = t;
+      x = (node?.fp - rootNodeFp) * nodeConfig.nodeWidthMargin;
+      y = yTranslateMargin;
     }
     // else set x and y to the parent translate value
     else {
@@ -87,7 +95,10 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
 
   // useEffect to update translate when tree is updated
   useEffect(() => {
-    setTranslate({ x: (node?.fp - r) * nodeConfig.nodeWidthMargin, y: t });
+    setTranslate({
+      x: (node?.fp - rootNodeFp) * nodeConfig.nodeWidthMargin,
+      y: yTranslateMargin,
+    });
   }, [update]);
 
   // function to handle node actions
@@ -180,7 +191,7 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
       <ReorderNode
         handleNode={handleNode}
         translate={translate}
-        r={r}
+        rootNodeFp={rootNodeFp}
         location={location}
         node={node}
         parent={parent}
@@ -228,7 +239,7 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
                 node={node}
                 handleNode={handleNode}
                 nodeConfig={nodeConfig}
-                r={r}
+                rootNodeFp={rootNodeFp}
                 handleIfNodeIsParentOfMoveNode={handleIfNodeIsParentOfMoveNode}
               />
             )}
@@ -247,7 +258,7 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
               node={node}
               parent={parent}
               nodeConfig={nodeConfig}
-              r={r}
+              rootNodeFp={rootNodeFp}
               setDeleteMenu={setDeleteMenu}
               setMove={setMove}
               translate={translate}
@@ -269,11 +280,13 @@ function Node({ node, t, r, location, ptranslate, init, parent = null }) {
                 init={init}
                 node={child}
                 parent={node}
-                t={t + nodeConfig.nodeHeightMargin * 2}
-                r={r}
+                yTranslateMargin={
+                  yTranslateMargin + nodeConfig.nodeHeightMargin * 2
+                }
+                rootNodeFp={rootNodeFp}
                 ptranslate={{
-                  x: (node?.fp - r) * nodeConfig.nodeWidthMargin,
-                  y: t,
+                  x: (node?.fp - rootNodeFp) * nodeConfig.nodeWidthMargin,
+                  y: yTranslateMargin,
                 }}
                 location={location.concat([i])}
               />
@@ -292,7 +305,7 @@ const MoveNodeOverlay = ({
   node,
   handleNode,
   nodeConfig,
-  r,
+  rootNodeFp,
   handleIfNodeIsParentOfMoveNode,
 }) => {
   // function to reset move node
@@ -312,7 +325,7 @@ const MoveNodeOverlay = ({
     // x coordinate of the node for live path
     x2 =
       translate.x +
-      r * nodeConfig.nodeWidthMargin -
+      rootNodeFp * nodeConfig.nodeWidthMargin -
       (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2;
     // y coordinate of the node for live path
     y2 = translate.y + nodeConfig.nodeHeightMargin;
@@ -442,7 +455,7 @@ const ButtonsWrapper = ({
   parent,
   translate,
   nodeConfig,
-  r,
+  rootNodeFp,
   handleNode,
   handleExpanded,
   setDeleteMenu,
@@ -455,12 +468,12 @@ const ButtonsWrapper = ({
     let tempTranslate = {
       x1:
         translate.x +
-        r * nodeConfig.nodeWidthMargin -
+        rootNodeFp * nodeConfig.nodeWidthMargin -
         (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2,
       y1: translate.y,
       x2:
         translate.x +
-        r * nodeConfig.nodeWidthMargin -
+        rootNodeFp * nodeConfig.nodeWidthMargin -
         (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2,
       y2: translate.y,
     };

@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-checkrootNodeFp
 import React, { useEffect, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import MovedIcon from "../../assets/Icons/MovedIcon";
@@ -9,7 +9,7 @@ function ReorderNode({
   parent,
   handleNode,
   translate,
-  r,
+  rootNodeFp,
   handleIfNodeIsChildOfMoveNode,
 }) {
   const { move, setMove } = useStateContext();
@@ -19,11 +19,12 @@ function ReorderNode({
   });
 
   const handleReorderCalculation = () => {
+    console.log("rootNodeFp", rootNodeFp);
     try {
       if (parent?.children[location[location.length - 1] + 1]) {
         let sigbling = parent.children[location[location.length - 1] + 1];
         let sigblingTranslate = {
-          x: (sigbling?.fp - r) * 250,
+          x: (sigbling?.fp - rootNodeFp) * 250,
         };
         let sigblingsCenter = {
           x: (sigblingTranslate.x + translate.x) / 2,
@@ -75,7 +76,7 @@ function ReorderNode({
 
   useEffect(() => {
     setReorder(handleReorderCalculation());
-  }, []);
+  }, [move?.node]);
 
   // if move node is null then return null
   if (!move?.node) return null;
@@ -86,7 +87,7 @@ function ReorderNode({
   // parent is null then return null
   if (!parent) return null;
   // if parent has no children then return null
-  if (parent?.children?.length < 1) return null;
+  if (!(parent?.children?.length > 1)) return null;
 
   return (
     <>
@@ -94,7 +95,7 @@ function ReorderNode({
       {location[location.length - 1] === 0 && (
         <Child
           type={"first"}
-          x={translate.x - 125 + r * 250 - 15}
+          x={translate.x - 125 + rootNodeFp * 250 - 15}
           width={`${20}px`}
           transform={`translate(${translate.x - 125}px, ${translate.y}px)`}
           handles={{ handleNode, handleEnter, handleLeave }}
@@ -106,7 +107,7 @@ function ReorderNode({
         move?.node?.id && (
         <Child
           type={"middle"}
-          x={reorder?.x + r * 250 - 15}
+          x={reorder?.x + rootNodeFp * 250 - 15}
           width={`${reorder?.w}px`}
           transform={`translate(${reorder?.x}px, ${translate.y}px)`}
           handles={{ handleNode, handleEnter, handleLeave }}
@@ -117,7 +118,7 @@ function ReorderNode({
       {parent?.children[location[location.length - 1] + 1] === undefined && (
         <Child
           type={"last"}
-          x={translate.x + 125 + r * 250 - 15}
+          x={translate.x + 125 + rootNodeFp * 250 - 15}
           width={`${20}px`}
           transform={`translate(${translate.x + 125}px, ${translate.y}px)`}
           handles={{ handleNode, handleEnter, handleLeave }}
