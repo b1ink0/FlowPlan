@@ -10,8 +10,8 @@ const AddEditNode = () => {
   // destructuring state from context
   const {
     db,
-    currentTreeNote,
-    setCurrentTreeNote,
+    currentFlowPlan,
+    setCurrentFlowPlan,
     addEditNode,
     setAddEditNode,
     setUpdate,
@@ -31,7 +31,7 @@ const AddEditNode = () => {
 
   // helper function for updating database
   const handleUpdateDb = async (node, refId) => {
-    await db.treeNotes
+    await db.flowPlans
       .where("refId")
       .equals(refId)
       .modify({ root: node, updatedAt: new Date() });
@@ -42,8 +42,8 @@ const AddEditNode = () => {
     // prevent default form submission
     e.preventDefault();
     // root node
-    let root = currentTreeNote.root;
-    let parentNode = currentTreeNote.root;
+    let root = currentFlowPlan.root;
+    let parentNode = currentFlowPlan.root;
 
     // loop through location array to get parent node to edit
     addEditNode.location.forEach((index) => {
@@ -61,9 +61,9 @@ const AddEditNode = () => {
       updateNode(parentNode, node.title, node.data);
     }
 
-    // update currentTreeNote and database
-    setCurrentTreeNote((prev) => ({ ...prev, root: root }));
-    await handleUpdateDb(root, currentTreeNote.refId);
+    // update currentFlowPlan and database
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateDb(root, currentFlowPlan.refId);
 
     // reset local state and close addEditNode component
     setNode({
@@ -84,7 +84,7 @@ const AddEditNode = () => {
     if (!inputRef.current) return;
     // if addEditNode type is add then set node title and data to empty string
     if (addEditNode.type === "edit") {
-      let parentNode = currentTreeNote.root;
+      let parentNode = currentFlowPlan.root;
       addEditNode.location.forEach((index) => {
         parentNode = parentNode.children[index];
       });

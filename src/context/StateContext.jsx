@@ -27,11 +27,11 @@ export function StateProvider({ children }) {
   // db state contains the database object to interact with the indexedDB database
   const [db, setDb] = useState(null);
 
-  // treeNotes state contains all the notes in the tree
-  const [treeNotes, setTreeNotes] = useState([]);
+  // flowPlans state contains all the notes in the tree
+  const [flowPlans, setFlowPlans] = useState([]);
 
-  // currentTreeNote state contains the current selected note
-  const [currentTreeNote, setCurrentTreeNote] = useState(null);
+  // currentFlowPlan state contains the current selected note
+  const [currentFlowPlan, setCurrentFlowPlan] = useState(null);
 
   // addEditNode state contains the information to show the add/edit node modal
   const [addEditNode, setAddEditNode] = useState({
@@ -40,7 +40,7 @@ export function StateProvider({ children }) {
     type: "add",
   });
 
-  // update state is used to update the treeNotes state
+  // update state is used to update the flowPlans state
   const [update, setUpdate] = useState(0);
 
   // move state contains the information to move a node
@@ -61,10 +61,10 @@ export function StateProvider({ children }) {
     setSettings,
     db,
     setDb,
-    treeNotes,
-    setTreeNotes,
-    currentTreeNote,
-    setCurrentTreeNote,
+    flowPlans,
+    setFlowPlans,
+    currentFlowPlan,
+    setCurrentFlowPlan,
     addEditNode,
     setAddEditNode,
     update,

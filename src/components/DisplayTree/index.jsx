@@ -7,7 +7,7 @@ import DisplayNode from "../DisplayNode";
 
 const DisplayTree = ({ node }) => {
   // destructure state from context
-  const { settings, setSettings, currentTreeNote, move, update, animation } =
+  const { settings, setSettings, currentFlowPlan, move, update, animation } =
     useStateContext();
   // local state
   const { treeConfig } = settings;
@@ -28,12 +28,12 @@ const DisplayTree = ({ node }) => {
                 {/* Svg for paths */}
                 <Svg
                   settings={settings}
-                  currentTreeNote={currentTreeNote}
+                  currentFlowPlan={currentFlowPlan}
                   update={update}
                   move={move}
                 />
                 {/* Node for displaying tree */}
-                <DisplayNode node={currentTreeNote?.root} />
+                <DisplayNode node={currentFlowPlan?.root} />
               </div>
             </TransformComponent>
             {/* Zoom helper for zoom in, zoom out and reset transform */}
@@ -102,7 +102,7 @@ const ZoomHelper = ({
 };
 
 // Svg wrapper for paths
-const Svg = ({ settings, currentTreeNote, update, move }) => {
+const Svg = ({ settings, currentFlowPlan, update, move }) => {
   // destructure node configuration from settings
   const { nodeConfig } = settings;
   // local state
@@ -114,19 +114,19 @@ const Svg = ({ settings, currentTreeNote, update, move }) => {
   // calculate width and height of svg after tree is updated
   const handleResize = () => {
     let w =
-      // currentTreeNote?.root?.fp is mid point and location of root node
+      // currentFlowPlan?.root?.fp is mid point and location of root node
       // nodeConfig.nodeWidthMargin is width with margin of node
       // nodeConfig.nodeWidth is width of node
-      // currentTreeNote?.root?.fp * nodeConfig.nodeWidthMargin gives width of half of tree so multiply by 2
-      currentTreeNote?.root?.fp * nodeConfig.nodeWidthMargin * 2 -
+      // currentFlowPlan?.root?.fp * nodeConfig.nodeWidthMargin gives width of half of tree so multiply by 2
+      currentFlowPlan?.root?.fp * nodeConfig.nodeWidthMargin * 2 -
       // subtract nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth to get width of svg without margin
       (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth);
     let h =
-      // currentTreeNote?.root?.numberOfLevels is number of levels in tree
+      // currentFlowPlan?.root?.numberOfLevels is number of levels in tree
       // nodeConfig.nodeHeightMargin is height with margin of node
       // nodeConfig.nodeHeight is height of node
-      // currentTreeNote?.root?.numberOfLevels * nodeConfig.nodeHeightMargin gives height of half of tree so multiply by 2
-      currentTreeNote?.root?.numberOfLevels * nodeConfig.nodeHeightMargin * 2 -
+      // currentFlowPlan?.root?.numberOfLevels * nodeConfig.nodeHeightMargin gives height of half of tree so multiply by 2
+      currentFlowPlan?.root?.numberOfLevels * nodeConfig.nodeHeightMargin * 2 -
       // subtract nodeConfig.nodeHeightMargin to get height of svg without margin
       nodeConfig.nodeHeightMargin;
     return {
@@ -137,8 +137,8 @@ const Svg = ({ settings, currentTreeNote, update, move }) => {
 
   // set svgSize after tree is updated is set
   useEffect(() => {
-    // if currentTreeNote is null then return
-    if (!currentTreeNote?.root) return;
+    // if currentFlowPlan is null then return
+    if (!currentFlowPlan?.root) return;
     setSvgSize(handleResize());
   }, [update]);
 
@@ -165,8 +165,8 @@ const Svg = ({ settings, currentTreeNote, update, move }) => {
     >
       {/* Paths for tree */}
       <Paths
-        key={"path-" + currentTreeNote?.root?.id}
-        node={currentTreeNote?.root}
+        key={"path-" + currentFlowPlan?.root?.id}
+        node={currentFlowPlan?.root}
         delay={0}
       />
       {/* Paths for live node when moving node */}

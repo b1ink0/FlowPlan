@@ -17,17 +17,17 @@ function SideNavbar() {
   const {
     db,
     setMove,
-    treeNotes,
-    setTreeNotes,
-    currentTreeNote,
-    setCurrentTreeNote,
+    flowPlans,
+    setFlowPlans,
+    currentFlowPlan,
+    setCurrentFlowPlan,
   } = useStateContext();
   // destructure functions from custom hook
   const {
-    handleExportTreeNote,
-    handleImportTreeNote,
-    handleShareTreeNote,
-    handleDeleteTreeNote,
+    handleExportFlowPlan,
+    handleImportFlowPlan,
+    handleShareFlowPlan,
+    handleDeleteFlowPlan,
     handlePositionCalculation,
   } = useFunctions();
   // local state
@@ -55,7 +55,7 @@ function SideNavbar() {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await db?.treeNotes.add(newNote);
+    await db?.flowPlans.add(newNote);
     setNoteTitle("");
   };
 
@@ -63,7 +63,7 @@ function SideNavbar() {
   const handleEditNote = async (e) => {
     e.preventDefault();
     if (db === null) return;
-    await db?.treeNotes.where("refId").equals(currentTreeNote.refId).modify({
+    await db?.flowPlans.where("refId").equals(currentFlowPlan.refId).modify({
       title: noteTitle,
       updatedAt: new Date(),
     });
@@ -72,14 +72,14 @@ function SideNavbar() {
   };
 
   // function to set current note
-  const handleSetCurrentTreeNote = async (refId) => {
+  const handleSetCurrentFlowPlan = async (refId) => {
     try {
       // get current note from db using refId
-      const result = await db.treeNotes.where("refId").equals(refId).first();
+      const result = await db.flowPlans.where("refId").equals(refId).first();
       // position calculation for tree
       handlePositionCalculation(result.root);
       // set current note in context
-      setCurrentTreeNote(result);
+      setCurrentFlowPlan(result);
       // set move to false and null for safety
       setMove((prev) => ({
         enable: false,
@@ -99,55 +99,55 @@ function SideNavbar() {
     }
   };
   const handleSelectAll = () => {
-    setSelected(treeNotes.map((treeNote) => treeNote.refId));
+    setSelected(flowPlans.map((flowPlan) => flowPlan.refId));
   };
   const handleSelectCancel = () => {
     setSelected([]);
     setExportSelect(false);
   };
 
-  // for updating treeNotes state when new note is added
+  // for updating flowPlans state when new note is added
   useLiveQuery(async () => {
     // if db is null return
     if (db === null) return;
-    // get all treeNotes from db
-    const allTreeNote = await db?.treeNotes?.toArray();
-    // if no treeNotes return
-    if (allTreeNote.length === 0) return;
-    // updating treeNotes state
-    setTreeNotes((prev) => {
-      // if prev and allTreeNote length is same return prev means no change
-      if (prev.length === allTreeNote.length) return prev;
-      // else create tempTreeNotes array
-      let tempTreeNotes = [];
-      // loop through allTreeNote and push required data to tempTreeNotes
-      allTreeNote.forEach((treeNote) => {
-        let tempTreeNote = {
-          refId: treeNote.refId,
-          title: treeNote.title,
-          createdAt: treeNote.createdAt,
-          updatedAt: treeNote.updatedAt,
+    // get all flowPlans from db
+    const allFlowPlan = await db?.flowPlans?.toArray();
+    // if no flowPlans return
+    if (allFlowPlan.length === 0) return;
+    // updating flowPlans state
+    setFlowPlans((prev) => {
+      // if prev and allFlowPlan length is same return prev means no change
+      if (prev.length === allFlowPlan.length) return prev;
+      // else create tempFlowPlans array
+      let tempFlowPlans = [];
+      // loop through allFlowPlan and push required data to tempFlowPlans
+      allFlowPlan.forEach((flowPlan) => {
+        let tempFlowPlan = {
+          refId: flowPlan.refId,
+          title: flowPlan.title,
+          createdAt: flowPlan.createdAt,
+          updatedAt: flowPlan.updatedAt,
         };
-        tempTreeNotes.push(tempTreeNote);
+        tempFlowPlans.push(tempFlowPlan);
       });
-      // sort tempTreeNotes by updatedAt field
-      tempTreeNotes
+      // sort tempFlowPlans by updatedAt field
+      tempFlowPlans
         .sort(function (a, b) {
           var c = new Date(a.updatedAt);
           var d = new Date(b.updatedAt);
           return c - d;
         })
         .reverse();
-      // finally return tempTreeNotes
-      return tempTreeNotes;
+      // finally return tempFlowPlans
+      return tempFlowPlans;
     });
   }, [db]);
 
   // for setting current note when App loads and when new note is added
   useEffect(() => {
-    if (treeNotes?.length === 0) return;
-    handleSetCurrentTreeNote(treeNotes[0]?.refId);
-  }, [treeNotes]);
+    if (flowPlans?.length === 0) return;
+    handleSetCurrentFlowPlan(flowPlans[0]?.refId);
+  }, [flowPlans]);
 
   return (
     // SideNavbar container
@@ -182,41 +182,41 @@ function SideNavbar() {
             handles={{
               handleSelectAll,
               handleSelectCancel,
-              handleExportTreeNote,
+              handleExportFlowPlan,
             }}
             setSelected={setSelected}
             selected={selected}
-            treeNotes={treeNotes}
+            flowPlans={flowPlans}
           />
         )}
 
         {/* Listing all notes */}
-        {treeNotes?.map((treeNote) => (
+        {flowPlans?.map((flowPlan) => (
           <div
-            key={treeNote?.refId}
+            key={flowPlan?.refId}
             onClick={() =>
-              // if exportSelect is true then handleChecked else handleSetCurrentTreeNote
+              // if exportSelect is true then handleChecked else handleSetCurrentFlowPlan
               exportSelect
-                ? handleChecked(treeNote?.refId)
-                : handleSetCurrentTreeNote(treeNote?.refId)
+                ? handleChecked(flowPlan?.refId)
+                : handleSetCurrentFlowPlan(flowPlan?.refId)
             }
             className={`${
               // set current note background color to light
-              currentTreeNote?.refId === treeNote?.refId
+              currentFlowPlan?.refId === flowPlan?.refId
                 ? "bg-slate-700"
                 : "bg-slate-800"
             } w-full p-3 relative group hover:bg-slate-700 transition-colors duration-200 cursor-pointer rounded-md flex items-center shrink-0 gap-2`}
           >
             {/* SubMenu */}
-            {subMenu.show && subMenu.refId === treeNote?.refId && (
+            {subMenu.show && subMenu.refId === flowPlan?.refId && (
               <SubMenu
                 handles={{
-                  handleShareTreeNote,
-                  handleDeleteTreeNote,
+                  handleShareFlowPlan,
+                  handleDeleteFlowPlan,
                 }}
                 setEditNote={setEditNote}
                 setNoteTitle={setNoteTitle}
-                treeNote={treeNote}
+                flowPlan={flowPlan}
                 setSubMenu={setSubMenu}
                 copied={copied}
                 setCopied={setCopied}
@@ -225,26 +225,26 @@ function SideNavbar() {
 
             {/* Export checkbox indicator */}
             {exportSelect && (
-              <Checkbox selected={selected} treeNote={treeNote} />
+              <Checkbox selected={selected} flowPlan={flowPlan} />
             )}
 
-            {/* Note title */}
-            <h4 title={treeNote?.title} className="truncate">
-              {treeNote?.title}
+            {/* Plan title */}
+            <h4 title={flowPlan?.title} className="truncate">
+              {flowPlan?.title}
             </h4>
 
             {/* Open sub menu button */}
-            <OpenSubMenuButton setSubMenu={setSubMenu} treeNote={treeNote} />
+            <OpenSubMenuButton setSubMenu={setSubMenu} flowPlan={flowPlan} />
 
-            {/* Note created at and updated at */}
-            <TimeAndDate timeDate={treeNote?.updatedAt} />
+            {/* Plan created at and updated at */}
+            <TimeAndDate timeDate={flowPlan?.updatedAt} />
           </div>
         ))}
       </div>
 
       {/* Import and Export buttons footer for sidenavbar*/}
       <ImportExport
-        handleImportTreeNote={handleImportTreeNote}
+        handleImportFlowPlan={handleImportFlowPlan}
         setExportSelect={setExportSelect}
       />
     </div>
@@ -267,23 +267,23 @@ const ToggleSideNavbarButton = ({ showSideNavbar, setShowSideNavbar }) => {
   );
 };
 
-const ExportButtons = ({ handles, setSelected, selected, treeNotes }) => {
-  const { handleSelectAll, handleSelectCancel, handleExportTreeNote } = handles;
+const ExportButtons = ({ handles, setSelected, selected, flowPlans }) => {
+  const { handleSelectAll, handleSelectCancel, handleExportFlowPlan } = handles;
   return (
     <div className="w-full flex gap-2">
       <button
         onClick={() =>
-          selected.length === treeNotes.length
+          selected.length === flowPlans.length
             ? setSelected([])
             : handleSelectAll()
         }
         className="w-full flex-1 bg-slate-800 py-1 rounded-md hover:bg-slate-700 transition-colors duration-300"
       >
-        {selected.length === treeNotes.length ? "Deselect All" : "Select All"}
+        {selected.length === flowPlans.length ? "Deselect All" : "Select All"}
       </button>
       {selected.length > 0 && (
         <button
-          onClick={() => handleExportTreeNote(selected)}
+          onClick={() => handleExportFlowPlan(selected)}
           className="w-3 h-8 flex-1 bg-slate-800 py-1 rounded-md hover:bg-slate-700 transition-colors duration-300"
         >
           Export
@@ -299,13 +299,13 @@ const ExportButtons = ({ handles, setSelected, selected, treeNotes }) => {
   );
 };
 
-const OpenSubMenuButton = ({ setSubMenu, treeNote }) => {
+const OpenSubMenuButton = ({ setSubMenu, flowPlan }) => {
   return (
     <button
       onClick={(e) => {
         e.stopPropagation();
         setSubMenu({
-          refId: treeNote?.refId,
+          refId: flowPlan?.refId,
           show: true,
         });
       }}
@@ -344,7 +344,7 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
   );
 };
 
-const ImportExport = ({ handleImportTreeNote, setExportSelect }) => {
+const ImportExport = ({ handleImportFlowPlan, setExportSelect }) => {
   return (
     <div className="w-full p-3 px-2 h-fit flex gap-2">
       <div className="relative w-full flex justify-center items-center cursor-pointer flex-1 bg-slate-800 py-1 rounded-md hover:bg-slate-700 transition-colors duration-300">
@@ -352,7 +352,7 @@ const ImportExport = ({ handleImportTreeNote, setExportSelect }) => {
         <input
           type="file"
           className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
-          onChange={handleImportTreeNote}
+          onChange={handleImportFlowPlan}
         />
       </div>
       <button
@@ -369,33 +369,33 @@ const SubMenu = ({
   handles,
   setEditNote,
   setNoteTitle,
-  treeNote,
+  flowPlan,
   setSubMenu,
   copied,
   setCopied,
 }) => {
-  const { handleShareTreeNote, handleDeleteTreeNote } = handles;
+  const { handleShareFlowPlan, handleDeleteFlowPlan } = handles;
   return (
     <span
       onClick={(e) => e.stopPropagation()}
       className="flex justify-between items-center w-full h-full bg-slate-800 absolute right-0 shrink-0 gap-2 cursor-default z-10 spread"
     >
       <span className="flex justify-center items-center">
-        {/* Share Note Button */}
+        {/* Share Plan Button */}
         <button
           title="Share"
-          onClick={() => handleShareTreeNote(treeNote?.refId, setCopied)}
+          onClick={() => handleShareFlowPlan(flowPlan?.refId, setCopied)}
           className="w-10 h-10 flex justify-center items-center hover:bg-slate-700 transition-colors duration-300 rounded-sm"
         >
           <span className="absolute w-5 h-5 rounded-full flex justify-center items-center gap-2">
             <ShareIcon />
           </span>
         </button>
-        {/* Edit Note Button */}
+        {/* Edit Plan Button */}
         <button
           onClick={() => {
             setEditNote(true);
-            setNoteTitle(treeNote?.title);
+            setNoteTitle(flowPlan?.title);
           }}
           className="w-10 h-10 flex justify-center items-center hover:bg-slate-700 transition-colors duration-300 rounded-sm"
         >
@@ -403,10 +403,10 @@ const SubMenu = ({
             <EditBtnIcon />
           </span>
         </button>
-        {/* Delete Note Button */}
+        {/* Delete Plan Button */}
         <button
           className="w-10 h-10 flex justify-center items-center hover:bg-slate-700 transition-colors duration-300 rounded-sm"
-          onClick={() => handleDeleteTreeNote(treeNote?.refId)}
+          onClick={() => handleDeleteFlowPlan(flowPlan?.refId)}
         >
           <span className="absolute w-5 h-5 rounded-full flex justify-center items-center gap-2">
             <DeleteIcon />
@@ -419,7 +419,7 @@ const SubMenu = ({
         onClick={(e) => {
           e.stopPropagation();
           setSubMenu({
-            refId: treeNote?.refId,
+            refId: flowPlan?.refId,
             show: false,
           });
         }}
@@ -446,12 +446,12 @@ const TimeAndDate = ({ timeDate }) => {
   );
 };
 
-const Checkbox = ({ selected, treeNote }) => {
+const Checkbox = ({ selected, flowPlan }) => {
   return (
     <div className="w-5 h-5 flex justify-center items-center">
       <span
         className={`${
-          selected?.includes(treeNote?.refId) ? "bg-gray-400" : "bg-gray-900"
+          selected?.includes(flowPlan?.refId) ? "bg-gray-400" : "bg-gray-900"
         } w-3 h-3 rounded-full transition-all duration-200`}
       ></span>
     </div>
