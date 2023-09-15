@@ -221,7 +221,7 @@ function Node({
           // set node width and height from settings
           style={{
             width: nodeConfig.nodeWidth + "px",
-            height: nodeConfig.nodeHeigth + "px",
+            height: nodeConfig.nodeHeight + "px",
           }}
         >
           {/* Node Body */}

@@ -5,10 +5,10 @@ import { useStateContext } from "./context/StateContext";
 import { useEffect } from "react";
 
 // Initialize Database
-const initializeDb = new Dexie("TreeNotes");
+const initializeDb = new Dexie("FlowPlan");
 // Create Database Schema
 initializeDb.version(1).stores({
-  treeNotes: "++id, refId, title, root, createdAt, updatedAt",
+  flowPlans: "++id, refId, title, root, createdAt, updatedAt",
 });
 
 const App = () => {

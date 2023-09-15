@@ -7,18 +7,18 @@ import { useFunctions } from "../../hooks/useFunctions";
 
 function Home() {
   // destructure state from context
-  const { currentTreeNote } = useStateContext();
+  const { currentFlowPlan } = useStateContext();
   // destructure functions from custom hook
-  const { handleImportTreeNote } = useFunctions();
+  const { handleImportFlowPlan } = useFunctions();
   return (
     <div
       id="top_container"
       className="w-screen h-screen flex justify-center items-center relative overflow-hidden"
     >
       <SideNavbar />
-      {/* If currentTreeNote is set then display tree */}
-      {currentTreeNote ? (
-        <DisplayTree key={currentTreeNote.id} />
+      {/* If currentFlowPlan is set then display tree */}
+      {currentFlowPlan ? (
+        <DisplayTree key={currentFlowPlan.id} />
       ) : (
         <div className="w-full h-full flex justify-center items-center text-2xl bg-gray-900 text-gray-200">
           ＞﹏＜
