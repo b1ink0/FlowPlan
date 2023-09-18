@@ -1,308 +1,329 @@
-import React, { Fragment, useEffect, useRef, useState } from "react";
+// @ts-check
+import React, { useEffect, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
-import { v4 } from "uuid";
-import DisplayNode from "../DisplayNode";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import ResetIcon from "../../assets/Icons/ResetIcon";
-import TestDisplayNode from "../TestDisplayNode";
+import DisplayNode from "../DisplayNode";
 
 const DisplayTree = ({ node }) => {
-  const {
-    db,
-    currentTreeNote,
-    setCurrentTreeNode,
-    update,
-    setUpdate,
-    currentExpanded,
-    move,
-  } = useStateContext();
-  const containerRef = useRef(null);
-  const treeRef = useRef(null);
-  const parentRef = useRef(null);
-
-  const [paths, setPaths] = useState([]);
-  const [scaleMultiplier, setScaleMultiplier] = useState(0.1);
-  const [testTree, setTestTree] = useState(null);
-
-  useEffect(() => {
-    const handleExpanded = async () => {
-      try {
-        if (!currentTreeNote?.refId) return;
-        const result = await db.treeNotesExpanded
-          .where("refId")
-          .equals(currentTreeNote.refId)
-          .first();
-        if (result === undefined) {
-          await db.treeNotesExpanded.add({
-            refId: currentTreeNote.refId,
-            expanded: {
-              [location.length > 0 ? location.join("-") : "root"]: false,
-            },
-          });
-        } else {
-          console.log(result);
-          // const { expanded } = result;
-          // if (expanded[location.length > 0 ? location.join("-") : "root"]) {
-          //   setExpanded(true);
-          // } else {
-          //   setExpanded(false);
-          // }
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    handleExpanded();
-  }, [currentTreeNote]);
-
-  const handleNumberOfAllChildrenForThatParent = (node, i) => {
-    if (node?.children?.length === 0) {
-      node.numberOfAllChildren = 1;
-      return 1;
-    }
-    let count = 0;
-    node?.children?.forEach((child, i) => {
-      console.log("test357", i);
-      count += handleNumberOfAllChildrenForThatParent(child, i);
-    });
-    node.numberOfAllChildren = count;
-    console.log("test357", node, count);
-    return count;
-  };
-
-  const handleFinalPositionOfNodes = (node, p = 0, flag = true) => {
-    let currentP = p;
-    if (flag) {
-      currentP = p + node.numberOfAllChildren;
-    }
-    let avg = node.numberOfAllChildren / 2;
-    if (flag) {
-      avg = (p + currentP) / 2;
-    }
-    // console.log("test357", node, avg, currentP);
-    if (node?.children?.length === 0) {
-      console.log("test357", "THIS");
-      node.finalPosition = avg;
-      return 0;
-    }
-
-    node?.children?.forEach((child) => {
-      console.log("test357", child.numberOfAllChildren, currentP);
-
-      handleFinalPositionOfNodes(child, currentP, true);
-
-      currentP = currentP + child.numberOfAllChildren;
-    });
-    node.finalPosition = avg;
-    // console.log("test357", node, avg);
-    return node.numberOfAllChildren;
-  };
-
-  const handleFP = (node, i) => {
-    let count = i;
-    node.fp = node.numberOfAllChildren / 2 + i;
-    node?.children?.forEach((child) => {
-      count = count + handleFP(child, count);
-    });
-    return node.numberOfAllChildren;
-  };
-
-  const handleFinalPositionOfNodes2 = (node, i) => {
-    // if (node?.children?.length === 0) {
-    //   node.finalPosition = 1;
-    //   return 1;
-    // }
-    node?.children?.forEach((child, i) => {
-      handleFinalPositionOfNodes2(child, i);
-    });
-    if (i === 0) {
-      console.log("test357", node.id, node?.parent?.parent?.children[0].fp);
-      node.finalPosition = node.numberOfAllChildren / 2;
-      // +
-      // (node?.parent?.fp || 0);
-      node.fp = node.numberOfAllChildren;
-    } else {
-      if (node?.parent?.children[i - 1]) {
-        node.finalPosition =
-          node.numberOfAllChildren / 2 + node.parent.children[i - 1].fp;
-        node.fp = node.numberOfAllChildren + node.parent.children[i - 1].fp;
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (!currentTreeNote?.refId) return;
-    const result = handleNumberOfAllChildrenForThatParent(currentTreeNote.root);
-    console.log("test357", result);
-    console.log("test357", currentTreeNote);
-    // const result2 = handleFinalPositionOfNodes(currentTreeNote.root, 0, false);
-    // console.log("test357", currentTreeNote);
-    // handleFinalPositionOfNodes2(currentTreeNote.root, 0);
-    // console.log("test357", currentTreeNote);
-    handleFP(currentTreeNote.root, 0);
-    setTestTree(currentTreeNote);
-    console.log("test357", currentTreeNote);
-  }, []);
+  // destructure state from context
+  const { settings, setSettings, currentFlowPlan, move, update, animation } =
+    useStateContext();
+  // local state
+  const { treeConfig } = settings;
 
   return (
-    <div
-      ref={containerRef}
-      className="hide-scroll-bar relative h-full grow bg-gray-900 flex justify-center items-center overflow-hidden cursor-grab"
-    >
+    <div className="hide-scroll-bar relative h-full grow bg-gray-900 flex justify-center items-center overflow-hidden cursor-grab">
+      {/* Transform component for zoom and drag */}
       <TransformWrapper
         minScale={0.1}
         limitToBounds={false}
-        wheel={{ step: scaleMultiplier }}
+        wheel={{ step: treeConfig.scaleMultiplier }}
       >
         {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
-          <Fragment>
+          <>
             <TransformComponent>
-              <div
-                ref={treeRef}
-                className="active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative bg-gray-900 flex justify-center items-start  transition-all duration-100 p-2"
-              >
-                {/* <TestDisplayNode node={testTree?.root} /> */}
-
-                <div ref={parentRef} className="w-fit h-fit flex relative">
-                  {currentTreeNote &&
-                    currentExpanded[currentTreeNote.refId] !== undefined && (
-                      <DisplayNode
-                        update={update}
-                        setUpdate={setUpdate}
-                        location={[]}
-                        containerRef={parentRef}
-                        paths={paths}
-                        setPaths={setPaths}
-                        currentIsExpanded={
-                          currentExpanded[currentTreeNote.refId]
-                        }
-                      />
-                    )}
-                  <svg className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible">
-                    <Paths paths={paths} />
-                    {move?.node && <LivePath move={move} rootRef={treeRef} />}
-                  </svg>
-                </div>
+              {/* Wrapper for svg and node */}
+              <div className="active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative bg-gray-900 flex justify-center items-start  transition-all duration-100 p-2">
+                {/* Svg for paths */}
+                <Svg
+                  settings={settings}
+                  currentFlowPlan={currentFlowPlan}
+                  update={update}
+                  move={move}
+                />
+                {/* Node for displaying tree */}
+                <DisplayNode node={currentFlowPlan?.root} />
               </div>
             </TransformComponent>
-            <div className="absolute bottom-2 right-2 flex flex-col justify-center items-end gap-2">
-              <input
-                value={scaleMultiplier}
-                onChange={(e) => setScaleMultiplier(e.target.value)}
-                type="number"
-                className="w-9 h-9 outline-none border-none flex justify-center text-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100"
-              />
-              <button
-                onClick={() => zoomIn(scaleMultiplier)}
-                className="w-9 h-9 flex justify-center items-center bottom-12 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-in"
-              >
-                <span className="absolute block w-1 rounded-md h-6 bg-gray-200"></span>
-                <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
-              </button>
-              <button
-                onClick={() => zoomOut(scaleMultiplier)}
-                className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-out"
-              >
-                <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
-              </button>
-              <button
-                onClick={() => resetTransform()}
-                className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-progress"
-              >
-                <ResetIcon />
-              </button>
-            </div>
-          </Fragment>
+            {/* Zoom helper for zoom in, zoom out and reset transform */}
+            <ZoomHelper
+              settings={settings}
+              setSettings={setSettings}
+              zoomIn={zoomIn}
+              zoomOut={zoomOut}
+              resetTransform={resetTransform}
+            />
+          </>
         )}
       </TransformWrapper>
     </div>
-    // <div className="border-l border-gray-500 pl-4">
-    //   <h3>{node?.title}</h3>
-    //   <p>{node?.description}</p>
-    //   <div dangerouslySetInnerHTML={{ __html: node?.html }} />
-    //   {node?.children.map(child => <DisplayTree node={child} key={child?.title} />)}
-    // </div>
+  );
+};
+
+// Zoom helper for zoom in, zoom out and reset transform
+const ZoomHelper = ({
+  settings,
+  setSettings,
+  zoomIn,
+  zoomOut,
+  resetTransform,
+}) => {
+  // destructure tree configuration from settings
+  const { treeConfig } = settings;
+  return (
+    <div className="absolute bottom-2 right-2 flex flex-col justify-center items-end gap-2">
+      {/* Input for scaleMultiplier */}
+      <input
+        value={treeConfig.scaleMultiplier}
+        onChange={(e) =>
+          setSettings((prev) => ({
+            ...prev,
+            treeConfig: { ...prev.treeConfig, scaleMultiplier: e.target.value },
+          }))
+        }
+        type="number"
+        className="w-9 h-9 outline-none border-none flex justify-center text-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100"
+      />
+      {/* Buttons for zoom in */}
+      <button
+        onClick={() => zoomIn(treeConfig.scaleMultiplier)}
+        className="w-9 h-9 flex justify-center items-center bottom-12 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-in"
+      >
+        <span className="absolute block w-1 rounded-md h-6 bg-gray-200"></span>
+        <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
+      </button>
+      {/* Buttons for zoom out */}
+      <button
+        onClick={() => zoomOut(treeConfig.scaleMultiplier)}
+        className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-out"
+      >
+        <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
+      </button>
+      {/* Buttons for reset transform */}
+      <button
+        onClick={() => resetTransform()}
+        className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-progress"
+      >
+        <ResetIcon />
+      </button>
+    </div>
+  );
+};
+
+// Svg wrapper for paths
+const Svg = ({ settings, currentFlowPlan, update, move }) => {
+  // destructure node configuration from settings
+  const { nodeConfig } = settings;
+  // local state
+  // svgSize is used to set width and height of svg
+  const [svgSize, setSvgSize] = useState(null);
+  // showPaths is used to show paths after svgSize is set
+  const [showPaths, setShowPaths] = useState(true);
+
+  // calculate width and height of svg after tree is updated
+  const handleResize = () => {
+    let w =
+      // currentFlowPlan?.root?.fp is mid point and location of root node
+      // nodeConfig.nodeWidthMargin is width with margin of node
+      // nodeConfig.nodeWidth is width of node
+      // currentFlowPlan?.root?.fp * nodeConfig.nodeWidthMargin gives width of half of tree so multiply by 2
+      currentFlowPlan?.root?.fp * nodeConfig.nodeWidthMargin * 2 -
+      // subtract nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth to get width of svg without margin
+      (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth);
+    let h =
+      // currentFlowPlan?.root?.numberOfLevels is number of levels in tree
+      // nodeConfig.nodeHeightMargin is height with margin of node
+      // nodeConfig.nodeHeight is height of node
+      // currentFlowPlan?.root?.numberOfLevels * nodeConfig.nodeHeightMargin gives height of half of tree so multiply by 2
+      currentFlowPlan?.root?.numberOfLevels * nodeConfig.nodeHeightMargin * 2 -
+      // subtract nodeConfig.nodeHeightMargin to get height of svg without margin
+      nodeConfig.nodeHeightMargin;
+    return {
+      width: w,
+      height: h,
+    };
+  };
+
+  // set svgSize after tree is updated is set
+  useEffect(() => {
+    // if currentFlowPlan is null then return
+    if (!currentFlowPlan?.root) return;
+    setSvgSize(handleResize());
+  }, [update]);
+
+  // hide paths after svgSize is set and show paths after 500ms
+  // this is done to prevent paths from animating when tree is updated
+  useEffect(() => {
+    setShowPaths(false);
+    setTimeout(() => {
+      setShowPaths(true);
+    }, 500);
+  }, [svgSize]);
+
+  // when paths are hidden or svgSize is not set then return empty fragment
+  if (!showPaths || !svgSize) return <></>;
+
+  return (
+    <svg
+      style={{
+        width: svgSize?.width + "px",
+        height: svgSize?.height + "px",
+        transition: "all 0.5s ease-in-out",
+      }}
+      className="absolute overflow-visible duration-500"
+    >
+      {/* Paths for tree */}
+      <Paths
+        key={"path-" + currentFlowPlan?.root?.id}
+        node={currentFlowPlan?.root}
+        delay={0}
+      />
+      {/* Paths for live node when moving node */}
+      {move?.node && <LivePath move={move} />}
+    </svg>
+  );
+};
+
+// Paths for tree
+const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
+  // destructure state from context
+  const { settings } = useStateContext();
+  // destructure node configuration from settings
+  const { nodeConfig } = settings;
+
+  // calculate path for node
+  const handlePath = () => {
+    // initialize path
+    let path = "";
+    let x1, y1, x2, y2, x3, y3, x4, y4;
+    let adjust1, adjust2;
+
+    // strucutre of path
+    // M x1 y1 C x2 y2, x3 y3, x4 y4
+    // M is move to
+    // C is curve to
+    // x1 y1 is starting point
+    // x2 y2 is first control point to adjust curve
+    // x3 y3 is second control point to adjust curve
+    // x4 y4 is end point
+
+    // initializing some variables for adjusting path
+    adjust1 = (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2;
+    adjust2 = nodeConfig.nodeHeightMargin;
+
+    // calculating starting point
+    x1 = parentPosition.x - adjust1;
+    y1 = parentPosition.y;
+    x2 = parentPosition.x - adjust1;
+    y2 = parentPosition.y + adjust2 - adjust1;
+    x3 = node?.fp * nodeConfig.nodeWidthMargin - adjust1;
+    y3 = parentPosition.y;
+    x4 = node?.fp * nodeConfig.nodeWidthMargin - adjust1;
+    y4 = parentPosition.y + adjust2 + adjust1 * 2;
+
+    // finalizing path
+    path = `M${x1} ${y1} C ${x2} ${y2}, ${x3} ${y3}, ${x4} ${y4}`;
+    // return path for node
+    return path;
+  };
+
+  // initialize path
+  const path = handlePath();
+
+  return (
+    <>
+      {/* don't show for root node */}
+      {parentPosition.y !== 0 && (
+        <path
+          id="curve"
+          d={path}
+          style={{
+            transition: "all 0.5s ease-in-out",
+          }}
+          className={`fade-in-path opacity-0 stroke-current text-gray-600 duration-500 delay-1000`}
+          strokeWidth="4"
+          strokeLinecap="round"
+          fill="transparent"
+        ></path>
+      )}
+      {/* do not show if children are hidden */}
+      {node?.expanded &&
+        // loop through children
+        node?.children?.map((child, i) => {
+          return (
+            <Paths
+              key={"path-" + child.id}
+              node={child}
+              // parentPosition is used to calculate path for child
+              parentPosition={{
+                x: node?.fp * nodeConfig.nodeWidthMargin,
+                y:
+                  nodeConfig.nodeHeightMargin * 2 * level -
+                  nodeConfig.nodeHeightMargin,
+              }}
+              level={level + 1}
+            />
+          );
+        })}
+    </>
+  );
+};
+
+// Paths for live node when moving node
+const LivePath = ({ move }) => {
+  // local state
+  const [path, setPath] = useState("");
+
+  const handlePath = () => {
+    let path = "";
+    const { x1, y1, x2, y2 } = move.translate;
+    switch (true) {
+      // when node is moved to same position
+      case x1 === x2 && y1 === y2:
+        return `M${x1} ${y1} C ${x1} ${y1}, ${x2} ${y2}, ${x2} ${y2}`;
+
+      // when node is moved to same x position
+      case x1 === x2:
+        return `M${x1} ${y1} ${x2} ${y2}`;
+
+      // when node is moved to upper node
+      case y2 <= y1:
+        return `M${x1} ${y1} C ${x1} ${y2 + 30}, ${x2} ${
+          y2 + 70
+        }, ${x2} ${y2}`;
+
+      // when node is moved to lower node
+      default:
+        return `M${x1} ${y1} C ${x1} ${y1 - 200}, ${x2} ${
+          y2 + 200
+        }, ${x2} ${y2}`;
+    }
+  };
+
+  useEffect(() => {
+    // if move.translate is not set then return
+    if (!move?.translate) return;
+    // calculate path
+    setPath(handlePath());
+  }, [move.translate]);
+
+  if (path === "") return <></>;
+
+  return (
+    <>
+      {/* Main path */}
+      <path
+        id="curvee"
+        d={path}
+        style={{ stroke: move?.color }}
+        className="neon-path-1 fade-in-path opacity-0 stroke-current transition-all duration-200"
+        strokeWidth="4"
+        strokeLinecap="round"
+        fill="transparent"
+      ></path>
+      {/* Second path for neon effect */}
+      <path
+        id="curve"
+        style={{ stroke: move?.color }}
+        d={path}
+        className="neon-path-2 fade-in-path opacity-0 stroke-current transition-all duration-200"
+        strokeWidth="4"
+        strokeLinecap="round"
+        fill="transparent"
+      ></path>
+    </>
   );
 };
 
 export default DisplayTree;
-
-const Paths = ({ paths }) => {
-  if (paths.length === 0) return null;
-  return paths.map((path, i) => (
-    <path
-      key={path.id}
-      id="curve"
-      d={path?.path}
-      className={`${
-        path?.show ? "hidden" : ""
-      } fade-in-path opacity-0 stroke-current text-gray-600`}
-      strokeWidth="4"
-      strokeLinecap="round"
-      fill="transparent"
-    ></path>
-  ));
-};
-
-const LivePath = ({ move, rootRef }) => {
-  const [path, setPath] = useState("");
-
-  useEffect(() => {
-    try {
-      const { p1x, p1y, p2x, p2y } = move.position;
-      console.log(p1x, p1y, p2x, p2y);
-      if (p1x === p2x && p1y === p2y) {
-        setPath(`M${p1x} ${p1y} C ${p1x} ${p1y}, ${p2x} ${p2y}, ${p2x} ${p2y}`);
-      } else if (p1x === p2x) {
-        setPath(`M${p1x} ${p1y} ${p2x} ${p2y}`);
-      } else if (p2y <= p1y) {
-        setPath(
-          `M${p1x} ${p1y} C ${p1x} ${p2y + 30}, ${p2x} ${
-            p2y + 150
-          }, ${p2x} ${p2y}`
-        );
-      } else {
-        setPath(
-          `M${p1x} ${p1y} C ${p1x} ${p1y - 200}, ${p2x} ${
-            p2y + 200
-          }, ${p2x} ${p2y}`
-        );
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }, [move.position]);
-
-  useEffect(() => {
-    if (move?.node === null) {
-      // setPath("");
-    }
-  }, [move.node]);
-
-  return (
-    <>
-      {path !== "" && (
-        <>
-          <path
-            id="curvee"
-            d={path}
-            style={{ stroke: move?.position?.color }}
-            className="neon-path-1 fade-in-path opacity-0 stroke-current transition-all duration-200"
-            strokeWidth="4"
-            strokeLinecap="round"
-            fill="transparent"
-          ></path>
-          <path
-            id="curve"
-            style={{ stroke: move?.position?.color }}
-            d={path}
-            className="neon-path-2 fade-in-path opacity-0 stroke-current transition-all duration-200"
-            strokeWidth="4"
-            strokeLinecap="round"
-            fill="transparent"
-          ></path>
-        </>
-      )}
-    </>
-  );
-};
