@@ -17,10 +17,12 @@ export function StateProvider({ children }) {
       nodeWidth: 220,
       nodeHeight: 100,
       nodeWidthMargin: 250,
-      nodeHeightMargin: 100,
+      nodeHeightMargin: 130,
     },
     treeConfig: {
       scaleMultiplier: 0.1,
+      // renderType: "verticalTree"
+      renderType: "horizontalTree"
     },
   });
 

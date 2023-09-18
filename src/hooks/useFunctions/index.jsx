@@ -283,6 +283,8 @@ export const useFunctions = () => {
 
   // function to handle position calculation
   const handlePositionCalculation = (root) => {
+    // reseting number of levels
+    root.numberOfLevels = 1;
     handleNumberOfAllChildrenForThatParent(root, 1, root);
     handleFinalPositionCalculation(root, 0);
   };

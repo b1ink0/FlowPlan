@@ -12,7 +12,9 @@ import ReorderNode from "../ReorderNode";
 
 function DisplayNode({ node }) {
   // destructure state from context
-  const { animation } = useStateContext();
+  const { animation, settings } = useStateContext();
+  // destructure node config from settings
+  const { treeConfig } = settings;
   // local state
   // init is used to stop animate the first time the tree is loaded
   // this is done to prevent the animation from running when the tree is loaded
@@ -30,7 +32,16 @@ function DisplayNode({ node }) {
 
   return (
     // Wrapper div for the whole tree
-    <div className="w-0 h-0 relative flex justify-center items-start">
+    <div
+      style={{
+        // set flex direction according to the render type
+        justifyContent:
+          treeConfig.renderType === "verticalTree" ? "center" : "flex-start",
+        alignItems:
+          treeConfig.renderType === "verticalTree" ? "flex-start" : "center",
+      }}
+      className="w-0 h-0 relative flex"
+    >
       <Node
         init={init}
         node={node}
@@ -57,7 +68,7 @@ function Node({
     useStateContext();
 
   // destructure node config from settings
-  const { nodeConfig } = settings;
+  const { nodeConfig, treeConfig } = settings;
 
   // destructure functions from custom hook
   const {
@@ -96,7 +107,12 @@ function Node({
   // useEffect to update translate when tree is updated
   useEffect(() => {
     setTranslate({
-      x: (node?.fp - rootNodeFp) * nodeConfig.nodeWidthMargin,
+      x:
+        treeConfig.renderType === "verticalTree"
+          ? // if render type is vertical then translate x according to the node width margin
+            (node?.fp - rootNodeFp) * nodeConfig.nodeWidthMargin
+          : // else translate x according to the node height margin
+            (node?.fp - rootNodeFp) * nodeConfig.nodeHeightMargin,
       y: yTranslateMargin,
     });
   }, [update]);
@@ -204,7 +220,12 @@ function Node({
         className="absolute duration-500"
         style={{
           // translate node to its position
-          transform: `translate(${translate.x}px,  ${translate.y}px)`,
+          transform:
+            treeConfig.renderType === "verticalTree"
+              ? //  if render type is vertical then translate x with x and y with y
+                `translate(${translate.x}px,  ${translate.y}px)`
+              : // else translate x with y and y with xF
+                `translate(${translate.y}px,  ${translate.x}px)`,
           // disable animation if animation is disabled
           transition: animation ? "transform 0.5s ease-in-out" : "none",
         }}
@@ -240,6 +261,7 @@ function Node({
                 handleNode={handleNode}
                 nodeConfig={nodeConfig}
                 rootNodeFp={rootNodeFp}
+                treeConfig={treeConfig}
                 handleIfNodeIsParentOfMoveNode={handleIfNodeIsParentOfMoveNode}
               />
             )}
@@ -262,6 +284,7 @@ function Node({
               setDeleteMenu={setDeleteMenu}
               setMove={setMove}
               translate={translate}
+              treeConfig={treeConfig}
             />
           </div>
         </div>
@@ -281,7 +304,13 @@ function Node({
                 node={child}
                 parent={node}
                 yTranslateMargin={
-                  yTranslateMargin + nodeConfig.nodeHeightMargin * 2
+                  treeConfig.renderType === "verticalTree"
+                    ? // if render type is vertical then translate y with yTranslateMargin + node height margin * 2
+                      yTranslateMargin + nodeConfig.nodeHeightMargin * 2
+                    : // else translate y with yTranslateMargin + node width + node height
+                      yTranslateMargin +
+                      nodeConfig.nodeWidth +
+                      nodeConfig.nodeHeight
                 }
                 rootNodeFp={rootNodeFp}
                 ptranslate={{
@@ -306,6 +335,7 @@ const MoveNodeOverlay = ({
   handleNode,
   nodeConfig,
   rootNodeFp,
+  treeConfig,
   handleIfNodeIsParentOfMoveNode,
 }) => {
   // function to reset move node
@@ -324,11 +354,18 @@ const MoveNodeOverlay = ({
     color = handleIfNodeIsParentOfMoveNode() ? "#ff0000" : "#19bdd6";
     // x coordinate of the node for live path
     x2 =
-      translate.x +
-      rootNodeFp * nodeConfig.nodeWidthMargin -
-      (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2;
+      treeConfig.renderType === "verticalTree"
+        ? translate.x +
+          rootNodeFp * nodeConfig.nodeWidthMargin -
+          (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2
+        : translate.x +
+          rootNodeFp * nodeConfig.nodeHeightMargin -
+          (nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) / 2;
     // y coordinate of the node for live path
-    y2 = translate.y + nodeConfig.nodeHeightMargin;
+    y2 =
+      treeConfig.renderType === "verticalTree"
+        ? translate.y + nodeConfig.nodeHeightMargin
+        : translate.y + nodeConfig.nodeWidth;
     // set move state
     setMove({
       ...move,
@@ -459,23 +496,29 @@ const ButtonsWrapper = ({
   handleNode,
   handleExpanded,
   setDeleteMenu,
+  treeConfig,
 }) => {
   // function to handle move node
   const handleInitMove = () => {
     // if location is empty then return because it mean its a root node
     if (location.length === 0) return;
     // else set move state
+    let x, y;
+    x =
+      treeConfig.renderType === "verticalTree"
+        ? translate.x +
+          rootNodeFp * nodeConfig.nodeWidthMargin -
+          (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2
+        : translate.x +
+          rootNodeFp * nodeConfig.nodeHeightMargin -
+          (nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) / 2;
+    y = translate.y;
+
     let tempTranslate = {
-      x1:
-        translate.x +
-        rootNodeFp * nodeConfig.nodeWidthMargin -
-        (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2,
-      y1: translate.y,
-      x2:
-        translate.x +
-        rootNodeFp * nodeConfig.nodeWidthMargin -
-        (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2,
-      y2: translate.y,
+      x1: x,
+      y1: y,
+      x2: x,
+      y2: y,
     };
 
     setMove({
