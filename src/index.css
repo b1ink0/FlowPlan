@@ -46,7 +46,7 @@ body {
 
 .neon-border {
   border: 3px solid #19bdd6;
-  border-radius: 20px;
+  border-radius: 10px;
   box-shadow: 0 0 3px rgba(25, 189, 214, 0);
   animation: fadeInPath 0.2s 0s ease-in forwards;
   transition-duration: 300ms;
@@ -59,7 +59,7 @@ body {
 
 .neon-red-border {
   border: 3px solid #d72020;
-  border-radius: 20px;
+  border-radius: 10px;
   box-shadow: 0 0 3px rgba(215, 32, 32, 0);
   animation: fadeInPath 0.2s 0s ease-in forwards;
   transition-duration: 300ms;
@@ -101,7 +101,7 @@ body {
 @keyframes spread {
   0% {
     opacity: 0;
-    translate: 0 -20px;
+    translate: 0 -50px;
     transform: scale(1);
   }
   100% {

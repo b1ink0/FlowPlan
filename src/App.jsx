@@ -1,24 +1,24 @@
 import "./App.css";
 import Dexie from "dexie";
-import { useLiveQuery } from "dexie-react-hooks";
-import DisplayTree from "./components/DisplayTree";
 import Home from "./components/Home";
-import { StateProvider, useStateContext } from "./context/StateContext";
-import { TreeNode, addChild, traverseTree } from "./hooks/useTree";
+import { useStateContext } from "./context/StateContext";
 import { useEffect } from "react";
 
-const initializeDb = new Dexie("TreeNotes");
+// Initialize Database
+const initializeDb = new Dexie("FlowPlan");
+// Create Database Schema
 initializeDb.version(1).stores({
-  treeNotesIndex: "++id, refId, title, createdAt, updatedAt",
-  treeNotes: "++id, refId, title, root, createdAt, updatedAt",
-  treeNotesExpanded: "++id, refId, expanded",
+  flowPlans: "++id, refId, title, root, createdAt, updatedAt",
 });
 
 const App = () => {
-  const { db, setDb } = useStateContext();
+  const { setDb } = useStateContext();
+  // Initialize Database on App Load
   useEffect(() => {
     const init = async () => {
+      // Open Database
       const initDb = await initializeDb.open();
+      // Set Database to Context
       setDb(initDb);
     };
     init();
