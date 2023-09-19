@@ -12,19 +12,23 @@ function ReorderNode({
   rootNodeFp,
   handleIfNodeIsChildOfMoveNode,
 }) {
-  const { move, setMove } = useStateContext();
+  const { move, setMove, settings } = useStateContext();
+  const { treeConfig } = settings;
   const [reorder, setReorder] = useState({
     w: 0,
     x: 0,
   });
 
   const handleReorderCalculation = () => {
-    console.log("rootNodeFp", rootNodeFp);
     try {
       if (parent?.children[location[location.length - 1] + 1]) {
         let sigbling = parent.children[location[location.length - 1] + 1];
         let sigblingTranslate = {
-          x: (sigbling?.fp - rootNodeFp) * 250,
+          x:
+            (sigbling?.fp - rootNodeFp) *
+            (treeConfig.renderType === "verticalTree"
+              ? settings.nodeConfig.nodeWidthMargin
+              : settings.nodeConfig.nodeHeightMargin),
         };
         let sigblingsCenter = {
           x: (sigblingTranslate.x + translate.x) / 2,
@@ -36,7 +40,10 @@ function ReorderNode({
               sigblingTranslate.x > 0 && translate.x < 0
                 ? Math.abs(sigblingTranslate.x) + Math.abs(translate.x)
                 : Math.abs(sigblingTranslate.x) - Math.abs(translate.x)
-            ) - 230,
+            ) -
+            (treeConfig.renderType === "verticalTree"
+              ? settings.nodeConfig.nodeWidthMargin - 20
+              : settings.nodeConfig.nodeHeightMargin - 20),
         };
       }
       return {
@@ -59,7 +66,10 @@ function ReorderNode({
       translate: {
         ...prev.translate,
         x2: x,
-        y2: translate.y + 100,
+        y2:
+          treeConfig.renderType === "verticalTree"
+            ? translate.y + 100
+            : translate.y + 200,
       },
     }));
   };
@@ -75,7 +85,7 @@ function ReorderNode({
   };
 
   useEffect(() => {
-    setReorder(handleReorderCalculation());
+    if (move?.node) setReorder(handleReorderCalculation());
   }, [move?.node]);
 
   // if move node is null then return null
@@ -95,9 +105,22 @@ function ReorderNode({
       {location[location.length - 1] === 0 && (
         <Child
           type={"first"}
-          x={translate.x - 125 + rootNodeFp * 250 - 15}
-          width={`${20}px`}
-          transform={`translate(${translate.x - 125}px, ${translate.y}px)`}
+          x={
+            treeConfig.renderType === "verticalTree"
+              ? translate.x - 125 + rootNodeFp * 250 - 15
+              : translate.x - 125 + rootNodeFp * 130 + 15 * 3
+          }
+          height={
+            treeConfig.renderType === "verticalTree" ? `${100}px` : `${20}px`
+          }
+          width={
+            treeConfig.renderType === "verticalTree" ? `${20}px` : `${220}px`
+          }
+          transform={
+            treeConfig.renderType === "verticalTree"
+              ? `translate(${translate.x - 125}px, ${translate.y}px)`
+              : `translate(${translate.y}px, ${translate.x - 65}px)`
+          }
           handles={{ handleNode, handleEnter, handleLeave }}
         />
       )}
@@ -107,9 +130,26 @@ function ReorderNode({
         move?.node?.id && (
         <Child
           type={"middle"}
-          x={reorder?.x + rootNodeFp * 250 - 15}
-          width={`${reorder?.w}px`}
-          transform={`translate(${reorder?.x}px, ${translate.y}px)`}
+          x={
+            treeConfig.renderType === "verticalTree"
+              ? reorder?.x + rootNodeFp * 250 - 15
+              : reorder?.x + rootNodeFp * 130 - 15
+          }
+          height={
+            treeConfig.renderType === "verticalTree"
+              ? `${100}px`
+              : `${reorder?.w}px`
+          }
+          width={
+            treeConfig.renderType === "verticalTree"
+              ? `${reorder?.w}px`
+              : `${220}px`
+          }
+          transform={
+            treeConfig.renderType === "verticalTree"
+              ? `translate(${reorder?.x}px, ${translate.y}px)`
+              : `translate(${translate.y}px, ${reorder?.x}px)`
+          }
           handles={{ handleNode, handleEnter, handleLeave }}
         />
       )}
@@ -118,9 +158,22 @@ function ReorderNode({
       {parent?.children[location[location.length - 1] + 1] === undefined && (
         <Child
           type={"last"}
-          x={translate.x + 125 + rootNodeFp * 250 - 15}
-          width={`${20}px`}
-          transform={`translate(${translate.x + 125}px, ${translate.y}px)`}
+          x={
+            treeConfig.renderType === "verticalTree"
+              ? translate.x + 125 + rootNodeFp * 250 - 15
+              : translate.x + 125 + rootNodeFp * 130 - 15 * 5
+          }
+          height={
+            treeConfig.renderType === "verticalTree" ? `${100}px` : `${20}px`
+          }
+          width={
+            treeConfig.renderType === "verticalTree" ? `${20}px` : `${220}px`
+          }
+          transform={
+            treeConfig.renderType === "verticalTree"
+              ? `translate(${translate.x + 125}px, ${translate.y}px)`
+              : `translate(${translate.y}px, ${translate.x + 65}px)`
+          }
           handles={{ handleNode, handleEnter, handleLeave }}
         />
       )}
@@ -128,13 +181,14 @@ function ReorderNode({
   );
 }
 
-const Child = ({ x, width, transform, handles, type }) => {
+const Child = ({ x, width, height, transform, handles, type }) => {
   const { handleNode, handleEnter, handleLeave } = handles;
   return (
     <div
-      className="absolute h-[100px] rounded-md border-2 border-green-600/40 overflow-hidden"
+      className="absolute rounded-md border-2 border-green-600/40 overflow-hidden"
       style={{
         width: width,
+        height: height,
         transform: transform,
       }}
     >

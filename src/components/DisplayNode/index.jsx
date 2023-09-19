@@ -115,7 +115,7 @@ function Node({
             (node?.fp - rootNodeFp) * nodeConfig.nodeHeightMargin,
       y: yTranslateMargin,
     });
-  }, [update]);
+  }, [update, treeConfig.renderType]);
 
   // function to handle node actions
   const handleNode = (type, data) => {
@@ -282,6 +282,7 @@ function Node({
               nodeConfig={nodeConfig}
               rootNodeFp={rootNodeFp}
               setDeleteMenu={setDeleteMenu}
+              move={move}
               setMove={setMove}
               translate={translate}
               treeConfig={treeConfig}
@@ -306,7 +307,7 @@ function Node({
                 yTranslateMargin={
                   treeConfig.renderType === "verticalTree"
                     ? // if render type is vertical then translate y with yTranslateMargin + node height margin * 2
-                      yTranslateMargin + nodeConfig.nodeHeightMargin * 2
+                      yTranslateMargin + nodeConfig.nodeHeight * 2
                     : // else translate y with yTranslateMargin + node width + node height
                       yTranslateMargin +
                       nodeConfig.nodeWidth +
@@ -314,7 +315,10 @@ function Node({
                 }
                 rootNodeFp={rootNodeFp}
                 ptranslate={{
-                  x: (node?.fp - rootNodeFp) * nodeConfig.nodeWidthMargin,
+                  x:
+                    treeConfig.renderType === "verticalTree"
+                      ? (node?.fp - rootNodeFp) * nodeConfig.nodeWidthMargin
+                      : (node?.fp - rootNodeFp) * nodeConfig.nodeHeightMargin,
                   y: yTranslateMargin,
                 }}
                 location={location.concat([i])}
@@ -364,7 +368,7 @@ const MoveNodeOverlay = ({
     // y coordinate of the node for live path
     y2 =
       treeConfig.renderType === "verticalTree"
-        ? translate.y + nodeConfig.nodeHeightMargin
+        ? translate.y + nodeConfig.nodeHeight
         : translate.y + nodeConfig.nodeWidth;
     // set move state
     setMove({
@@ -487,6 +491,7 @@ const DeleteMenu = ({ handleNode, setDeleteMenu }) => {
 // Buttons For Node Component
 const ButtonsWrapper = ({
   location,
+  move,
   setMove,
   node,
   parent,
