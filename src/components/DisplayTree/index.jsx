@@ -13,7 +13,7 @@ const DisplayTree = ({ node }) => {
   const { treeConfig } = settings;
 
   return (
-    <div className="hide-scroll-bar relative h-full grow bg-gray-900 flex justify-center items-center overflow-hidden cursor-grab">
+    <div className="hide-scroll-bar relative h-full grow bg-[var(--bg-primary)] flex justify-center items-center overflow-hidden cursor-grab">
       {/* Transform component for zoom and drag */}
       <TransformWrapper
         minScale={0.1}
@@ -36,7 +36,7 @@ const DisplayTree = ({ node }) => {
                       ? "flex-start"
                       : "center",
                 }}
-                className=" active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative bg-gray-900 flex  transition-all duration-100 p-2"
+                className=" active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative bg-[var(--bg-primary)] flex  transition-all duration-100 p-2"
               >
                 {/* Svg for paths */}
                 <Svg
@@ -86,27 +86,27 @@ const ZoomHelper = ({
           }))
         }
         type="number"
-        className="w-9 h-9 outline-none border-none flex justify-center text-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100"
+        className="text-[var(--text-primary)] w-9 h-9 outline-none border-none flex justify-center text-center items-center bottom-2 right-2 z-10 p-1 bg-[var(--btn-secondary)] rounded-lg"
       />
       {/* Buttons for zoom in */}
       <button
         onClick={() => zoomIn(treeConfig.scaleMultiplier)}
-        className="w-9 h-9 flex justify-center items-center bottom-12 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-in"
+        className="w-9 h-9 flex justify-center items-center bottom-12 right-2 z-10 p-1 bg-[var(--btn-secondary)] rounded-lg text-gray-100 cursor-zoom-in"
       >
-        <span className="absolute block w-1 rounded-md h-6 bg-gray-200"></span>
-        <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
+        <span className="absolute block w-1 rounded-md h-6 bg-[var(--logo-primary)]"></span>
+        <span className="absolute block w-6 rounded-md h-1 bg-[var(--logo-primary)]"></span>
       </button>
       {/* Buttons for zoom out */}
       <button
         onClick={() => zoomOut(treeConfig.scaleMultiplier)}
-        className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-zoom-out"
+        className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-[var(--btn-secondary)] rounded-lg text-gray-100 cursor-zoom-out"
       >
-        <span className="absolute block w-6 rounded-md h-1 bg-gray-200"></span>
+        <span className="absolute block w-6 rounded-md h-1 bg-[var(--logo-primary)]"></span>
       </button>
       {/* Buttons for reset transform */}
       <button
         onClick={() => resetTransform()}
-        className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-slate-800 rounded-lg text-gray-100 cursor-progress"
+        className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-[var(--btn-secondary)] rounded-lg text-gray-100 cursor-progress"
       >
         <ResetIcon />
       </button>
@@ -287,7 +287,7 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
           style={{
             transition: "all 0.5s ease-in-out",
           }}
-          className={`fade-in-path opacity-0 stroke-current text-gray-600 duration-500 delay-1000`}
+          className={`fade-in-path opacity-0 stroke-current text-[var(--path-primary)] duration-500 delay-1000`}
           strokeWidth="4"
           strokeLinecap="round"
           fill="transparent"

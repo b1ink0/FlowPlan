@@ -22,7 +22,7 @@ function Home() {
       {currentFlowPlan ? (
         <DisplayTree key={currentFlowPlan.id} />
       ) : (
-        <div className="w-full h-full flex justify-center items-center text-2xl bg-gray-900 text-gray-200">
+        <div className="w-full h-full flex justify-center items-center text-2xl bg-[var(--bg-primary)] text-gray-200">
           ＞﹏＜
         </div>
       )}

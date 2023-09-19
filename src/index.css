@@ -3,6 +3,75 @@
 @tailwind components;
 @tailwind utilities;
 
+:root,
+:root.light {
+  --text-primary: #202020;
+  --text-secondary: #919191;
+  --bg-primary: #ffffff;
+  --bg-primary-translucent: rgba(255, 255, 255, 0.9);
+  --bg-secondary: #eaeaea;
+  --bg-tertiary: #999999;
+  --bg-quaternary: #eaeaea;
+  --btn-primary: #ffffff;
+  --btn-secondary: #cacaca;
+  --border-primary: #a7a7a7;
+  --path-primary: #828282;
+  --logo-primary: #424242;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --text-primary: #202020;
+    --text-secondary: #919191;
+    --bg-primary: #ffffff;
+    --bg-primary-translucent: rgba(255, 255, 255, 0.9);
+    --bg-secondary: #eaeaea;
+    --bg-tertiary: #999999;
+    --bg-quaternary: #eaeaea;
+    --btn-primary: #ffffff;
+    --btn-secondary: #cacaca;
+    --border-primary: #a7a7a7;
+    --path-primary: #828282;
+    --logo-primary: #424242;
+  }
+}
+
+:root.dark {
+  --text-primary: #e5e7eb;
+  --text-secondary: #707786;
+  --bg-primary: #111827;
+  --bg-primary-translucent: rgba(17, 24, 39, 0.9);
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --bg-quaternary: #1f2937;
+  --btn-primary: #1e293b;
+  --btn-secondary: #334155;
+  --border-primary: #334155;
+  --path-primary: #4b5563;
+  --logo-primary: #e5e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary: #e5e7eb;
+    --text-secondary: #707786;
+    --bg-primary: #111827;
+    --bg-primary-translucent: rgba(17, 24, 39, 0.9);
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --bg-quaternary: #1f2937;
+    --btn-primary: #1e293b;
+    --btn-secondary: #334155;
+    --border-primary: #334155;
+    --path-primary: #4b5563;
+    --logo-primary: #e5e7eb;
+  }
+}
+
+input::placeholder {
+  color: var(--text-secondary);
+}
+
 html {
   touch-action: manipulation;
 }
@@ -53,8 +122,9 @@ body {
 }
 .neon-border:hover {
   /* box-shadow: 0 0 3px #19bdd6, 0 0 6px #19bdd6, 0 0 12px #19bdd6, 0 0 15px #19bdd6, 0 0 17px #19bdd6; */
-  box-shadow: 0 0 3px rgba(25, 189, 214, 1) , 0 0 6px rgba(25, 189, 214, 1) , 0 0 12px rgba(25, 189, 214, 1) , 0 0 15px rgba(25, 189, 214, 1) , 0 0 17px rgba(25, 189, 214, 1) ;
-
+  box-shadow: 0 0 3px rgba(25, 189, 214, 1), 0 0 6px rgba(25, 189, 214, 1),
+    0 0 12px rgba(25, 189, 214, 1), 0 0 15px rgba(25, 189, 214, 1),
+    0 0 17px rgba(25, 189, 214, 1);
 }
 
 .neon-red-border {
@@ -66,8 +136,9 @@ body {
 }
 .neon-red-border:hover {
   /* box-shadow: 0 0 3px #19bdd6, 0 0 6px #19bdd6, 0 0 12px #19bdd6, 0 0 15px #19bdd6, 0 0 17px #19bdd6; */
-  box-shadow:  0 0 3px rgba(215, 32, 32, 1) , 0 0 6px rgba(215, 32, 32, 1) , 0 0 12px rgba(215, 32, 32, 1) , 0 0 15px rgba(215, 32, 32, 1) , 0 0 17px rgba(215, 32, 32, 1) ;
-
+  box-shadow: 0 0 3px rgba(215, 32, 32, 1), 0 0 6px rgba(215, 32, 32, 1),
+    0 0 12px rgba(215, 32, 32, 1), 0 0 15px rgba(215, 32, 32, 1),
+    0 0 17px rgba(215, 32, 32, 1);
 }
 .neon-path-1 {
   /* stroke: #19bdd6; */
@@ -82,8 +153,6 @@ body {
     stroke-dashoffset: 0;
   }
 }
-
-
 
 @keyframes width-fade-in {
   0% {
