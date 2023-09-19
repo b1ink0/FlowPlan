@@ -16,7 +16,7 @@ function Home() {
       id="top_container"
       className="w-screen h-screen flex justify-center items-center relative overflow-hidden"
     >
-      <Navbar/>
+      <Navbar />
       <SideNavbar />
       {/* If currentFlowPlan is set then display tree */}
       {currentFlowPlan ? (
