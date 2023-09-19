@@ -21,8 +21,7 @@ export function StateProvider({ children }) {
     },
     treeConfig: {
       scaleMultiplier: 0.1,
-      // renderType: "verticalTree"
-      renderType: "horizontalTree"
+      renderType: localStorage.getItem("renderType") || "verticalTree",
     },
   });
 

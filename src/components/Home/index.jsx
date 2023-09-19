@@ -4,6 +4,7 @@ import DisplayTree from "../DisplayTree";
 import AddEditNode from "../AddEditNode";
 import { useStateContext } from "../../context/StateContext";
 import { useFunctions } from "../../hooks/useFunctions";
+import Navbar from "../Navbar";
 
 function Home() {
   // destructure state from context
@@ -15,6 +16,7 @@ function Home() {
       id="top_container"
       className="w-screen h-screen flex justify-center items-center relative overflow-hidden"
     >
+      <Navbar/>
       <SideNavbar />
       {/* If currentFlowPlan is set then display tree */}
       {currentFlowPlan ? (

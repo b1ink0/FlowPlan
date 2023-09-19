@@ -19,6 +19,7 @@ const DisplayTree = ({ node }) => {
         minScale={0.1}
         limitToBounds={false}
         wheel={{ step: treeConfig.scaleMultiplier }}
+        initialPositionX={treeConfig.renderType === "verticalTree" ? 0 : 300}
       >
         {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
           <>
@@ -132,9 +133,9 @@ const Svg = ({ settings, currentFlowPlan, update, move }) => {
       // currentFlowPlan?.root?.fp * nodeConfig.nodeWidthMargin gives width of half of tree so multiply by 2
       treeConfig.renderType === "verticalTree"
         ? // if tree is vertical then multiply by nodeConfig.nodeWidthMargin
-          currentFlowPlan?.root?.fp * nodeConfig.nodeWidthMargin * 1 +
+          currentFlowPlan?.root?.fp * nodeConfig.nodeWidthMargin * 2 -
           // subtract nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth to get width of svg without margin
-          (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) * 2
+          (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth)
         : // if tree is horizontal then multiply by nodeConfig.nodeWidth
           currentFlowPlan?.root?.fp * nodeConfig.nodeHeightMargin * 2 -
           // subtract nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth to get width of svg without margin
@@ -168,7 +169,7 @@ const Svg = ({ settings, currentFlowPlan, update, move }) => {
     // if currentFlowPlan is null then return
     if (!currentFlowPlan?.root) return;
     setSvgSize(handleResize());
-  }, [update]);
+  }, [update, treeConfig.renderType]);
 
   // hide paths after svgSize is set and show paths after 500ms
   // this is done to prevent paths from animating when tree is updated
@@ -242,7 +243,7 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
     if (treeConfig.renderType === "verticalTree") {
       adjust1 = (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2;
       // if tree is vertical then starting point is parentPosition.x + adjust1 and parentPosition.y
-      x1 = parentPosition.x + adjust1;
+      x1 = parentPosition.x - adjust1;
       y1 = parentPosition.y;
       x2 = parentPosition.x - adjust1;
       y2 = parentPosition.y + adjust2 - adjust1;
@@ -270,7 +271,11 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
   };
 
   // initialize path
-  const path = handlePath();
+  let path = handlePath();
+
+  useEffect(() => {
+    path = handlePath();
+  }, [treeConfig.renderType]);
 
   return (
     <>
@@ -307,8 +312,7 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
                 y:
                   treeConfig.renderType === "verticalTree"
                     ? // if tree is vertical then y is nodeConfig.nodeHeightMargin * 1 * level
-                      nodeConfig.nodeHeightMargin * 1 * level -
-                      nodeConfig.nodeHeightMargin
+                      nodeConfig.nodeHeight * 2 * level - nodeConfig.nodeHeight
                     : // else y is nodeConfig.nodeWidth + nodeConfig.nodeHeight * 1 * level
                       (nodeConfig.nodeWidth + nodeConfig.nodeHeight) *
                         1 *
@@ -334,14 +338,6 @@ const LivePath = ({ move }) => {
 
   const handlePath = () => {
     let { x1, y1, x2, y2 } = move.translate;
-    let tempX1 = x1,
-      tempY1 = y1,
-      tempX2 = x2,
-      tempY2 = y2;
-    x1 = tempY1;
-    y1 = tempX1;
-    x2 = tempY2;
-    y2 = tempX2;
 
     if (treeConfig.renderType === "verticalTree") {
       switch (true) {
@@ -366,6 +362,15 @@ const LivePath = ({ move }) => {
           }, ${x2} ${y2}`;
       }
     } else {
+      let tempX1 = x1,
+        tempY1 = y1,
+        tempX2 = x2,
+        tempY2 = y2;
+
+      x1 = tempY1;
+      y1 = tempX1;
+      x2 = tempY2;
+      y2 = tempX2;
       switch (true) {
         // when node is moved to same position
         case x1 === x2 && y1 === y2:
