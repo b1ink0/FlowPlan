@@ -2,7 +2,7 @@ import React from "react";
 import { useStateContext } from "../../context/StateContext";
 
 function Navbar() {
-  const { settings, setSettings } = useStateContext();
+  const { setMove, settings, setSettings } = useStateContext();
   const handleRenderType = (e) => {
     setSettings({
       ...settings,
@@ -11,6 +11,10 @@ function Navbar() {
         nodeHeightMargin: e.target.value === "verticalTree" ? 100 : 130,
       },
       treeConfig: { ...settings.treeConfig, renderType: e.target.value },
+    });
+    setMove({
+      enable: false,
+      node: null,
     });
     localStorage.setItem("renderType", e.target.value);
   };

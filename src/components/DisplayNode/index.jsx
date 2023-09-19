@@ -568,7 +568,13 @@ const ButtonsWrapper = ({
             <span
               className={`w-full h-full ${
                 // if node is expanded then rotate the button
-                node?.expanded ? "-rotate-90" : "rotate-90"
+                treeConfig.renderType === "verticalTree"
+                  ? node?.expanded
+                    ? "-rotate-90"
+                    : "rotate-90"
+                  : node?.expanded
+                  ? "-rotate-180"
+                  : "rotate-0"
               } flex justify-center items-center transition-all duration-300 transform group-hover:scale-125`}
             >
               <BackIcon />
