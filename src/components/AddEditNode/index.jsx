@@ -104,7 +104,7 @@ const AddEditNode = () => {
       className={`${
         // if addEditNode.show is true then show component else hide component
         !addEditNode.show ? "translate-x-full" : ""
-      } z-10 transition-all duration-200 w-[280px] grow-0 h-full absolute right-0 top-0 bg-gray-900/90 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-slate-700`}
+      } z-10 transition-all duration-200 w-[280px] grow-0 h-full absolute right-0 top-0 bg-[var(--bg-primary-translucent)] text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
       <OpenCloseButton
         addEditNode={addEditNode}
@@ -113,11 +113,11 @@ const AddEditNode = () => {
 
       {/* if addEditNode.location is null then show select a node else show addEditNode component */}
       {addEditNode.location === null ? (
-        <h1>Select A Node!</h1>
+        <h1 className="text-[var(--text-primary)]">Select A Node!</h1>
       ) : (
-        <div className="w-full h-full flex flex-col justify-center items-center p-3 px-2 gap-1 border-b-2 border-slate-700">
+        <div className="w-full h-full flex flex-col justify-center items-center p-3 px-2 gap-1 border-b-2 border-[var(--border-primary)]">
           {/* Header if addEditNode.type is add then show add node else show edit node */}
-          <h3 className="text-lg font-medium tracking-wider ">
+          <h3 className="text-[var(--text-primary)] text-lg font-medium tracking-wider ">
             {addEditNode.type === "add" ? "Add" : "Edit"} Node
           </h3>
 
@@ -142,7 +142,7 @@ const OpenCloseButton = ({ addEditNode, setAddEditNode }) => {
       className={`${
         // if addEditNode.show is true then rotate close open button else rotate backIcon 180deg
         addEditNode.show ? "" : "-translate-x-[24px] rotate-180"
-      } outline-none transition-all duration-200 w-6 h-12 rounded-r-full absolute left-0 z-10 bg-slate-700 flex justify-center items-center p-1 cursor-pointer`}
+      } outline-none transition-all duration-200 w-6 h-12 rounded-r-full absolute left-0 z-10 bg-[var(--bg-tertiary)] flex justify-center items-center p-1 cursor-pointer`}
       onClick={() => setAddEditNode((prev) => ({ ...prev, show: !prev.show }))}
     >
       <BackIcon />
@@ -159,7 +159,7 @@ const Form = ({ handleAddEditNode, addEditNode, inputRef, setNode, node }) => {
     >
       <div className="flex-1 flex flex-col justify-center items-center gap-2">
         <div className="w-full flex flex-col justify-center items-start gap-1">
-          <label htmlFor="title" className="text-sm font-medium">
+          <label htmlFor="title" className="text-[var(--text-primary)] text-sm font-medium">
             Title:
           </label>
           <input
@@ -169,13 +169,13 @@ const Form = ({ handleAddEditNode, addEditNode, inputRef, setNode, node }) => {
             onChange={(e) => setNode({ ...node, title: e.target.value })}
             placeholder="Enter note title..."
             required
-            className="w-full px-2 py-1 rounded-md bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
+            className="text-[var(--text-primary)] w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
           />
         </div>
       </div>
       <button
         type="submit"
-        className="h-fit bg-slate-800 py-1 rounded-md hover:bg-slate-700 transition-colors duration-300"
+        className="text-[var(--text-primary)] h-fit bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
       >
         {addEditNode.type === "add" ? "Add" : "Edit"}
       </button>
