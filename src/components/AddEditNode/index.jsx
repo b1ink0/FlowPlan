@@ -141,8 +141,8 @@ const OpenCloseButton = ({ addEditNode, setAddEditNode }) => {
     <button
       className={`${
         // if addEditNode.show is true then rotate close open button else rotate backIcon 180deg
-        addEditNode.show ? "" : "-translate-x-[24px] rotate-180"
-      } outline-none transition-all duration-200 w-6 h-12 rounded-r-full absolute left-0 z-10 bg-[var(--bg-tertiary)] flex justify-center items-center p-1 cursor-pointer`}
+        addEditNode.show ? "-translate-x-[24px] rotate-180" : "-translate-x-[24px] rotate-180"
+      } outline-none transition-all duration-200 w-6 h-12 rounded-r-full absolute left-0 z-10 bg-[var(--bg-tertiary)] flex justify-center items-center p-1 cursor-pointer border-r-2 border-t-2 border-b-2 border-[var(--border-primary)]`}
       onClick={() => setAddEditNode((prev) => ({ ...prev, show: !prev.show }))}
     >
       <BackIcon />

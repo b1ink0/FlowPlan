@@ -13,7 +13,7 @@ function ReorderNode({
   handleIfNodeIsChildOfMoveNode,
 }) {
   const { move, setMove, settings } = useStateContext();
-  const { treeConfig } = settings;
+  const { treeConfig, nodeConfig } = settings;
   const [reorder, setReorder] = useState({
     w: 0,
     x: 0,
@@ -62,14 +62,14 @@ function ReorderNode({
   const handleEnter = (x) => {
     setMove((prev) => ({
       ...prev,
-      color: "#19bdd6",
+      color: "var(--live-path-primary)",
       translate: {
         ...prev.translate,
         x2: x,
         y2:
           treeConfig.renderType === "verticalTree"
-            ? translate.y + 100
-            : translate.y + 200,
+            ? translate.y + nodeConfig.nodeHeight
+            : translate.y + nodeConfig.nodeWidth,
       },
     }));
   };
@@ -107,14 +107,24 @@ function ReorderNode({
           type={"first"}
           x={
             treeConfig.renderType === "verticalTree"
-              ? translate.x - 125 + rootNodeFp * 250 - 15
-              : translate.x - 125 + rootNodeFp * 130 + 15 * 3
+              ? translate.x -
+                125 +
+                rootNodeFp * nodeConfig.nodeWidthMargin -
+                (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2
+              : translate.x -
+                125 +
+                rootNodeFp * nodeConfig.nodeHeightMargin +
+                ((nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) / 2) * 3
           }
           height={
-            treeConfig.renderType === "verticalTree" ? `${100}px` : `${20}px`
+            treeConfig.renderType === "verticalTree"
+              ? `${nodeConfig.nodeHeight}px`
+              : `${20}px`
           }
           width={
-            treeConfig.renderType === "verticalTree" ? `${20}px` : `${220}px`
+            treeConfig.renderType === "verticalTree"
+              ? `${20}px`
+              : `${nodeConfig.nodeWidth}px`
           }
           transform={
             treeConfig.renderType === "verticalTree"
@@ -132,18 +142,22 @@ function ReorderNode({
           type={"middle"}
           x={
             treeConfig.renderType === "verticalTree"
-              ? reorder?.x + rootNodeFp * 250 - 15
-              : reorder?.x + rootNodeFp * 130 - 15
+              ? reorder?.x +
+                rootNodeFp * nodeConfig.nodeWidthMargin -
+                (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2
+              : reorder?.x +
+                rootNodeFp * nodeConfig.nodeHeightMargin -
+                (nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) / 2
           }
           height={
             treeConfig.renderType === "verticalTree"
-              ? `${100}px`
+              ? `${nodeConfig.nodeHeight}px`
               : `${reorder?.w}px`
           }
           width={
             treeConfig.renderType === "verticalTree"
               ? `${reorder?.w}px`
-              : `${220}px`
+              : `${nodeConfig.nodeWidth}px`
           }
           transform={
             treeConfig.renderType === "verticalTree"
@@ -160,14 +174,24 @@ function ReorderNode({
           type={"last"}
           x={
             treeConfig.renderType === "verticalTree"
-              ? translate.x + 125 + rootNodeFp * 250 - 15
-              : translate.x + 125 + rootNodeFp * 130 - 15 * 5
+              ? translate.x +
+                125 +
+                rootNodeFp * nodeConfig.nodeWidthMargin -
+                (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2
+              : translate.x +
+                125 +
+                rootNodeFp * nodeConfig.nodeHeightMargin -
+                ((nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) / 2) * 5
           }
           height={
-            treeConfig.renderType === "verticalTree" ? `${100}px` : `${20}px`
+            treeConfig.renderType === "verticalTree"
+              ? `${nodeConfig.nodeHeight}px`
+              : `${20}px`
           }
           width={
-            treeConfig.renderType === "verticalTree" ? `${20}px` : `${220}px`
+            treeConfig.renderType === "verticalTree"
+              ? `${20}px`
+              : `${nodeConfig.nodeWidth}px`
           }
           transform={
             treeConfig.renderType === "verticalTree"
@@ -185,7 +209,7 @@ const Child = ({ x, width, height, transform, handles, type }) => {
   const { handleNode, handleEnter, handleLeave } = handles;
   return (
     <div
-      className="absolute rounded-md border-2 border-green-600/40 overflow-hidden"
+      className="absolute rounded-md border-2 border-[var(--border-secondary)] overflow-hidden"
       style={{
         width: width,
         height: height,
@@ -193,7 +217,7 @@ const Child = ({ x, width, height, transform, handles, type }) => {
       }}
     >
       <div
-        className={`w-full h-full group opacity-0 hover:opacity-100 transition-opacity duration-300  absolute top-0 left-0 bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2 hover:cursor-pointer`}
+        className={`w-full h-full group opacity-0 hover:opacity-100 transition-opacity duration-300  absolute top-0 left-0 bg-[var(--bg-primary-translucent)] z-10 flex flex-col justify-center items-center gap-3 p-2 hover:cursor-pointer`}
         onMouseEnter={() => handleEnter(x)}
         onMouseLeave={() => handleLeave()}
         onClick={() => handleNode("reorder", type)}

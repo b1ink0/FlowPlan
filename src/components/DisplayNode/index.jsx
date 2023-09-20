@@ -236,7 +236,7 @@ function Node({
             move?.node &&
             // check if node alloed to move to current node
             (handleIfNodeIsParentOfMoveNode()
-              ? "neon-red-border"
+              ? "neon-border-secondary"
               : "neon-border")
           } overflow-hidden flex flex-col justify-between items-center border-2 border-[var(--border-primary)] bg-[var(--bg-quaternary)] text-gray-200 rounded-md gap-1`}
           // set node width and height from settings
@@ -268,6 +268,7 @@ function Node({
             {/* Delete Menu*/}
             {deleteMenu && (
               <DeleteMenu
+                node={node}
                 handleNode={handleNode}
                 setDeleteMenu={setDeleteMenu}
               />
@@ -355,7 +356,9 @@ const MoveNodeOverlay = ({
     // initlize variables
     let color, x2, y2;
     // set color and translate according to the node
-    color = handleIfNodeIsParentOfMoveNode() ? "#ff0000" : "#19bdd6";
+    color = handleIfNodeIsParentOfMoveNode()
+      ? "var(--live-path-secondary)"
+      : "var(--live-path-primary)";
     // x coordinate of the node for live path
     x2 =
       treeConfig.renderType === "verticalTree"
@@ -409,12 +412,12 @@ const MoveNodeOverlay = ({
       {move.node.id === node.id ? (
         <div
           onClick={handleResetMove}
-          className="w-full h-full absolute top-0 left-0 bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2 hover:cursor-pointer"
+          className="w-full h-full absolute top-0 left-0 bg-[var(--bg-primary-translucent)] z-10 flex flex-col justify-center items-center gap-3 p-2 hover:cursor-pointer"
         >
           <div className="w-max-[250px] p-2 rounded-md h-max-[150px] flex flex-col justify-center items-center gap-3">
             <div className="w-full flex flex-col justify-between items-center gap-2 hover:cursor-pointer">
               <CloseIcon
-                stylePath={{ fill: "#15b952" }}
+                stylePath={{ fill: "var(--live-path-primary)" }}
                 styleSvg={{ rotate: "45deg" }}
               />
             </div>
@@ -425,7 +428,7 @@ const MoveNodeOverlay = ({
         <div
           onMouseEnter={handleOnEnter}
           onMouseLeave={handleOnLeave}
-          className={`w-full h-full group opacity-0 hover:opacity-100 transition-opacity duration-300  absolute top-0 left-0 bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2 ${
+          className={`w-full h-full group opacity-0 hover:opacity-100 transition-opacity duration-300  absolute top-0 left-0 bg-[var(--bg-primary-translucent)] z-10 flex flex-col justify-center items-center gap-3 p-2 ${
             handleIfNodeIsParentOfMoveNode()
               ? "hover:cursor-not-allowed"
               : "hover:cursor-pointer"
@@ -441,20 +444,20 @@ const MoveNodeOverlay = ({
 };
 
 // Delete Menu
-const DeleteMenu = ({ handleNode, setDeleteMenu }) => {
+const DeleteMenu = ({ node, handleNode, setDeleteMenu }) => {
   return (
-    <div className="spread absolute w-full h-full bg-black/80 z-10 flex flex-col justify-center items-center gap-3 p-2">
-      <div className="w-max-[250px] p-2 bg-[var(--bg-quaternary)] rounded-md h-max-[150px] flex flex-col justify-center items-center gap-2">
+    <div className="spread absolute w-full h-full z-10 flex flex-col justify-center items-center gap-3">
+      <div className="w-full h-full p-2 bg-[var(--bg-quaternary)] flex flex-col justify-center items-center gap-2">
         {/* This button will delete the node without its children */}
-        <div className="w-full flex justify-between items-center">
+        <div className="w-full flex justify-between items-center rounded-md">
           <button
             // delete node without its children
             onClick={() => handleNode("delete")}
             title="Deleting a node will make its children become children of the node's parent."
             className="w-full h-6 px-2 flex justify-center items-center relative text-xs bg-[var(--bg-tertiary)] py-1 rounded-sm hover:bg-red-500 transition-colors duration-300"
           >
-            <h3 className="text-xs whitespace-nowrap w-full text-start">
-              Delete Only Node
+            <h3 className="text-[var(--text-primary)] text-xs whitespace-nowrap w-full text-start">
+              Delete Only Current Node
             </h3>
             <div className="w-8 h-4">
               <DeleteIcon />
@@ -462,24 +465,26 @@ const DeleteMenu = ({ handleNode, setDeleteMenu }) => {
           </button>
         </div>
         {/* This button will delete the node with its children */}
-        <div className="w-full flex justify-between items-center">
-          <button
-            // delete node with its children
-            onClick={() => handleNode("deleteAll")}
-            className="w-full h-6 px-2 flex justify-between items-center relative text-xs bg-[var(--bg-tertiary)] py-1 rounded-sm hover:bg-red-500 transition-colors duration-300"
-          >
-            <h3 className="text-xs whitespace-nowrap text-start w-full">
-              Delete Node & Its Children
-            </h3>
-            <div className="w-8 h-4">
-              <DeleteIcon />
-            </div>
-          </button>
-        </div>
+        {node.children?.length > 0 && (
+          <div className="w-full flex justify-between items-center rounded-md">
+            <button
+              // delete node with its children
+              onClick={() => handleNode("deleteAll")}
+              className="text-[var(--text-primary)] w-full h-6 px-2 flex justify-between items-center relative text-xs bg-[var(--bg-tertiary)] py-1 rounded-sm hover:bg-red-500 transition-colors duration-300"
+            >
+              <h3 className="text-xs whitespace-nowrap text-start w-full">
+                Delete Node & Its Children
+              </h3>
+              <div className="w-8 h-4">
+                <DeleteIcon />
+              </div>
+            </button>
+          </div>
+        )}
         {/* This button will cancel the delete menu */}
         <button
           onClick={() => setDeleteMenu(false)}
-          className="w-full h-5 group flex justify-center items-center relative text-xs bg-[var(--bg-tertiary)] py-1 px-2 rounded-sm hover:bg-green-700 transition-colors duration-300"
+          className="text-[var(--text-primary)] w-full h-5 group flex justify-center items-center relative text-xs bg-[var(--bg-tertiary)] py-1 px-2 hover:bg-green-700 transition-colors duration-300 rounded-md"
         >
           Cancel
         </button>
@@ -530,7 +535,7 @@ const ButtonsWrapper = ({
       enable: true,
       node: node,
       parent: parent,
-      color: "#19bdd6",
+      color: "var(--live-path-primary)",
       location: location,
       translate: tempTranslate,
     });
@@ -543,14 +548,14 @@ const ButtonsWrapper = ({
       <button
         className={`${
           location.length === 0 ? "cursor-not-allowed" : "cursor-pointer"
-        } w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-cyan-600 transition-colors duration-300`}
+        } w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-move)] transition-colors duration-300`}
         onClick={handleInitMove}
       >
         <MoveIcon />
       </button>
       {/* Add Node Button */}
       <button
-        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-purple-600 transition-colors duration-300"
+        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
         onClick={() => handleNode("add")}
       >
         <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-[3px] rounded-md h-4 bg-[var(--logo-primary)]"></span>
@@ -562,7 +567,7 @@ const ButtonsWrapper = ({
         node?.children?.length > 0 && (
           //  then show expand node button
           <button
-            className="w-8 h-8 group text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-blue-600 transition-colors duration-300"
+            className="w-8 h-8 group text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-expand)] transition-colors duration-300"
             onClick={() => handleExpanded(node)}
           >
             <span
@@ -584,14 +589,14 @@ const ButtonsWrapper = ({
       }
       {/* Edit Node Button */}
       <button
-        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-green-700 transition-colors duration-300"
+        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
         onClick={() => handleNode("edit")}
       >
         <EditBtnIcon />
       </button>
       {/* Delete Node Button */}
       <button
-        className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-red-500 transition-colors duration-300"
+        className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
         onClick={() => setDeleteMenu(true)}
       >
         <DeleteIcon />

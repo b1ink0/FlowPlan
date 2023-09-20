@@ -24,7 +24,7 @@ function Navbar() {
   return (
     <div className="z-10 absolute top-2 right-0 rounded-sm w-fit h-10 text-gray-200 flex justify-center items-center gap-3 px-3 py-2">
       <button
-        className="w-fit h-8 rounded-md bg-[var(--bg-quaternary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
+        className="w-fit h-8 rounded-md bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
         onClick={toggleColorScheme}
       >
         <ThemeIcon />
@@ -32,16 +32,16 @@ function Navbar() {
       <select
         value={settings.treeConfig.renderType}
         onChange={handleRenderType}
-        className="text-[var(--text-primary)] w-fit h-8 rounded-md bg-[var(--bg-quaternary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
+        className="text-[var(--text-primary)] w-fit h-8 rounded-md bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
       >
         <option
-          className="text-[var(--text-primary)] bg-[var(--bg-quaternary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
+          className="text-[var(--text-primary)] bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
           value="verticalTree"
         >
           Vertical Tree
         </option>
         <option
-          className="text-[var(--text-primary)] bg-[var(--bg-quaternary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
+          className="text-[var(--text-primary)] bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
           value="horizontalTree"
         >
           Horizontal Tree
