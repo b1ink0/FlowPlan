@@ -382,6 +382,8 @@ const MoveNodeOverlay = ({
         ...move.translate,
         x2: x2,
         y2: y2,
+        x3: null,
+        y3: null,
       },
     });
   };
@@ -393,6 +395,8 @@ const MoveNodeOverlay = ({
       ...move.translate,
       x2: move.translate.x1,
       y2: move.translate.y1,
+      x3: null,
+      y3: null,
     };
     setMove({
       ...move,
