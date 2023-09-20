@@ -206,6 +206,7 @@ function Node({
       {/* Reorder Helper */}
       <ReorderNode
         handleNode={handleNode}
+        ptranslate={ptranslate}
         translate={translate}
         rootNodeFp={rootNodeFp}
         location={location}
