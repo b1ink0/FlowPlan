@@ -8,6 +8,7 @@ function ReorderNode({
   node,
   parent,
   handleNode,
+  ptranslate,
   translate,
   rootNodeFp,
   handleIfNodeIsChildOfMoveNode,
@@ -63,6 +64,7 @@ function ReorderNode({
     setMove((prev) => ({
       ...prev,
       color: "var(--live-path-primary)",
+      rootNodeFp: rootNodeFp,
       translate: {
         ...prev.translate,
         x2: x,
@@ -70,6 +72,8 @@ function ReorderNode({
           treeConfig.renderType === "verticalTree"
             ? translate.y + nodeConfig.nodeHeight
             : translate.y + nodeConfig.nodeWidth,
+        x3: ptranslate.x,
+        y3: ptranslate.y,
       },
     }));
   };
@@ -80,6 +84,8 @@ function ReorderNode({
         ...prev.translate,
         x2: prev.translate.x1,
         y2: prev.translate.y1,
+        x3: null,
+        y3: null,
       },
     }));
   };

@@ -332,9 +332,10 @@ const LivePath = ({ move }) => {
   // destructure state from context
   const { settings } = useStateContext();
   // destructure node configuration from settings
-  const { treeConfig } = settings;
+  const { treeConfig, nodeConfig } = settings;
   // local state
   const [path, setPath] = useState("");
+  const [parentPath, setParentPath] = useState("");
 
   const handlePath = () => {
     let { x1, y1, x2, y2 } = move.translate;
@@ -395,11 +396,54 @@ const LivePath = ({ move }) => {
     }
   };
 
+  // calculate parent path for live node when hover over reordering node
+  const handleParentPath = () => {
+    // if move.translate is not set then return
+    if (move?.translate?.x3 === null) return "";
+    // destructure move.translate
+    let { x2, y2, x3, y3 } = move.translate;
+    // local variables
+    let x4, y4, x5, y5, x6, y6, x7, y7;
+    let adjust1, adjust2, adjust3;
+    // seting adjust2 to nodeConfig.nodeHeightMargin
+    adjust2 = nodeConfig.nodeHeightMargin;
+    if (treeConfig.renderType === "verticalTree") {
+      adjust1 = (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2;
+      adjust3 = nodeConfig.nodeWidthMargin * move.rootNodeFp;
+
+      x4 = x3 + adjust3 - adjust1;
+      y4 = y3 + nodeConfig.nodeHeight;
+      x5 = x4;
+      y5 = y4 + adjust2 - adjust1;
+      x6 = x2;
+      y6 = y4;
+      x7 = x2;
+      y7 = y2 - nodeConfig.nodeHeight;
+    } else {
+      adjust1 = (nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) / 2;
+      adjust3 = nodeConfig.nodeHeightMargin * move.rootNodeFp;
+
+      y4 = x3 + adjust3 - adjust1;
+      x4 = y3 + nodeConfig.nodeWidth;
+      y5 = y4;
+      x5 = x4 + adjust2 - adjust1 * 4;
+      y6 = x2;
+      x6 = x4;
+      y7 = x2;
+      x7 = y2 - nodeConfig.nodeWidth;
+    }
+
+    return `M${x4} ${y4} C ${x5} ${y5}, ${x6} ${y6}, ${x7} ${y7}`;
+  };
+
   useEffect(() => {
     // if move.translate is not set then return
     if (!move?.translate) return;
+
     // calculate path
     setPath(handlePath());
+    // calulate parent path
+    setParentPath(handleParentPath());
   }, [move.translate]);
 
   if (path === "") return <></>;
@@ -426,6 +470,18 @@ const LivePath = ({ move }) => {
         strokeLinecap="round"
         fill="transparent"
       ></path>
+      {/* Parent path for reorder node */}
+      {parentPath !== "" && (
+        <path
+          id="curve"
+          d={parentPath}
+          style={{ stroke: move?.color }}
+          className="stroke-blue-600 fade-in-path opacity-0 transition-all duration-200"
+          strokeWidth="4"
+          strokeLinecap="round"
+          fill="transparent"
+        ></path>
+      )}
     </>
   );
 };
