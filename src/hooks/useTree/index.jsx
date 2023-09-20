@@ -6,6 +6,8 @@ function createNode(id, title, data = []) {
     data,
     expanded: true,
     children: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 }
 // Define functions for adding and removing child nodes from a parent node
@@ -22,6 +24,8 @@ function updateNode(node, title, data, expanded) {
   node.title = title || node.title;
   node.data = data || node.data;
   node.expanded = expanded || node.expanded;
+  // update updatedAt property if tile, data is updated
+  if (!expanded) node.updatedAt = new Date();
 }
 
 // Define a function for deleting a node

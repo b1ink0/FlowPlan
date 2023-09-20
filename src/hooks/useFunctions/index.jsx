@@ -15,11 +15,14 @@ export const useFunctions = () => {
   } = useStateContext();
 
   // function to handle update tree note
-  const handleUpdateIndexDB = async (refId, root) => {
-    await db.flowPlans.where("refId").equals(refId).modify({
-      updatedAt: new Date(),
-      root: root,
-    });
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
   };
 
   // function to handle delete node without its children
@@ -283,6 +286,8 @@ export const useFunctions = () => {
 
   // function to handle position calculation
   const handlePositionCalculation = (root) => {
+    // reseting number of levels
+    root.numberOfLevels = 1;
     handleNumberOfAllChildrenForThatParent(root, 1, root);
     handleFinalPositionCalculation(root, 0);
   };
@@ -294,7 +299,7 @@ export const useFunctions = () => {
     let root = currentFlowPlan.root;
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     // update tree note in indexedDB
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, false);
     // handle position calculation
     handlePositionCalculation(root);
     // update state
