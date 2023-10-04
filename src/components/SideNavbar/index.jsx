@@ -21,6 +21,7 @@ function SideNavbar() {
     setFlowPlans,
     currentFlowPlan,
     setCurrentFlowPlan,
+    setAddEditNode,
   } = useStateContext();
   // destructure functions from custom hook
   const {
@@ -85,6 +86,11 @@ function SideNavbar() {
         enable: false,
         node: null,
       }));
+      setAddEditNode({
+        show: false,
+        location: null,
+        type: "add",
+      });
     } catch (error) {
       console.error(error);
     }
@@ -166,7 +172,9 @@ function SideNavbar() {
 
       {/* SideNavbar header */}
       <div className="w-full flex flex-col justify-center items-center p-3 px-2 gap-1 border-b-2 border-[var(--border-primary)]">
-        <h3 className="text-[var(--text-primary)] text-lg font-medium tracking-wider">FlowPlan</h3>
+        <h3 className="text-[var(--text-primary)] text-lg font-medium tracking-wider">
+          FlowPlan
+        </h3>
         <Form
           handles={{ handleAddNewNote, handleEditNote }}
           editNote={editNote}
@@ -230,7 +238,10 @@ function SideNavbar() {
             )}
 
             {/* Plan title */}
-            <h4 title={flowPlan?.title} className="text-[var(--text-primary)] truncate">
+            <h4
+              title={flowPlan?.title}
+              className="text-[var(--text-primary)] truncate"
+            >
               {flowPlan?.title}
             </h4>
 
@@ -351,7 +362,9 @@ const ImportExport = ({ handleImportFlowPlan, setExportSelect }) => {
   return (
     <div className="w-full p-3 px-2 h-fit flex gap-2">
       <div className="relative w-full flex justify-center items-center cursor-pointer flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300">
-        <span className="text-[var(--text-primary)] cursor-pointer">Import</span>
+        <span className="text-[var(--text-primary)] cursor-pointer">
+          Import
+        </span>
         <input
           type="file"
           className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
@@ -456,7 +469,9 @@ const Checkbox = ({ selected, flowPlan }) => {
     <div className="w-5 h-5 flex justify-center items-center">
       <span
         className={`${
-          selected?.includes(flowPlan?.refId) ? "bg-[var(--text-secondary)]" : "bg-[var(--bg-primary)]"
+          selected?.includes(flowPlan?.refId)
+            ? "bg-[var(--text-secondary)]"
+            : "bg-[var(--bg-primary)]"
         } w-3 h-3 rounded-full transition-all duration-200`}
       ></span>
     </div>

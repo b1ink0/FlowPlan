@@ -249,7 +249,24 @@ function Node({
           {/* Node Body */}
           <div className="w-full h-full flex flex-col justify-between items-center">
             {/* Node Title */}
-            <h3 className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2 hover:bg-[var(--bg-tertiary)] transition-colors duration-300 cursor-pointer">
+            <h3
+              style={{
+                fontSize: `${node?.config?.titleConfig?.fontSize}px`,
+                textDecoration: `${
+                  node?.config?.titleConfig?.strickthrough
+                    ? "line-through"
+                    : "none"
+                }`,
+                fontStyle: `${
+                  node?.config?.titleConfig?.italic ? "italic" : "normal"
+                }`,
+                fontWeight: `${
+                  node?.config?.titleConfig?.bold ? "bold" : "normal"
+                }`,
+                color: `${node?.config?.titleConfig?.color}`,
+              }}
+              className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2 hover:bg-[var(--bg-tertiary)] transition-colors duration-300 cursor-pointer"
+            >
               {node?.title}
             </h3>
             {/* Move Node Overlay When Moving Node */}

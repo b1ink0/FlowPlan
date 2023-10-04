@@ -1,9 +1,10 @@
 // Define a function for creating a new node
-function createNode(id, title, data = []) {
+function createNode(id, title, data = [], config = {}) {
   return {
     id,
     title,
     data,
+    config,
     expanded: true,
     children: [],
     createdAt: new Date(),
@@ -20,10 +21,11 @@ function removeChild(parent, child) {
 }
 
 // Define a function for updating a node's properties
-function updateNode(node, title, data, expanded) {
+function updateNode(node, title, data, expanded, config) {
   node.title = title || node.title;
   node.data = data || node.data;
   node.expanded = expanded || node.expanded;
+  node.config = config || node.config;
   // update updatedAt property if tile, data is updated
   if (!expanded) node.updatedAt = new Date();
 }
