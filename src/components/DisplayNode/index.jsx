@@ -244,7 +244,17 @@ function Node({
           style={{
             width: nodeConfig.nodeWidth + "px",
             height: nodeConfig.nodeHeight + "px",
+            background: node.config?.nodeConfig?.backgroundColor,
+            borderColor: node.config?.nodeConfig?.borderColor,
           }}
+          ref={(n) =>
+            n?.style?.setProperty(
+              "opacity",
+              // "0.5",
+              `${node?.config?.nodeConfig?.opacity / 100}`,
+              "important"
+            )
+          }
         >
           {/* Node Body */}
           <div className="w-full h-full flex flex-col justify-between items-center">
@@ -264,8 +274,9 @@ function Node({
                   node?.config?.titleConfig?.bold ? "bold" : "normal"
                 }`,
                 color: `${node?.config?.titleConfig?.color}`,
+                borderColor: `${node?.config?.nodeConfig?.borderColor}`,
               }}
-              className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2 hover:bg-[var(--bg-tertiary)] transition-colors duration-300 cursor-pointer"
+              className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
             >
               {node?.title}
             </h3>
@@ -572,6 +583,9 @@ const ButtonsWrapper = ({
           location.length === 0 ? "cursor-not-allowed" : "cursor-pointer"
         } w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-move)] transition-colors duration-300`}
         onClick={handleInitMove}
+        style={{
+          background: node?.config?.nodeConfig?.buttonColor,
+        }}
       >
         <MoveIcon />
       </button>
@@ -579,6 +593,9 @@ const ButtonsWrapper = ({
       <button
         className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
         onClick={() => handleNode("add")}
+        style={{
+          background: node?.config?.nodeConfig?.buttonColor,
+        }}
       >
         <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-[3px] rounded-md h-4 bg-[var(--logo-primary)]"></span>
         <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-4 rounded-md h-[3px] bg-[var(--logo-primary)]"></span>
@@ -591,6 +608,9 @@ const ButtonsWrapper = ({
           <button
             className="w-8 h-8 group text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-expand)] transition-colors duration-300"
             onClick={() => handleExpanded(node)}
+            style={{
+              background: node?.config?.nodeConfig?.buttonColor,
+            }}
           >
             <span
               className={`w-full h-full ${
@@ -613,6 +633,9 @@ const ButtonsWrapper = ({
       <button
         className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
         onClick={() => handleNode("edit")}
+        style={{
+          background: node?.config?.nodeConfig?.buttonColor,
+        }}
       >
         <EditBtnIcon />
       </button>
@@ -620,6 +643,9 @@ const ButtonsWrapper = ({
       <button
         className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
         onClick={() => setDeleteMenu(true)}
+        style={{
+          background: node?.config?.nodeConfig?.buttonColor,
+        }}
       >
         <DeleteIcon />
       </button>

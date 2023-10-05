@@ -9,10 +9,6 @@ function Navbar() {
   const handleRenderType = (e) => {
     setSettings({
       ...settings,
-      nodeConfig: {
-        ...settings.nodeConfig,
-        nodeHeightMargin: e.target.value === "verticalTree" ? 100 : 130,
-      },
       treeConfig: { ...settings.treeConfig, renderType: e.target.value },
     });
     setMove({

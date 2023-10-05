@@ -62,14 +62,14 @@ export function StateProvider({ children }) {
       strickthrough: false,
       italic: false,
       bold: false,
-      color: "#e5e7eb",
+      color: "var(--text-primary)",
     },
     nodeConfig: {
-      backgroundColor: "",
-      borderColor: "",
-      buttonColor: "",
-      pathColor: "",
-      opacity: "",
+      backgroundColor: "var(--bg-quaternary)",
+      borderColor: "var(--border-primary)",
+      buttonColor: "var(--btn-secondary)",
+      pathColor: "var(--btn-secondary)",
+      opacity: 100,
     },
   };
   // values contains all the states and functions to update the states
