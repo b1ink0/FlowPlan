@@ -246,11 +246,11 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
       x1 = parentPosition.x - adjust1;
       y1 = parentPosition.y;
       x2 = parentPosition.x - adjust1;
-      y2 = parentPosition.y + adjust2 - adjust1;
+      y2 = parentPosition.y + adjust2 - adjust1 * 2 ;
       x3 = node?.fp * nodeConfig.nodeWidthMargin - adjust1;
-      y3 = parentPosition.y;
-      x4 = node?.fp * nodeConfig.nodeWidthMargin - adjust1;
-      y4 = parentPosition.y + adjust2 + adjust1 * 2;
+      y3 = parentPosition.y + adjust1 * 2;
+      x4 = node?.fp * nodeConfig.nodeWidthMargin - adjust1 ;
+      y4 = parentPosition.y + adjust2 - adjust1 * 2 ;
     } else {
       adjust1 = (nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) / 2;
       // else starting point is parentPosition.x - adjust1 and parentPosition.y + adjust1 * 2
@@ -284,10 +284,19 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
         <path
           id="curve"
           d={path}
+          className={`fade-in-path opacity-0 stroke-current text-[var(--path-primary)] duration-500 delay-1000`}
           style={{
             transition: "all 0.5s ease-in-out",
+            color: node?.config?.nodeConfig?.pathColor,
           }}
-          className={`fade-in-path opacity-0 stroke-current text-[var(--path-primary)] duration-500 delay-1000`}
+          ref={(n) =>
+            n?.style?.setProperty(
+              "opacity",
+              // "0.5",
+              `${node?.config?.nodeConfig?.opacity / 100}`,
+              "important"
+            )
+          }
           strokeWidth="4"
           strokeLinecap="round"
           fill="transparent"
