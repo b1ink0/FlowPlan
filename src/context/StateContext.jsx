@@ -56,6 +56,22 @@ export function StateProvider({ children }) {
   // animation state contains the information to animate the tree
   const [animation, setAnimation] = useState(true);
 
+  const defaultNodeConfig = {
+    titleConfig: {
+      fontSize: 24,
+      strickthrough: false,
+      italic: false,
+      bold: false,
+      color: "var(--text-primary)",
+    },
+    nodeConfig: {
+      backgroundColor: "var(--bg-quaternary)",
+      borderColor: "var(--border-primary)",
+      buttonColor: "var(--btn-secondary)",
+      pathColor: "var(--btn-secondary)",
+      opacity: 100,
+    },
+  };
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -74,6 +90,7 @@ export function StateProvider({ children }) {
     setMove,
     animation,
     setAnimation,
+    defaultNodeConfig,
   };
   return (
     // Providing all the states and functions to update the states
