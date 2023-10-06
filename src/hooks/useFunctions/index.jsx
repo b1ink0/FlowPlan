@@ -1,7 +1,7 @@
 import { v4 } from "uuid";
 import { useStateContext } from "../../context/StateContext";
 import { deleteNode, moveNode, removeChild, reorderNode } from "../useTree";
-
+import { get_position } from "@rsw/jsonp";
 export const useFunctions = () => {
   // destructure state from context
   const {
@@ -285,11 +285,19 @@ export const useFunctions = () => {
   };
 
   // function to handle position calculation
-  const handlePositionCalculation = (root) => {
+  const handlePositionCalculation = async (root) => {
     // reseting number of levels
     root.numberOfLevels = 1;
-    handleNumberOfAllChildrenForThatParent(root, 1, root);
-    handleFinalPositionCalculation(root, 0);
+    try {
+      if (!currentFlowPlan) throw new Error("No currentFlowPlan");
+      let newRoot = await get_position(JSON.stringify(root));
+      newRoot = JSON.parse(newRoot);
+      setCurrentFlowPlan((prev) => ({ ...prev, root: newRoot }));
+    } catch (e) {
+      console.log("Fallback: ", e);
+      handleNumberOfAllChildrenForThatParent(root, 1, root);
+      handleFinalPositionCalculation(root, 0);
+    }
   };
 
   // function to handle expanded

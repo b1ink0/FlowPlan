@@ -113,7 +113,6 @@ const AddEditNode = () => {
         config: defaultNodeConfig,
       });
     }
-    console.log("run");
     // focus on input element after 200ms
     setTimeout(() => {
       inputRef?.current?.focus();
@@ -177,7 +176,6 @@ const OpenCloseButton = ({ addEditNode, setAddEditNode }) => {
 const Form = ({ handleAddEditNode, addEditNode, inputRef, setNode, node }) => {
   const [config, setConfig] = useState(null);
   useEffect(() => {
-    console.log("S", node.config);
     setConfig(node.config);
   }, [node.config]);
 
