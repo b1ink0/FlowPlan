@@ -3,7 +3,7 @@ import Dexie from "dexie";
 import Home from "./components/Home";
 import { useStateContext } from "./context/StateContext";
 import { useEffect } from "react";
-
+import init1 from "@rsw/jsonp"
 // Initialize Database
 const initializeDb = new Dexie("FlowPlan");
 // Create Database Schema
@@ -12,6 +12,7 @@ initializeDb.version(1).stores({
 });
 
 const App = () => {
+  // init1()
   const { setDb } = useStateContext();
   // Initialize Database on App Load
   useEffect(() => {
@@ -22,6 +23,7 @@ const App = () => {
       setDb(initDb);
     };
     init();
+    init1()
   }, []);
   return <Home />;
 };

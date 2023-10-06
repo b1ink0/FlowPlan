@@ -57,6 +57,7 @@ function SideNavbar() {
       updatedAt: new Date(),
     };
     await db?.flowPlans.add(newNote);
+    handleSetCurrentFlowPlan(newRefId);
     setNoteTitle("");
   };
 
