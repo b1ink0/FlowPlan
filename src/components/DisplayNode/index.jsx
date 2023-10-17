@@ -274,6 +274,7 @@ function Node({
                   node?.config?.titleConfig?.bold ? "bold" : "normal"
                 }`,
                 color: `${node?.config?.titleConfig?.color}`,
+                fontFamily: `${node?.config?.titleConfig?.fontFamily}`,
                 borderColor: `${node?.config?.nodeConfig?.borderColor}`,
               }}
               className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"

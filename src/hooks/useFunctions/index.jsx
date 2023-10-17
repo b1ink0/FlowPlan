@@ -305,7 +305,123 @@ export const useFunctions = () => {
     // update state
     setUpdate(update + 1);
   };
-
+  const handleGetValueFromProperty = (property) => {
+    try {
+      const rootStyle = getComputedStyle(document.documentElement);
+      property = property.replace("var(", "").replace(")", "");
+      return rootStyle.getPropertyValue(property);
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  };
+  const handleGetRandomColor = () => {
+    const colors = [
+      "#FF6633",
+      "#FFB399",
+      "#FF33FF",
+      "#FFFF99",
+      "#00B3E6",
+      "#E6B333",
+      "#3366E6",
+      "#999966",
+      "#99FF99",
+      "#B34D4D",
+      "#80B300",
+      "#809900",
+      "#E6B3B3",
+      "#6680B3",
+      "#66991A",
+      "#FF99E6",
+      "#CCFF1A",
+      "#FF1A66",
+      "#E6331A",
+      "#33FFCC",
+      "#66994D",
+      "#B366CC",
+      "#4D8000",
+      "#B33300",
+      "#CC80CC",
+      "#66664D",
+      "#991AFF",
+      "#E666FF",
+      "#4DB3FF",
+      "#1AB399",
+      "#E666B3",
+      "#33991A",
+      "#CC9999",
+      "#B3B31A",
+      "#00E680",
+      "#4D8066",
+      "#809980",
+      "#E6FF80",
+      "#1AFF33",
+      "#999933",
+      "#FF3380",
+      "#CCCC00",
+      "#66E64D",
+      "#4D80CC",
+      "#9900B3",
+      "#E64D66",
+      "#4DB380",
+      "#FF4D4D",
+      "#99E6E6",
+      "#6666FF",
+      "#993366",
+      "#FFFFCC",
+      "#CC6699",
+      "#66B2FF",
+      "#B2FF66",
+      "#FFCC00",
+      "#FF99CC",
+      "#FF6666",
+      "#66FF66",
+      "#CCFF00",
+      "#00FFCC",
+      "#CCFFCC",
+      "#FF6600",
+      "#66FFCC",
+      "#FF0066",
+      "#33FF66",
+      "#FFFF00",
+      "#00FF00",
+      "#00FFFF",
+      "#FF00FF",
+      "#FF0000",
+      "#00FF33",
+      "#FF9900",
+      "#6600FF",
+      "#FF3366",
+      "#66FFFF",
+      "#FF9933",
+      "#33FF99",
+      "#FF3300",
+      "#FFCC33",
+      "#9933FF",
+      "#66CCFF",
+      "#3366FF",
+      "#FF6699",
+      "#FFCC99",
+      "#66FF33",
+      "#99FF66",
+      "#FF6666",
+      "#FF9966",
+      "#66FF66",
+      "#66FF66",
+      "#66FF66",
+      "#66FF66",
+      "#66FF66",
+      "#66FF66",
+    ];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    // return randomColor;
+    const letters = "0123456789ABCDEF";
+    let color = "#";
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+  };
   // return functions
   return {
     handleDeleteNodeWithoutItsChildren,
@@ -318,5 +434,7 @@ export const useFunctions = () => {
     handleDeleteFlowPlan,
     handlePositionCalculation,
     handleExpanded,
+    handleGetValueFromProperty,
+    handleGetRandomColor,
   };
 };
