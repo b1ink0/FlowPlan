@@ -12,6 +12,15 @@ import BoldIcon from "../../assets/Icons/BoldIcon";
 import ColorIcon from "../../assets/Icons/ColorIcon";
 import InheritIcon from "../../assets/Icons/InheritIcon";
 import ResetToDefaultIcon from "../../assets/Icons/ResetToDefaultIcon";
+import useClickOutside from "../../hooks/useClickOutside";
+import FontIcon from "../../assets/Icons/FontIcon";
+import PreviewIcon from "../../assets/Icons/PreviewIcon";
+import MoveIcon from "../../assets/Icons/MoveIcon";
+import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
+import DeleteIcon from "../../assets/Icons/DeleteIcon";
+import RandomIcon from "../../assets/Icons/RandomIcon";
+import CopyIcon from "../../assets/Icons/CopyIcon";
+import PasteIcon from "../../assets/Icons/PasteIcon";
 
 const AddEditNode = () => {
   // destructuring state from context
@@ -34,6 +43,7 @@ const AddEditNode = () => {
     data: [],
     config: {},
   });
+  const [currentNodeConfig, setCurrentNodeConfig] = useState(null);
 
   // refence to input element
   const inputRef = useRef(null);
@@ -98,14 +108,18 @@ const AddEditNode = () => {
       addEditNode.location.forEach((index) => {
         parentNode = parentNode.children[index];
       });
+
+      const config =
+        parentNode?.config && Object.keys(parentNode?.config)?.length
+          ? parentNode?.config
+          : defaultNodeConfig;
+
       setNode({
         title: parentNode.title,
         data: parentNode.data,
-        config:
-          parentNode?.config && Object.keys(parentNode?.config)?.length
-            ? parentNode?.config
-            : defaultNodeConfig,
+        config: config,
       });
+      setCurrentNodeConfig(structuredClone(config));
     } else {
       setNode({
         title: "",
@@ -149,6 +163,7 @@ const AddEditNode = () => {
             inputRef={inputRef}
             setNode={setNode}
             node={node}
+            currentNodeConfig={currentNodeConfig}
           />
         </div>
       )}
@@ -174,7 +189,14 @@ const OpenCloseButton = ({ addEditNode, setAddEditNode }) => {
 };
 
 // Other components
-const Form = ({ handleAddEditNode, addEditNode, inputRef, setNode, node }) => {
+const Form = ({
+  handleAddEditNode,
+  addEditNode,
+  inputRef,
+  setNode,
+  node,
+  currentNodeConfig,
+}) => {
   const [config, setConfig] = useState(null);
   useEffect(() => {
     console.log("S", node.config);
@@ -183,27 +205,30 @@ const Form = ({ handleAddEditNode, addEditNode, inputRef, setNode, node }) => {
 
   return (
     <form
-      className="w-full flex-1 flex flex-col mt-1 gap-2 py-3"
+      className="w-full h-[calc(100%_-_46px)] flex flex-col justify-between gap-2 py-1"
       onSubmit={handleAddEditNode}
     >
-      <div className="flex-1 flex flex-col justify-start items-center gap-2">
+      <div className="w-full overflow-x-auto flex flex-col justify-start items-center gap-2">
         <InputTitle
           node={node}
           setNode={setNode}
           inputRef={inputRef}
           config={config}
         />
-        <NodeConfig node={node} setNode={setNode} config={config} />
+        <NodeConfig
+          node={node}
+          setNode={setNode}
+          config={config}
+          currentNodeConfig={currentNodeConfig}
+        />
       </div>
-      <div className="w-full h-full px-2">
+      <div className="w-full flex-grow flex flex-col gap-2 px-2">
         <button
-          className="cursor-pointer w-full h-full rounded-md border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+          className="cursor-pointer w-full flex-grow rounded-md border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
           type="button"
         >
           Click To Add More Fields!
         </button>
-      </div>
-      <div className="w-full flex px-2">
         <button
           type="submit"
           className="w-full text-[var(--text-primary)] h-fit bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
@@ -216,6 +241,9 @@ const Form = ({ handleAddEditNode, addEditNode, inputRef, setNode, node }) => {
 };
 
 const InputTitle = ({ node, setNode, inputRef, config }) => {
+  const handleTitleChange = (e) => {
+    setNode({ ...node, title: e.target.value });
+  };
   return (
     <div className="w-full flex flex-col justify-center items-start gap-1 px-2">
       <label
@@ -228,7 +256,7 @@ const InputTitle = ({ node, setNode, inputRef, config }) => {
         ref={inputRef}
         type="text"
         value={node.title}
-        onChange={(e) => setNode({ ...node, title: e.target.value })}
+        onChange={handleTitleChange}
         placeholder="Enter note title..."
         required
         className="text-[var(--text-primary)] w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
@@ -239,6 +267,7 @@ const InputTitle = ({ node, setNode, inputRef, config }) => {
           }`,
           fontStyle: `${config?.titleConfig?.italic ? "italic" : "normal"}`,
           fontWeight: `${config?.titleConfig?.bold ? "bold" : "normal"}`,
+          fontFamily: `${config?.titleConfig?.fontFamily}`,
           color: `${config?.titleConfig?.color}`,
         }}
       />
@@ -248,8 +277,24 @@ const InputTitle = ({ node, setNode, inputRef, config }) => {
 };
 
 const InputTitleButtons = ({ config, node, setNode }) => {
-  const [colorActive, setColorActive] = useState(false);
-  const [fontSizeActive, setFontSizeActive] = useState(false);
+  const { defaultNodeConfig } = useStateContext();
+  const { handleGetRandomColor } = useFunctions();
+  const {
+    ref: fontSizeRef,
+    isActive: fontSizeActive,
+    setIsActive: setFontSizeActive,
+  } = useClickOutside(false);
+  const {
+    ref: colorRef,
+    isActive: colorActive,
+    setIsActive: setColorActive,
+  } = useClickOutside(false);
+  const {
+    ref: fontFamilyRef,
+    isActive: fontFamilyActive,
+    setIsActive: setFontFamilyActive,
+  } = useClickOutside(false);
+
   const fontSizes = [10, 12, 14, 16, 18, 20, 22, 24, 26];
   const colors = [
     "#e5e7eb",
@@ -258,6 +303,21 @@ const InputTitleButtons = ({ config, node, setNode }) => {
     "#a9f0d1",
     "#ffc100",
     "#2a9d8f",
+  ];
+  const fontFamilies = [
+    "Poppins",
+    "Monospace",
+    "Times",
+    "Courier New",
+    "Courier",
+    "Verdana",
+    "Georgia",
+    "Palatino",
+    "Garamond",
+    "Comic Sans MS",
+    "Trebuchet MS",
+    "Arial Black",
+    "Impact",
   ];
   const handleFontSizeClick = () => {
     setFontSizeActive((prev) => !prev);
@@ -347,6 +407,49 @@ const InputTitleButtons = ({ config, node, setNode }) => {
     });
   };
 
+  const handleFontFamilyClick = () => {
+    setFontFamilyActive((prev) => !prev);
+  };
+
+  const handleFontFamilytChange = (e) => {
+    e.stopPropagation();
+    setNode({
+      ...node,
+      config: {
+        ...config,
+        titleConfig: {
+          ...config.titleConfig,
+          fontFamily: e.target.value,
+        },
+      },
+    });
+    setFontFamilyActive(false);
+  };
+
+  const handleSetTitleColor = (color) => {
+    setNode({
+      ...node,
+      config: {
+        ...config,
+        titleConfig: {
+          ...config.titleConfig,
+          color: color,
+        },
+      },
+    });
+  };
+
+  const handleResetToDefaultTitleConfig = () => {
+    setNode({
+      ...node,
+      config: {
+        ...config,
+        titleConfig: {
+          ...defaultNodeConfig.titleConfig,
+        },
+      },
+    });
+  };
   return (
     <div className="w-full mt-1 flex justify-center items-center gap-2">
       <div className="relative">
@@ -361,7 +464,10 @@ const InputTitleButtons = ({ config, node, setNode }) => {
           </span>
         </button>
         {fontSizeActive && (
-          <div className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)]">
+          <div
+            ref={fontSizeRef}
+            className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+          >
             {fontSizes.map((fontSize) => (
               <label
                 key={`fontsize-id-${fontSize}`}
@@ -435,7 +541,6 @@ const InputTitleButtons = ({ config, node, setNode }) => {
           T
         </span>
       </button>
-
       <div className="relative">
         <button
           type="button"
@@ -451,7 +556,10 @@ const InputTitleButtons = ({ config, node, setNode }) => {
           ></span>
         </button>
         {colorActive && (
-          <div className="hide z-10 absolute flex flex-col items-center gap-1 w-8 top-9 p-1 rounded-md  bg-[var(--btn-secondary)] overflow-hidden">
+          <div
+            ref={colorRef}
+            className="hide z-10 absolute flex flex-col items-center gap-1 w-8 top-9 p-1 rounded-md  bg-[var(--btn-secondary)] overflow-hidden"
+          >
             {colors.map((color) => (
               <label
                 key={`color-id-${color}`}
@@ -461,7 +569,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
                 }}
               >
                 <input
-                  className="w-full h-full absolute opacity-0"
+                  className="w-full h-full absolute opacity-0 cursor-pointer"
                   type="radio"
                   value={color}
                   checked={config?.titleConfig?.color === color}
@@ -477,21 +585,85 @@ const InputTitleButtons = ({ config, node, setNode }) => {
               }}
             >
               <input
-                className="w-full h-full absolute opacity-0"
+                className="w-full h-full absolute opacity-0 cursor-pointer"
                 type="color"
                 onChange={handleActiveColorChange}
               />
             </label>
+            <label className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300">
+              <RandomIcon />
+              <button
+                type="button"
+                className="w-full h-full absolute opacity-0 cursor-pointer"
+                onClick={() => handleSetTitleColor(handleGetRandomColor())}
+              ></button>
+            </label>
           </div>
         )}
       </div>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={handleFontFamilyClick}
+          className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
+        >
+          <FontIcon />
+          <span
+            style={{
+              fontFamily: `${config?.titleConfig?.fontFamily}`,
+            }}
+            className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
+          >
+            Aa
+          </span>
+        </button>
+        {fontFamilyActive && (
+          <div
+            ref={fontFamilyRef}
+            className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+          >
+            {fontFamilies.map((fontFamily) => (
+              <label
+                key={`fontsize-id-${fontFamily}`}
+                className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                style={{
+                  fontFamily: `${fontFamily}`,
+                  backgroundColor: `${
+                    config?.titleConfig?.fontFamily === fontFamily
+                      ? "var(--btn-edit)"
+                      : ""
+                  }`,
+                }}
+              >
+                <input
+                  title={fontFamily}
+                  className="w-full h-full bg-blue-500 absolute opacity-0"
+                  type="radio"
+                  value={fontFamily}
+                  checked={config?.titleConfig?.fontFamily === fontFamily}
+                  onChange={handleFontFamilytChange}
+                />
+                Aa
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={handleResetToDefaultTitleConfig}
+        title="Reset To Default"
+        className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300 relative"
+      >
+        <ResetToDefaultIcon />
+      </button>
     </div>
   );
 };
 
-const NodeConfig = ({ node, setNode, config }) => {
+const NodeConfig = ({ node, setNode, config, currentNodeConfig }) => {
   return (
-    <div className="w-full flex flex-col justify-start items-center">
+    <div className="w-full flex flex-col justify-start items-center ">
       <h4
         className="text-[var(--text-primary)] text-sm font-medium 
       border-t-2 py-1 border-[var(--border-primary)] w-full text-center
@@ -500,6 +672,8 @@ const NodeConfig = ({ node, setNode, config }) => {
         Node Settings
       </h4>
       <div className="w-full flex flex-col justify-start items-start px-2">
+        <NodePreview node={node} setNode={setNode} config={config} />
+        <RandomColors node={node} setNode={setNode} config={config} />
         <ColorSelector
           config={config}
           node={node}
@@ -529,22 +703,197 @@ const NodeConfig = ({ node, setNode, config }) => {
           type={"pathColor"}
         />
         <OpacitySelector config={config} node={node} setNode={setNode} />
-        <MoreOptions config={config} node={node} setNode={setNode} />
+        <CopyPasteNodeConfig config={config} node={node} setNode={setNode} />
+        <MoreOptions
+          config={config}
+          node={node}
+          setNode={setNode}
+          currentNodeConfig={currentNodeConfig}
+        />
       </div>
+    </div>
+  );
+};
+const NodePreview = ({ node, setNode, config }) => {
+  const [showPreview, setShowPreview] = useState(false);
+  const handleShowPreview = () => {
+    setShowPreview((prev) => !prev);
+  };
+  return (
+    <div className="shrink-0 w-full flex flex-col justify-start items-center">
+      <button
+        type="button"
+        onClick={handleShowPreview}
+        className="w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium"
+      >
+        <span>Show Node Preview</span>
+        <span className="rounded-md inline-block w-8 h-5 cursor-pointer border border-[var(--border-primary)]">
+          <PreviewIcon />
+        </span>
+      </button>
+      {showPreview && (
+        <div className="duration-500 pb-1">
+          <div
+            className={`overflow-hidden flex flex-col justify-between items-center border-2 border-[var(--border-primary)] bg-[var(--bg-quaternary)] text-gray-200 rounded-md gap-1`}
+            // set node width and height from settings
+            style={{
+              width: 220 + "px",
+              height: 100 + "px",
+              background: node.config?.nodeConfig?.backgroundColor,
+              borderColor: node.config?.nodeConfig?.borderColor,
+            }}
+            ref={(n) =>
+              n?.style?.setProperty(
+                "opacity",
+                // "0.5",
+                `${node?.config?.nodeConfig?.opacity / 100}`,
+                "important"
+              )
+            }
+          >
+            {/* Node Body */}
+            <div className="w-full h-full flex flex-col justify-between items-center">
+              {/* Node Title */}
+              <h3
+                style={{
+                  fontSize: `${node?.config?.titleConfig?.fontSize}px`,
+                  textDecoration: `${
+                    node?.config?.titleConfig?.strickthrough
+                      ? "line-through"
+                      : "none"
+                  }`,
+                  fontStyle: `${
+                    node?.config?.titleConfig?.italic ? "italic" : "normal"
+                  }`,
+                  fontWeight: `${
+                    node?.config?.titleConfig?.bold ? "bold" : "normal"
+                  }`,
+                  color: `${node?.config?.titleConfig?.color}`,
+                  fontFamily: `${node?.config?.titleConfig?.fontFamily}`,
+                  borderColor: `${node?.config?.nodeConfig?.borderColor}`,
+                }}
+                className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
+              >
+                {node?.title}
+              </h3>
+              {/* Node Buttons */}
+              <ButtonsWrapper node={node} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const RandomColors = ({ node, setNode, config }) => {
+  const { handleGetRandomColor } = useFunctions();
+  const handleRandomColors = () => {
+    setNode({
+      ...node,
+      config: {
+        ...config,
+        nodeConfig: {
+          ...config.nodeConfig,
+          backgroundColor: handleGetRandomColor(),
+          borderColor: handleGetRandomColor(),
+          buttonColor: handleGetRandomColor(),
+          pathColor: handleGetRandomColor(),
+        },
+      },
+    });
+  };
+  return (
+    <div className="shrink-0 w-full flex justify-center items-center gap-2">
+      <button
+        type="button"
+        onClick={handleRandomColors}
+        className="w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium"
+      >
+        <span>Random Colors</span>
+        <span className="rounded-md inline-block w-8 h-5 cursor-pointer border border-[var(--border-primary)]">
+          <RandomIcon />
+        </span>
+      </button>
+    </div>
+  );
+};
+
+// Buttons For Node Component
+const ButtonsWrapper = ({ node }) => {
+  // function to handle move node
+
+  return (
+    // Buttons Wrapper
+    <div className="shrink-0 w-full flex justify-center items-center gap-2 p-2">
+      {/* Move Node Button */}
+      <button
+        className={`cursor-pointer w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-move)] transition-colors duration-300`}
+        style={{
+          background: node?.config?.nodeConfig?.buttonColor,
+        }}
+      >
+        <MoveIcon />
+      </button>
+      {/* Add Node Button */}
+      <button
+        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
+        style={{
+          background: node?.config?.nodeConfig?.buttonColor,
+        }}
+      >
+        <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-[3px] rounded-md h-4 bg-[var(--logo-primary)]"></span>
+        <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-4 rounded-md h-[3px] bg-[var(--logo-primary)]"></span>
+      </button>
+      {/* Expand Node Button */}
+      {
+        // check if node has children
+        node?.children?.length > 0 && (
+          //  then show expand node button
+          <button
+            className="w-8 h-8 group text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-expand)] transition-colors duration-300"
+            style={{
+              background: node?.config?.nodeConfig?.buttonColor,
+            }}
+          >
+            <span
+              className={`w-full h-full -rotate-90 flex justify-center items-center transition-all duration-300 transform group-hover:scale-125`}
+            >
+              <BackIcon />
+            </span>
+          </button>
+        )
+      }
+      {/* Edit Node Button */}
+      <button
+        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+        style={{
+          background: node?.config?.nodeConfig?.buttonColor,
+        }}
+      >
+        <EditBtnIcon />
+      </button>
+      {/* Delete Node Button */}
+      <button
+        className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+        style={{
+          background: node?.config?.nodeConfig?.buttonColor,
+        }}
+      >
+        <DeleteIcon />
+      </button>
     </div>
   );
 };
 
 const ColorSelector = ({ title, type, node, setNode, config }) => {
-  const [colorActive, setColorActive] = useState(false);
-  const colors = [
-    "#e5e7eb",
-    "#000000",
-    "#ff0000",
-    "#a9f0d1",
-    "#ffc100",
-    "#2a9d8f",
-  ];
+  const {
+    ref: colorRef,
+    isActive: colorActive,
+    setIsActive: setColorActive,
+  } = useClickOutside(false);
+  const { handleGetValueFromProperty, handleGetRandomColor } = useFunctions();
+  const colors = ["#e5e7eb", "#000000", "#ff0000", "#a9f0d1", "#ffc100"];
   const handleColorClick = () => {
     setColorActive((prev) => !prev);
   };
@@ -562,24 +911,44 @@ const ColorSelector = ({ title, type, node, setNode, config }) => {
     });
   };
 
+  const handleSetColor = (color) => {
+    setNode({
+      ...node,
+      config: {
+        ...config,
+        nodeConfig: {
+          ...config.nodeConfig,
+          [type]: color,
+        },
+      },
+    });
+  };
+
   return (
-    <div className="w-full flex flex-col">
+    <div className="shrink-0 w-full flex flex-col">
       <label
         htmlFor="title"
-        className="w-fu rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium  "
+        className="relative w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium  "
       >
-        {title}
         <button
           type="button"
+          onClick={handleColorClick}
+          className="absolute rounded-md w-full h-full cursor-pointer"
+        ></button>
+        {title}
+
+        <span
           style={{
             background: config?.nodeConfig ? config?.nodeConfig[type] : "",
           }}
-          onClick={handleColorClick}
           className="rounded-md inline-block w-8 h-4 cursor-pointer border border-[var(--border-primary)]"
-        ></button>
+        ></span>
       </label>
       {colorActive && (
-        <div className="relative flex justify-center items-center gap-1 w-full p-2 rounded-md  bg-[var(--btn-secondary)] mb-1">
+        <div
+          ref={colorRef}
+          className="relative flex justify-center items-center gap-1 w-full p-2 rounded-md  bg-[var(--btn-secondary)] mb-1"
+        >
           <span
             className="absolute w-3 h-3 rounded-full inline-block -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
             style={{
@@ -620,8 +989,21 @@ const ColorSelector = ({ title, type, node, setNode, config }) => {
             <input
               className="w-full h-full absolute opacity-0"
               type="color"
+              value={
+                config?.nodeConfig[type]?.includes("var")
+                  ? handleGetValueFromProperty(config?.nodeConfig[type])
+                  : config?.nodeConfig[type]
+              }
               onChange={handleColorChange}
             />
+          </label>
+          <label className="shrink-0 w-8 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300">
+            <RandomIcon />
+            <button
+              type="button"
+              className="w-full h-full absolute opacity-0"
+              onClick={() => handleSetColor(handleGetRandomColor())}
+            ></button>
           </label>
         </div>
       )}
@@ -629,7 +1011,11 @@ const ColorSelector = ({ title, type, node, setNode, config }) => {
   );
 };
 const OpacitySelector = ({ node, setNode, config }) => {
-  const [opacityActive, setOpacityActive] = useState(false);
+  const {
+    ref: opacityRef,
+    isActive: opacityActive,
+    setIsActive: setOpacityActive,
+  } = useClickOutside(false);
   const opacitys = [20, 30, 40, 50, 60, 70, 80, 90, 100];
   const handleOpacityClick = (e) => {
     e.stopPropagation();
@@ -650,24 +1036,30 @@ const OpacitySelector = ({ node, setNode, config }) => {
   };
 
   return (
-    <div className="w-full flex flex-col">
-      <label className="w-fu rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium">
+    <div className="shrink-0 w-full flex flex-col">
+      <label className="relative w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium">
         Opacity
         <button
           type="button"
+          onClick={handleOpacityClick}
+          className="absolute rounded-md w-full h-full cursor-pointer"
+        ></button>
+        <span
           style={{
             opacity: config?.nodeConfig
               ? config?.nodeConfig?.opacity / 100
               : "",
           }}
-          onClick={handleOpacityClick}
           className="rounded-md w-8 h-4 cursor-pointer"
         >
           {config?.nodeConfig?.opacity}%
-        </button>
+        </span>
       </label>
       {opacityActive && (
-        <div className="relative flex justify-center items-center gap-1 w-full p-2 rounded-md  bg-[var(--btn-secondary)] mb-1">
+        <div
+          ref={opacityRef}
+          className="relative flex justify-center items-center gap-1 w-full p-2 rounded-md  bg-[var(--btn-secondary)] mb-1"
+        >
           <span
             className="absolute w-3 h-3 rounded-full inline-block -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
             style={{
@@ -704,7 +1096,45 @@ const OpacitySelector = ({ node, setNode, config }) => {
     </div>
   );
 };
-const MoreOptions = ({ node, setNode, config }) => {
+
+const CopyPasteNodeConfig = ({ node, setNode, config }) => {
+  const { copyPasteNodeConfig, setCopyPasteNodeConfig } = useStateContext();
+  const handleCopyNodeConfig = () => {
+    setCopyPasteNodeConfig(config);
+  };
+  const handlePasteNodeConfig = () => {
+    setNode({
+      ...node,
+      config: copyPasteNodeConfig,
+    });
+  };
+  return (
+    <div className="shrink-0 w-full flex flex-col justify-center items-center gap-">
+      <button
+        type="button"
+        className="w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium"
+        onClick={handleCopyNodeConfig}
+      >
+        <span>Copy Node Settings</span>
+        <span className="rounded-md inline-block w-8 h-5 cursor-pointer border border-[var(--border-primary)]">
+          <CopyIcon />
+        </span>
+      </button>
+      <button
+        type="button"
+        className="w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium"
+        onClick={handlePasteNodeConfig}
+      >
+        <span>Paste Node Settings</span>
+        <span className="rounded-md inline-block w-8 h-5 cursor-pointer border border-[var(--border-primary)]">
+          <PasteIcon />
+        </span>
+      </button>
+    </div>
+  );
+};
+
+const MoreOptions = ({ node, setNode, config, currentNodeConfig }) => {
   const { defaultNodeConfig, addEditNode, currentFlowPlan } = useStateContext();
 
   const handleGetParentNode = () => {
@@ -744,6 +1174,13 @@ const MoreOptions = ({ node, setNode, config }) => {
     });
   };
 
+  const handleResetToCurrent = () => {
+    setNode({
+      ...node,
+      config: structuredClone(currentNodeConfig),
+    });
+  };
+
   const handleResetToDefault = () => {
     setNode({
       ...node,
@@ -751,7 +1188,7 @@ const MoreOptions = ({ node, setNode, config }) => {
     });
   };
   return (
-    <div className="w-full flex flex-col">
+    <div className="shrink-0 w-full flex flex-col">
       <label
         htmlFor="title"
         className="w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium"
@@ -778,6 +1215,21 @@ const MoreOptions = ({ node, setNode, config }) => {
           <InheritIcon />
         </button>
       </label>
+
+      <label
+        htmlFor="title"
+        className="w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium"
+      >
+        Reset To Current
+        <button
+          type="button"
+          className="rounded-md inline-block w-8 h-5 cursor-pointer hover:bg-[var(--btn-secondary)]"
+          onClick={handleResetToCurrent}
+        >
+          <ResetToDefaultIcon />
+        </button>
+      </label>
+
       <label
         htmlFor="title"
         className="w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium"

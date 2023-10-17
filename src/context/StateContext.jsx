@@ -63,6 +63,7 @@ export function StateProvider({ children }) {
       italic: false,
       bold: false,
       color: "var(--text-primary)",
+      fontFamily: "var(--font-primary)",
     },
     nodeConfig: {
       backgroundColor: "var(--bg-quaternary)",
@@ -72,6 +73,8 @@ export function StateProvider({ children }) {
       opacity: 100,
     },
   };
+
+  const [copyPasteNodeConfig, setCopyPasteNodeConfig] = useState({});
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -91,6 +94,8 @@ export function StateProvider({ children }) {
     animation,
     setAnimation,
     defaultNodeConfig,
+    copyPasteNodeConfig,
+    setCopyPasteNodeConfig 
   };
   return (
     // Providing all the states and functions to update the states

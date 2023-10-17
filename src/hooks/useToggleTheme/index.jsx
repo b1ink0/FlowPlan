@@ -38,10 +38,28 @@ export const useToggleTheme = () => {
       document.documentElement.classList.add("light");
     }
   };
+
+  const getCurrentColorScheme = () => {
+    if (document.documentElement.classList.contains("light")) {
+      return "light";
+    } else if (document.documentElement.classList.contains("dark")) {
+      return "dark";
+    } else {
+      if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+      ) {
+        return "dark";
+      } else {
+        return "light";
+      }
+    }
+  }
   useEffect(() => {
     initColorScheme();
   }, []);
   return {
     toggleColorScheme,
+    getCurrentColorScheme
   };
 };

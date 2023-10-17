@@ -3,6 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-primary: "Poppins", sans-serif;
+}
+
 :root,
 :root.light {
   --text-primary: #202020;

@@ -182,23 +182,22 @@ function SideNavbar() {
           setNoteTitle={setNoteTitle}
         />
       </div>
+      {/* Export Buttons show when exporting */}
+      {exportSelect && (
+        <ExportButtons
+          handles={{
+            handleSelectAll,
+            handleSelectCancel,
+            handleExportFlowPlan,
+          }}
+          setSelected={setSelected}
+          selected={selected}
+          flowPlans={flowPlans}
+        />
+      )}
 
       {/* SideNavbar body */}
       <div className="grow w-full overflow-x-auto flex flex-col justify-start items-center gap-2 py-2 px-2">
-        {/* Export Buttons show when exporting */}
-        {exportSelect && (
-          <ExportButtons
-            handles={{
-              handleSelectAll,
-              handleSelectCancel,
-              handleExportFlowPlan,
-            }}
-            setSelected={setSelected}
-            selected={selected}
-            flowPlans={flowPlans}
-          />
-        )}
-
         {/* Listing all notes */}
         {flowPlans?.map((flowPlan) => (
           <div
@@ -281,7 +280,7 @@ const ToggleSideNavbarButton = ({ showSideNavbar, setShowSideNavbar }) => {
 const ExportButtons = ({ handles, setSelected, selected, flowPlans }) => {
   const { handleSelectAll, handleSelectCancel, handleExportFlowPlan } = handles;
   return (
-    <div className="w-full flex gap-2">
+    <div className="w-full flex gap-2 px-2 pt-1">
       <button
         onClick={() =>
           selected.length === flowPlans.length
