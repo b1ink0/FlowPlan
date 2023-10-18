@@ -22,6 +22,7 @@ function SideNavbar() {
     currentFlowPlan,
     setCurrentFlowPlan,
     setAddEditNode,
+    defaultNodeConfig,
   } = useStateContext();
   // destructure functions from custom hook
   const {
@@ -48,7 +49,12 @@ function SideNavbar() {
     e.preventDefault();
     if (db === null) return;
     const newRefId = v4();
-    const newRootTreeNode = createNode(newRefId, noteTitle);
+    const newRootTreeNode = createNode(
+      newRefId,
+      noteTitle,
+      [],
+      structuredClone(defaultNodeConfig)
+    );
     const newNote = {
       refId: newRefId,
       title: noteTitle,
@@ -57,6 +63,7 @@ function SideNavbar() {
       updatedAt: new Date(),
     };
     await db?.flowPlans.add(newNote);
+    handleSetCurrentFlowPlan(newRefId);
     setNoteTitle("");
   };
 

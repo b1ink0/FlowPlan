@@ -239,7 +239,7 @@ function Node({
             (handleIfNodeIsParentOfMoveNode()
               ? "neon-border-secondary"
               : "neon-border")
-          } overflow-hidden flex flex-col justify-between items-center border-2 border-[var(--border-primary)] bg-[var(--bg-quaternary)] text-gray-200 rounded-md gap-1`}
+          } flex flex-col justify-between items-center border-2 border-[var(--border-primary)] bg-[var(--bg-quaternary)] text-gray-200 rounded-md gap-1`}
           // set node width and height from settings
           style={{
             width: nodeConfig.nodeWidth + "px",
@@ -607,22 +607,25 @@ const ButtonsWrapper = ({
         node?.children?.length > 0 && (
           //  then show expand node button
           <button
-            className="w-8 h-8 group text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-expand)] transition-colors duration-300"
+            className="absolute bottom-0 w-8 h-6 group text-xs bg-[var(--btn-secondary)] pb-[4px] rounded-b-lg border-r-2 border-b-2 border-l-2 hover:bg-[var(--btn-expand)] transition-colors duration-300"
             onClick={() => handleExpanded(node)}
             style={{
-              background: node?.config?.nodeConfig?.buttonColor,
+              background: node?.config?.nodeConfig?.backgroundColor,
+              borderColor: node?.config?.nodeConfig?.borderColor,
+              bottom: treeConfig.renderType === "verticalTree" ? 0 : "unset",
+              top: treeConfig.renderType === "verticalTree" ? "unset" : 35,
+              right: treeConfig.renderType === "verticalTree" ? "unset" : 0,
+              transform:
+                treeConfig.renderType === "verticalTree"
+                  ? "translate(0, 24px)"
+                  : "translate(28px, 0)  rotate(-90deg)",
+              // translate: treeConfig.renderType === "verticalTree" ? "0 24px" : "unset",
             }}
           >
             <span
               className={`w-full h-full ${
                 // if node is expanded then rotate the button
-                treeConfig.renderType === "verticalTree"
-                  ? node?.expanded
-                    ? "-rotate-90"
-                    : "rotate-90"
-                  : node?.expanded
-                  ? "-rotate-180"
-                  : "rotate-0"
+                node?.expanded ? "-rotate-90" : "rotate-90"
               } flex justify-center items-center transition-all duration-300 transform group-hover:scale-125`}
             >
               <BackIcon />

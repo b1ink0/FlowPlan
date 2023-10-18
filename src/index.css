@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 :root {
-  --font-primary: "Poppins", sans-serif;
+  --font-primary: "Poppins";
 }
 
 :root,
@@ -29,6 +29,7 @@
   --logo-primary: #424242;
   --live-path-primary: #3f4896;
   --live-path-secondary: #d72020;
+  --font-primary: "Poppins";
 }
 
 @media (prefers-color-scheme: light) {
@@ -53,6 +54,7 @@
     --logo-primary: #424242;
     --live-path-primary: #3f4896;
     --live-path-secondary: #d72020;
+    --font-primary: "Poppins";
   }
 }
 
@@ -77,6 +79,7 @@
   --logo-primary: #e5e7eb;
   --live-path-primary: #19bdd6;
   --live-path-secondary: #d72020;
+  --font-primary: "Poppins";
 }
 
 @media (prefers-color-scheme: dark) {
@@ -101,6 +104,7 @@
     --logo-primary: #e5e7eb;
     --live-path-primary: #19bdd6;
     --live-path-secondary: #d72020;
+    --font-primary: "Poppins";
   }
 }
 

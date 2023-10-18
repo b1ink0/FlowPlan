@@ -21,6 +21,7 @@ import DeleteIcon from "../../assets/Icons/DeleteIcon";
 import RandomIcon from "../../assets/Icons/RandomIcon";
 import CopyIcon from "../../assets/Icons/CopyIcon";
 import PasteIcon from "../../assets/Icons/PasteIcon";
+import CustomizeIcon from "../../assets/Icons/CustomizeIcon";
 
 const AddEditNode = () => {
   // destructuring state from context
@@ -674,34 +675,7 @@ const NodeConfig = ({ node, setNode, config, currentNodeConfig }) => {
       <div className="w-full flex flex-col justify-start items-start px-2">
         <NodePreview node={node} setNode={setNode} config={config} />
         <RandomColors node={node} setNode={setNode} config={config} />
-        <ColorSelector
-          config={config}
-          node={node}
-          setNode={setNode}
-          title={"Background Color"}
-          type={"backgroundColor"}
-        />
-        <ColorSelector
-          config={config}
-          node={node}
-          setNode={setNode}
-          title={"Border Color"}
-          type={"borderColor"}
-        />
-        <ColorSelector
-          config={config}
-          node={node}
-          setNode={setNode}
-          title={"Button Color"}
-          type={"buttonColor"}
-        />
-        <ColorSelector
-          config={config}
-          node={node}
-          setNode={setNode}
-          title={"Connection Color"}
-          type={"pathColor"}
-        />
+        <CustomizeColors node={node} config={config} setNode={setNode} />
         <OpacitySelector config={config} node={node} setNode={setNode} />
         <CopyPasteNodeConfig config={config} node={node} setNode={setNode} />
         <MoreOptions
@@ -726,7 +700,7 @@ const NodePreview = ({ node, setNode, config }) => {
         onClick={handleShowPreview}
         className="w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium"
       >
-        <span>Show Node Preview</span>
+        <span>{showPreview ? "Hide" : "Show"} Node Preview</span>
         <span className="rounded-md inline-block w-8 h-5 cursor-pointer border border-[var(--border-primary)]">
           <PreviewIcon />
         </span>
@@ -819,6 +793,60 @@ const RandomColors = ({ node, setNode, config }) => {
   );
 };
 
+const CustomizeColors = ({ node, setNode, config }) => {
+  const [showCustomizeColors, setShowCustomizeColors] = useState(false);
+  const handleShowCustomizeColors = () => {
+    setShowCustomizeColors((prev) => !prev);
+  };
+  return (
+    <>
+      <div className="shrink-0 w-full flex justify-center items-center gap-2">
+        <button
+          type="button"
+          onClick={handleShowCustomizeColors}
+          className="w-full rounded-md mb-1 p-2 flex justify-between gap-3 items-center  bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium"
+        >
+          <span>{showCustomizeColors ? "Hide" : "Show"} Customize Colors</span>
+          <span className="rounded-md inline-block w-8 h-5 cursor-pointer border border-[var(--border-primary)]">
+            <CustomizeIcon/>
+          </span>
+        </button>
+      </div>
+      {showCustomizeColors && (
+        <>
+          <ColorSelector
+            config={config}
+            node={node}
+            setNode={setNode}
+            title={"Background Color"}
+            type={"backgroundColor"}
+          />
+          <ColorSelector
+            config={config}
+            node={node}
+            setNode={setNode}
+            title={"Border Color"}
+            type={"borderColor"}
+          />
+          <ColorSelector
+            config={config}
+            node={node}
+            setNode={setNode}
+            title={"Button Color"}
+            type={"buttonColor"}
+          />
+          <ColorSelector
+            config={config}
+            node={node}
+            setNode={setNode}
+            title={"Connection Color"}
+            type={"pathColor"}
+          />
+        </>
+      )}
+    </>
+  );
+};
 // Buttons For Node Component
 const ButtonsWrapper = ({ node }) => {
   // function to handle move node
