@@ -225,7 +225,7 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
     // initialize path
     let path = "";
     let x1, y1, x2, y2, x3, y3, x4, y4;
-    let adjust1, adjust2;
+    let adjust1, adjust2, adjust3;
 
     // strucutre of path
     // M x1 y1 C x2 y2, x3 y3, x4 y4
@@ -242,24 +242,26 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
     // calculating starting point
     if (treeConfig.renderType === "verticalTree") {
       adjust1 = (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth) / 2;
+      adjust3 = 24;
       // if tree is vertical then starting point is parentPosition.x + adjust1 and parentPosition.y
       x1 = parentPosition.x - adjust1;
-      y1 = parentPosition.y;
+      y1 = parentPosition.y + adjust3 - 1;
       x2 = parentPosition.x - adjust1;
-      y2 = parentPosition.y + adjust2 - adjust1 * 2 ;
+      y2 = parentPosition.y + adjust2 - adjust1 * 2;
       x3 = node?.fp * nodeConfig.nodeWidthMargin - adjust1;
       y3 = parentPosition.y + adjust1 * 2;
-      x4 = node?.fp * nodeConfig.nodeWidthMargin - adjust1 ;
-      y4 = parentPosition.y + adjust2 - adjust1 * 2 ;
+      x4 = node?.fp * nodeConfig.nodeWidthMargin - adjust1;
+      y4 = parentPosition.y + adjust2 - adjust1 * 2;
     } else {
       adjust1 = (nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) / 2;
+      adjust3 = 24;
       // else starting point is parentPosition.x - adjust1 and parentPosition.y + adjust1 * 2
-      y1 = parentPosition.x - adjust1;
-      x1 = parentPosition.y + adjust1 * 2;
+      y1 = parentPosition.x - adjust1 ;
+      x1 = parentPosition.y + adjust1 * 2 + adjust3 - 1;
       y2 = parentPosition.x - adjust1;
       x2 = parentPosition.y + adjust2 - adjust1 * 2;
       y3 = node?.fp * nodeConfig.nodeHeightMargin - adjust1;
-      x3 = parentPosition.y + adjust1 * 2;
+      x3 = parentPosition.y + adjust1 * 2 + adjust3 - 1;
       y4 = node?.fp * nodeConfig.nodeHeightMargin - adjust1;
       x4 = parentPosition.y + adjust2;
     }
@@ -347,8 +349,8 @@ const LivePath = ({ move }) => {
   const [parentPath, setParentPath] = useState("");
 
   const handlePath = () => {
-    let { x1, y1, x2, y2 } = move.translate;
-
+    let { x1, y1, x2, y2, x3 } = move.translate;
+    if (x3 === null) y2 = y2 + 22;
     if (treeConfig.renderType === "verticalTree") {
       switch (true) {
         // when node is moved to same position
