@@ -75,6 +75,8 @@ export function StateProvider({ children }) {
   };
 
   const [copyPasteNodeConfig, setCopyPasteNodeConfig] = useState({});
+
+  const [ws, setWs] = useState(null);
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -95,7 +97,9 @@ export function StateProvider({ children }) {
     setAnimation,
     defaultNodeConfig,
     copyPasteNodeConfig,
-    setCopyPasteNodeConfig 
+    setCopyPasteNodeConfig,
+    ws,
+    setWs,
   };
   return (
     // Providing all the states and functions to update the states
