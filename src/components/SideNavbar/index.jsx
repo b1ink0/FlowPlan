@@ -354,6 +354,7 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
         required
         className="text-[var(--text-primary)] w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
       />
+      <Autogeneration />
       <button
         type="submit"
         className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
@@ -361,6 +362,170 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
         {editNote ? "Save" : "Add"}
       </button>
     </form>
+  );
+};
+
+const Autogeneration = () => {
+  const [showAutogenration, setShowAutogenration] = useState(false);
+  const [questons, setQuestons] = useState([
+    {
+      title: "Project Scope",
+      questions: [
+        {
+          question: "What is the problem statement of Project?",
+          answer:
+            "The current manual process for students to apply for available jobs and for the training and placement department to manage applications is time-consuming and inefficient.",
+          required: true,
+        },
+        {
+          question:
+            "What are the primary goals and objectives of implementing this Project?",
+          answer:
+            "To streamline the job application process for students and improve communication between students, companies, and the training and placement department.",
+          required: true,
+        },
+        {
+          question:
+            "What specific requirements do you have in mind for the application?",
+          answer:
+            "The application should allow students to browse and apply for available job opportunities, and it should provide an interface for the training and placement admin to manage and approve applications.",
+          required: true,
+        },
+        {
+          question: "How do you envision this Project benefiting users?",
+          answer:
+            "The project will provide students with easy access to job opportunities, while the training and placement admin will be able to efficiently manage and monitor applications, thereby enhancing the overall placement process.",
+          required: true,
+        },
+      ],
+    },
+    {
+      title: "Project Timeline",
+      questions: [
+        {
+          question:
+            "What are the key milestones you expect to achieve during the development and implementation phases?",
+          answer:
+            "Completion of the application design phase, development phase, testing phase, and deployment and launch phase.",
+          required: true,
+        },
+        {
+          question:
+            "What is the expected duration for the development and implementation of the Project?",
+          answer:
+            "Approximately 6-9 months, depending on the complexity of the application and the availability of resources.",
+          required: true,
+        },
+        {
+          question: "What is the start date of the Project?",
+          answer: "01-04-23",
+          required: true,
+        },
+        {
+          question: "What is the expected date of completion of the Project?",
+          answer: "01-11-23",
+          required: true,
+        },
+        {
+          question: "What is the expected date of Project launch?",
+          answer: "01-12-23",
+          required: true,
+        },
+      ],
+    },
+    {
+      title: "Project Resources",
+      questions: [
+        {
+          question:
+            "What human resources are available for the development and maintenance of the Project?",
+          answer:
+            "A team of experienced developers, designers, quality assurance professionals, and project managers will be allocated for the development and maintenance of the application.",
+          required: true,
+        },
+        {
+          question:
+            "What is the budget allocated for the development, maintenance, and updates of the Project?",
+          answer:
+            "Approximately 100000Rs will be allocated for the development, maintenance, and regular updates of the application.",
+          required: true,
+        },
+        {
+          question:
+            "What specific tools and technologies do you prefer to use for building this application?",
+          answer:
+            "Preferred technologies include react native, java, jvascript programming language, mysql database management system, and git, github for version control.",
+          required: true,
+        },
+      ],
+    },
+    {
+      title: "Project Features",
+      questions: [
+        {
+          question: "What are the key features of the Project?",
+          answer:
+            "The key features of the application include a user-friendly job search interface for students, application management tools for the admin, real-time notifications for students on application status, and a comprehensive dashboard for the admin to monitor and manage applications efficiently.",
+          required: true,
+        },
+      ],
+    },
+  ]);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setShowAutogenration((prev) => !prev)}
+        className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+      >
+        {showAutogenration ? "Hide" : "Show"} Autogeneration
+      </button>
+      <div
+        className="h-[500px] overflow-y-auto bg-[var(--bg-secondary)] rounded-md p-2"
+        style={{ display: showAutogenration ? "block" : "none" }}
+      >
+        {showAutogenration &&
+          questons.map((question, i) => (
+            <div
+              key={"question-container-" + i}
+              className="flex flex-col gap-2"
+            >
+              <h3 className="text-[var(--text-primary)] text-md font-medium tracking-wider">
+                {question.title}
+              </h3>
+              {question.questions.map((question, j) => (
+                <div
+                  key={"question-" + j}
+                  className="flex flex-col gap-2 bg-[var(--bg-primary)] p-2 rounded-md"
+                >
+                  <span className="text-[var(--text-primary)] text-sm ">
+                    {question.question} {question.required && "*"}
+                  </span>
+                  <textarea
+                    className="h-fit text-[var(--text-primary)] text-sm w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+                    value={question.answer}
+                    onChange={(e) => {
+                      let tempQuestions = [...questons];
+                      tempQuestions[i].questions[j].answer = e.target.value;
+                      setQuestons(tempQuestions);
+                    }}
+                    required={question.required}
+                    placeholder="Enter answer..."
+                  ></textarea>
+                </div>
+              ))}
+            </div>
+          ))}
+      </div>
+      {showAutogenration && (
+        <button
+          type="button"
+          className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+        >
+          Generate
+        </button>
+      )}
+    </>
   );
 };
 

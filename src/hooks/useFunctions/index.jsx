@@ -422,6 +422,26 @@ export const useFunctions = () => {
     }
     return color;
   };
+  const searchDeepObject = (obj, searchTerm) => {
+    const results = [];
+
+    const searchInObject = (obj, term) => {
+      for (let key in obj) {
+        if (
+          key === "title" &&
+          typeof obj[key] === "string" &&
+          obj[key].includes(term)
+        ) {
+          results.push({ title: obj[key], refId: obj.refId });
+        } else if (typeof obj[key] === "object") {
+          searchInObject(obj[key], term);
+        }
+      }
+    };
+    searchInObject(obj, searchTerm);
+    return results;
+  };
+
   // return functions
   return {
     handleDeleteNodeWithoutItsChildren,
@@ -436,5 +456,6 @@ export const useFunctions = () => {
     handleExpanded,
     handleGetValueFromProperty,
     handleGetRandomColor,
+    searchDeepObject,
   };
 };
