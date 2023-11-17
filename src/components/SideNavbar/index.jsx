@@ -47,7 +47,7 @@ function SideNavbar() {
   const [copied, setCopied] = useState(false);
 
   // function to create new note
-  const handleAddNewNote = async (e) => {
+  const handleAddNewNote = async (e, type) => {
     e.preventDefault();
     if (db === null) return;
     const newRefId = v4();
@@ -64,6 +64,27 @@ function SideNavbar() {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
+    if (type === "Plan") {
+      const DefaultNodes = [
+        "Planning",
+        "Analysis",
+        "Design",
+        "Implementation",
+        "Testing and Integration",
+        "Deployment",
+        "Maintenance",
+      ];
+      DefaultNodes.forEach((node) => {
+        const newNode = createNode(
+          v4(),
+          node,
+          [],
+          structuredClone(defaultNodeConfig)
+        );
+        newNote.root.children.push(newNode);
+      });
+    }
     await db?.flowPlans.add(newNote);
     handleSetCurrentFlowPlan(newRefId);
     setNoteTitle("");
@@ -343,10 +364,13 @@ const OpenSubMenuButton = ({ setSubMenu, flowPlan }) => {
 // Helper Components
 const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
   const { handleEditNote, handleAddNewNote } = handles;
+  const [type, setType] = useState("Plan");
   return (
     <form
       className="w-full flex flex-col mt-1 gap-2"
-      onSubmit={editNote ? handleEditNote : handleAddNewNote}
+      onSubmit={(e) => {
+        editNote ? handleEditNote(e) : handleAddNewNote(e, type);
+      }}
     >
       <input
         type="text"
@@ -356,7 +380,15 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
         required
         className="text-[var(--text-primary)] w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
       />
-      {/* <Autogeneration noteTitle={noteTitle} /> */}
+      <select
+        value={type}
+        onChange={(e) => setType(e.target.value)}
+        className="text-[var(--text-primary)] w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+      >
+        <option value="Plan">Plan</option>
+        <option value="Project">Note</option>
+        <option value="Task">Doc</option>
+      </select>
       <button
         type="submit"
         className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
@@ -364,294 +396,6 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
         {editNote ? "Save" : "Add"}
       </button>
     </form>
-  );
-};
-
-const Autogeneration = ({ noteTitle }) => {
-  const [showAutogenration, setShowAutogenration] = useState(false);
-  const { showBottomPanel, setShowBottomPanel } = useStateContext();
-  const [questons, setQuestons] = useState([
-    {
-      title: "Project Scope",
-      questions: [
-        {
-          question: "What is the problem statement of Project?",
-          answer:
-            "The current manual process for students to apply for available jobs and for the training and placement department to manage applications is time-consuming and inefficient.",
-          required: true,
-        },
-        {
-          question:
-            "What are the primary goals and objectives of implementing this Project?",
-          answer:
-            "To streamline the job application process for students and improve communication between students, companies, and the training and placement department.",
-          required: true,
-        },
-        {
-          question:
-            "What specific requirements do you have in mind for the application?",
-          answer:
-            "The application should allow students to browse and apply for available job opportunities, and it should provide an interface for the training and placement admin to manage and approve applications.",
-          required: true,
-        },
-        {
-          question: "How do you envision this Project benefiting users?",
-          answer:
-            "The project will provide students with easy access to job opportunities, while the training and placement admin will be able to efficiently manage and monitor applications, thereby enhancing the overall placement process.",
-          required: true,
-        },
-      ],
-    },
-    {
-      title: "Project Timeline",
-      questions: [
-        {
-          question:
-            "What are the key milestones you expect to achieve during the development and implementation phases?",
-          answer:
-            "Completion of the application design phase, development phase, testing phase, and deployment and launch phase.",
-          required: true,
-        },
-        {
-          question:
-            "What is the expected duration for the development and implementation of the Project?",
-          answer:
-            "Approximately 6-9 months, depending on the complexity of the application and the availability of resources.",
-          required: true,
-        },
-        {
-          question: "What is the start date of the Project?",
-          answer: "01-04-23",
-          required: true,
-        },
-        {
-          question: "What is the expected date of completion of the Project?",
-          answer: "01-11-23",
-          required: true,
-        },
-        {
-          question: "What is the expected date of Project launch?",
-          answer: "01-12-23",
-          required: true,
-        },
-      ],
-    },
-    {
-      title: "Project Resources",
-      questions: [
-        {
-          question:
-            "What human resources are available for the development and maintenance of the Project?",
-          answer:
-            "A team of experienced developers, designers, quality assurance professionals, and project managers will be allocated for the development and maintenance of the application.",
-          required: true,
-        },
-        {
-          question:
-            "What is the budget allocated for the development, maintenance, and updates of the Project?",
-          answer:
-            "Approximately 100000Rs will be allocated for the development, maintenance, and regular updates of the application.",
-          required: true,
-        },
-        {
-          question:
-            "What specific tools and technologies do you prefer to use for building this application?",
-          answer:
-            "Preferred technologies include react native, java, jvascript programming language, mysql database management system, and git, github for version control.",
-          required: true,
-        },
-      ],
-    },
-    {
-      title: "Project Features",
-      questions: [
-        {
-          question: "What are the key features of the Project?",
-          answer:
-            "The key features of the application include a user-friendly job search interface for students, application management tools for the admin, real-time notifications for students on application status, and a comprehensive dashboard for the admin to monitor and manage applications efficiently.",
-          required: true,
-        },
-      ],
-    },
-  ]);
-
-  const { handleSendMessage, handleReceiveMessage } = useWebSocket();
-  const [message, setMessage] = useState({});
-  const { openai } = useStateContext();
-  const handleGenerate = async () => {
-    let s = `this questons answer will be given by users as a prompt generate a flow of planning using this context in a tree based form example {"planning": [{name: node name, description: description about node, childs: []...} like this only don't return any other text here node name is the name of node which will be genreated by using the answer to questions and tree should be 4 level deep :
-             use the below questions and answers to generate the flow for planning`;
-    questons.forEach((question, i) => {
-      s += `\n${question.title}\n`;
-      question.questions.forEach((question, j) => {
-        s += `\n${question.question}\n${question.answer}\n`;
-      });
-    });
-    console.log(s);
-    const chatCompletion = await openai?.chat?.completions?.create({
-      messages: [
-        {
-          role: "user",
-          content: s,
-        },
-      ],
-      model: "gpt-3.5-turbo",
-    });
-    console.log(chatCompletion);
-    const plan = JSON.parse(chatCompletion.choices[0].message.content);
-    console.log(plan);
-    Object.keys(plan).forEach((key) => {
-      handleCreateNewTree(plan[key]);
-    });
-    // handleSendMessage(
-    // JSON.stringify({
-    // message: s,
-    // c_id: "t",
-    // })
-    // );
-  };
-  useEffect(() => {
-    // handleReceiveMessage(setMessage);
-  }, []);
-  const { db, defaultNodeConfig } = useStateContext();
-
-  const handleAddNewChildNode = (plans, node) => {
-    if (plans.length === 0) return;
-    console.log(plans);
-    plans.forEach((plan) => {
-      const newRefId = v4();
-      const newNode = createNode(
-        newRefId,
-        plan.name,
-        [],
-        structuredClone(
-          nodeThemes[Math.floor(Math.random() * nodeThemes.length)]
-        ),
-        plan.description
-      );
-      node.children.push(newNode);
-      handleAddNewChildNode(plan.childs, newNode);
-    });
-  };
-
-  const handleCreateNewTree = async (data) => {
-    if (db === null) return;
-    const newRefId = v4();
-    const newRootTreeNode = createNode(
-      newRefId,
-      noteTitle,
-      [],
-      structuredClone(nodeThemes[Math.floor(Math.random() * nodeThemes.length)])
-    );
-
-    const sdlfc = [
-      "Planning",
-      "Design",
-      "Development",
-      "Testing",
-      "Deployment",
-      "Maintenance",
-    ];
-
-    sdlfc.forEach((plan) => {
-      const newRefId = v4();
-      const newNode = createNode(
-        newRefId,
-        plan,
-        [],
-        structuredClone(
-          nodeThemes[Math.floor(Math.random() * nodeThemes.length)]
-        )
-      );
-      newRootTreeNode.children.push(newNode);
-    });
-
-    const newNote = {
-      refId: newRefId,
-      title: noteTitle,
-      root: newRootTreeNode,
-      autogeneration: { stage_1: questons },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    handleAddNewChildNode(data, newRootTreeNode.children[0]);
-
-    console.log(newNote);
-
-    await db?.flowPlans.add(newNote);
-  };
-
-  useEffect(() => {
-    console.log(message);
-    if (Object.keys(message).length === 0) return;
-    try {
-      // const plan = JSON.parse(message?.message);
-      // console.log(plan);
-      // Object.keys(plan).forEach((key) => {
-      // handleCreateNewTree(key, plan[key]);
-      // });
-    } catch (error) {
-      console.error(error);
-    }
-  }, [message]);
-  return (
-    <>
-      <button
-        type="button"
-        // onClick={() => setShowAutogenration((prev) => !prev)}
-        onClick={() => setShowBottomPanel((prev) => !prev)}
-        className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
-      >
-        {/* {showAutogenration ? "Hide" : "Show"} Autogeneration */}
-        {showBottomPanel ? "Hide" : "Show"} Autogeneration
-      </button>
-      <div
-        className="h-[500px] overflow-y-auto bg-[var(--bg-secondary)] rounded-md p-2"
-        style={{ display: showAutogenration ? "block" : "none" }}
-      >
-        {showAutogenration &&
-          questons.map((question, i) => (
-            <div
-              key={"question-container-" + i}
-              className="flex flex-col gap-2"
-            >
-              <h3 className="text-[var(--text-primary)] text-md font-medium tracking-wider">
-                {question.title}
-              </h3>
-              {question.questions.map((question, j) => (
-                <div
-                  key={"question-" + j}
-                  className="flex flex-col gap-2 bg-[var(--bg-primary)] p-2 rounded-md"
-                >
-                  <span className="text-[var(--text-primary)] text-sm ">
-                    {question.question} {question.required && "*"}
-                  </span>
-                  <textarea
-                    className="h-fit text-[var(--text-primary)] text-sm w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
-                    value={question.answer}
-                    onChange={(e) => {
-                      let tempQuestions = [...questons];
-                      tempQuestions[i].questions[j].answer = e.target.value;
-                      setQuestons(tempQuestions);
-                    }}
-                    required={question.required}
-                    placeholder="Enter answer..."
-                  ></textarea>
-                </div>
-              ))}
-            </div>
-          ))}
-      </div>
-      {showAutogenration && (
-        <button
-          type="button"
-          className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
-          onClick={handleGenerate}
-        >
-          Generate
-        </button>
-      )}
-    </>
   );
 };
 
