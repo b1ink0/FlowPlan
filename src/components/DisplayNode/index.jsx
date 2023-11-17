@@ -10,6 +10,7 @@ import { useStateContext } from "../../context/StateContext";
 import { useFunctions } from "../../hooks/useFunctions";
 import ReorderNode from "../ReorderNode";
 import DetailNode from "../DetailNode";
+import AiIcon from "../../assets/Icons/AiIcon";
 
 function DisplayNode({ node }) {
   // destructure state from context
@@ -65,8 +66,15 @@ function Node({
   parent = null,
 }) {
   // destructure state from context
-  const { settings, setAddEditNode, move, setMove, update, animation } =
-    useStateContext();
+  const {
+    settings,
+    setAddEditNode,
+    move,
+    setMove,
+    update,
+    animation,
+    setCurrentNode,
+  } = useStateContext();
 
   // destructure node config from settings
   const { nodeConfig, treeConfig } = settings;
@@ -136,6 +144,12 @@ function Node({
           show: true,
           location: location,
           type: type,
+        });
+        break;
+      case "generate":
+        setCurrentNode({
+          show: true,
+          location: location,
         });
         break;
       // if type is delete then delete node without its children its children become children of the node's parent
@@ -661,6 +675,15 @@ const ButtonsWrapper = ({
         }}
       >
         <DeleteIcon />
+      </button>
+      <button
+        className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+        onClick={() => handleNode("generate")}
+        style={{
+          background: node?.config?.nodeConfig?.buttonColor,
+        }}
+      >
+        <AiIcon />
       </button>
     </div>
   );

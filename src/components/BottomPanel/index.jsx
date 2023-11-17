@@ -7,354 +7,70 @@ import sample_2 from "./sample_2.json";
 import nodeThemes from "../../assets/themes/nodeThemes.json";
 import { v4 } from "uuid";
 import { createNode } from "../../hooks/useTree";
+import AiIcon from "../../assets/Icons/AiIcon";
+import { useFunctions } from "../../hooks/useFunctions";
 
 function BottomPanel() {
-  const tabs = [
-    "Initialize",
-    "Planning",
-    "Design",
-    "Development",
-    "Testing",
-    "Deployment",
-    "Maintenance",
-  ];
-  const { db, currentFlowPlan, showBottomPanel, setShowBottomPanel } =
-    useStateContext();
-  const [currentTab, setCurrentTab] = useState("Initialize");
-  const [planningQuestons, setPlanningQuestons] = useState([
-    {
-      question:
-        "What are the specific requirements of the Training and placement Application project?",
-      answer:
-        "The application should have features to allow students to apply for jobs and for the training and placement department to manage applications efficiently.",
-      required: true,
-    },
-    {
-      question:
-        "How would you define the target audience for the Training and placement Application?",
-      answer:
-        "The target audience would be both students who want to apply for jobs and the training and placement department who will be managing the applications.",
-      required: true,
-    },
-    {
-      question:
-        "What are the key functionalities required in the Training and placement Application?",
-      answer:
-        "The application should have features for job application submission, application status tracking, and application management capabilities for the training and placement department.",
-      required: true,
-    },
-    {
-      question:
-        "What is the expected timeline for the development of the Training and placement Application?",
-      answer:
-        "The development should be completed within a specified time frame to minimize the disruption of the current manual process.",
-      required: true,
-    },
-    {
-      question:
-        "What are the technical requirements for the Training and placement Application?",
-      answer:
-        "The application should be web-based, user-friendly, and should support a large number of users simultaneously.",
-      required: true,
-    },
-    {
-      question:
-        "What are the potential challenges or risks associated with the development of the Training and placement Application?",
-      answer:
-        "Some potential challenges may include integrating with existing systems, ensuring data security, and managing user authentication and authorization.",
-      required: true,
-    },
-    {
-      question:
-        "What are the desired outcomes of the Training and placement Application project?",
-      answer:
-        "The desired outcomes are to streamline the job application process for students and improve the efficiency of application management for the training and placement department.",
-      required: true,
-    },
-  ]);
-  const [noteTitle, setNoteTitle] = useState(
-    "Training and placement Application"
-  );
-  const [problemStatement, setProblemStatement] = useState(
-    "The current manual process for students to apply for available jobs and for the training and placement department to manage applications is time-consuming and inefficient."
-  );
-
-  const handleGetSubTree = (node) => {
-    if (node.children.length === 0) {
-      return {
-        name: node.title,
-        description: node.description,
-        childs: [],
-      };
-    }
-    let newNode = {
-      name: node.title,
-      description: node.description,
-      childs: [],
-    };
-
-    console.log(newNode);
-    node.children.forEach((child) => {
-      newNode.childs.push(handleGetSubTree(child));
+  const {
+    db,
+    currentFlowPlan,
+    showBottomPanel,
+    setShowBottomPanel,
+    currentNode,
+    setCurrentNode,
+    defaultNodeConfig,
+  } = useStateContext();
+  const [node, setNode] = useState(null);
+  useEffect(() => {
+    if (
+      db === null ||
+      currentFlowPlan === null ||
+      currentNode.location === null
+    )
+      return;
+    let parentNode = currentFlowPlan.root;
+    currentNode.location.forEach((index) => {
+      parentNode = parentNode.children[index];
     });
-    return newNode;
-  };
 
-  const handleGenerate = async () => {
-    const openai = new OpenAI({
-      apiKey: "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",
-      dangerouslyAllowBrowser: true,
+    const config =
+      parentNode?.config && Object.keys(parentNode?.config)?.length
+        ? parentNode?.config
+        : defaultNodeConfig;
+
+    setNode({
+      title: parentNode.title,
+      data: parentNode.data,
+      config: config,
     });
-    // let s = `User this below context to return flow for design and not for planning format {design:[node name:.., description:..., childs:[...]...]} return in this tree format with 4 level deep and only return json  \n\n`;
-    // let s = `Use below software development life cycle: design only return flow for design example: {"design":[{name:...:...,description:...,childs:[...]},...]}: (Note: response should only be in json format without any text) (Note: return flow for design only with 4 level deep) \n\n
-    // give flow of design for problem statement:  streamline the job application process for students and improve communication between students, companies, and the training and placement department.
-    // `
-    let s = `
-    create a flow for design  phase of  software development life cycle using the context of planning below and these components of design phase {Note: format should be {design:[name:"",description:"",childs:[...],...]} everything should be in this array and 4 level deep ) (Note: only return json without any text this is important)
-System Architecture Design:
-
-Component Diagram: A visual representation of the high-level components and their relationships.
-System Boundary: Defining the scope of the system and its interfaces with external systems.
-Platform Selection: Choosing the technology stack and platforms for development.
-Database Design:
-
-Entity-Relationship Diagrams (ERD): Illustrates the entities, attributes, and relationships within the database.
-Schema Definition: Specifying the structure and constraints of database tables.
-Indexing Strategy: Planning for efficient data retrieval through indexing.
-User Interface (UI) Design:
-
-Wireframes: Basic sketches of UI layouts and elements.
-Mock-ups: Detailed, static representations of UI screens.
-Prototypes: Interactive models of the user interface for usability testing.
-Functional Design:
-
-Use Case Diagrams: Visual representation of how users interact with the system.
-Flowcharts: Diagrams showing the flow of control and data in the software.
-Pseudocode: Human-readable code-like descriptions of algorithmic steps.
-Algorithm Design:
-
-Pseudocode: Algorithmic steps described in a structured, code-like manner.
-Flowcharts: Diagrams illustrating the flow of logic in algorithms.
-Performance Analysis: Evaluating algorithm efficiency and complexity.
-Data Flow Design:
-
-Data Flow Diagrams (DFD): Visual representation of how data moves through the system.
-Data Transformation Rules: Describing how data is processed and transformed.
-Data Mapping: Defining data sources, destinations, and transformations.
-Security Design:
-
-Access Control Lists (ACL): Defining who has access to what data and functions.
-Encryption Algorithms: Selecting encryption methods for data protection.
-Threat Modeling: Identifying potential security risks and countermeasures.
-Error Handling and Recovery Design:
-
-Exception Handling: Defining how the software should handle errors and exceptions.
-Logging Mechanisms: Establishing procedures for recording errors and issues.
-Backup and Recovery Plans: Strategies for data backup and system recovery.
-Performance and Scalability Design:
-
-Load Testing Plans: Strategies for evaluating the software's performance under stress.
-Caching Strategies: Implementing techniques to enhance performance.
-Horizontal and Vertical Scaling: Planning for system expansion.
-Documentation Design:
-
-Design Documents: Creating detailed documents that explain design decisions.
-API Documentation: Describing how to use and interact with APIs.
-User Manuals: Guides for users to understand and operate the software.
-Integration Design:
-
-API Specifications: Defining the structure and functionality of APIs.
-Data Mapping: Matching data formats between different systems.
-Message Queue Design: Establishing communication protocols for integration.
-
-
-{"name":"Planning","description":"","childs":[{"name":"Project Scope","description":"Define the problem statement, goals, and objectives of the project.","childs":[{"name":"Problem Statement","description":"The current manual process for students to apply for available jobs and for the training and placement department to manage applications is time-consuming and inefficient.","childs":[]},{"name":"Goals and Objectives","description":"To streamline the job application process for students and improve communication between students, companies, and the training and placement department.","childs":[]},{"name":"Specific Requirements","description":"The application should allow students to browse and apply for available job opportunities, and it should provide an interface for the training and placement admin to manage and approve applications.","childs":[]},{"name":"Benefit to Users","description":"The project will provide students with easy access to job opportunities, while the training and placement admin will be able to efficiently manage and monitor applications, thereby enhancing the overall placement process.","childs":[]}]},{"name":"Project Timeline","description":"Define the key milestones and timeline for the project.","childs":[{"name":"Milestones","description":"Completion of the application design phase, development phase, testing phase, and deployment and launch phase.","childs":[]},{"name":"Duration","description":"Approximately 6-9 months, depending on the complexity of the application and the availability of resources.","childs":[]},{"name":"Start Date","description":"01-04-23","childs":[]},{"name":"Completion Date","description":"01-11-23","childs":[]},{"name":"Project Launch Date","description":"01-12-23","childs":[]}]},{"name":"Project Resources","description":"Identify the human resources, budget, and preferred technologies for the project.","childs":[{"name":"Human Resources","description":"A team of experienced developers, designers, quality assurance professionals, and project managers will be allocated for the development and maintenance of the application.","childs":[]},{"name":"Budget","description":"Approximately 100000Rs will be allocated for the development, maintenance, and regular updates of the application.","childs":[]},{"name":"Preferred Technologies","description":"Preferred technologies include react native, java, javascript programming language, mysql database management system, and git, github for version control.","childs":[]}]},{"name":"Project Features","description":"Define the key features of the project.","childs":[{"name":"Job Search Interface","description":"User-friendly job search interface for students.","childs":[]},{"name":"Application Management Tools","description":"Tools for the admin to manage and approve applications.","childs":[]},{"name":"Real-time Notifications","description":"Real-time notifications for students on application status.","childs":[]},{"name":"Comprehensive Dashboard","description":"A dashboard for the admin to monitor and manage applications efficiently.","childs":[]}]}]}
-    `;
-    const questons = currentFlowPlan.autogeneration.stage_1;
-    // questons.forEach((question, i) => {
-    //   // s += `\n${question.title}\n`;
-    //   question.questions.forEach((question, j) => {
-    //     s += `\n${question.question}\n${question.answer}\n`;
-    //   });
-    // });
-    // console.log(questons);
-    // console.log(s);
-    // let newNode;
-    // newNode = handleGetSubTree(currentFlowPlan.root.children[0]);
-    // // console.log(JSON.stringify(newNode));
-    // s += JSON.stringify({
-    // planning: newNode.childs,
-    // });
-    // let s1 = JSON.stringify({
-    //   planning: newNode.childs,
-    // });
-
-    // s1 += s
-    // console.log(s);
-    // setLoading(true);
-    // const chatCompletion = await openai?.chat?.completions?.create({
-    //   messages: [
-    //     {
-    //       role: "user",
-    //       content: s,
-    //     },
-    //   ],
-    //   temperature: 0.8,
-    //   model: "gpt-3.5-turbo",
-    // });
-    // console.log(chatCompletion);
-    // try {
-    //   const content = chatCompletion.choices[0].message.content;
-    //   const plan = JSON.parse(content);
-    //   console.log(plan, content);
-    //   setLoading(false);
-    // } catch (err) {
-    //   console.log(err);
-    //   console.log(chatCompletion.choices[0].text);
-    //   setLoading(false);
-    // }
-    setLoading(true);
-    handleCreateNewTree(sample_1);
-    setLoading(false);
-  };
-  const handleCreateNewTree = async (data) => {
-    if (db === null) return;
-    // const newRefId = v4();
-    // const newRootTreeNode = createNode(
-    //   newRefId,
-    //   noteTitle,
-    //   [],
-    //   structuredClone(nodeThemes[Math.floor(Math.random() * nodeThemes.length)])
-    // );
-
-    // const sdlfc = [
-    //   "Planning",
-    //   "Design",
-    //   "Development",
-    //   "Testing",
-    //   "Deployment",
-    //   "Maintenance",
-    // ];
-
-    // sdlfc.forEach((plan) => {
-    //   const newRefId = v4();
-    //   const newNode = createNode(
-    //     newRefId,
-    //     plan,
-    //     [],
-    //     structuredClone(
-    //       nodeThemes[Math.floor(Math.random() * nodeThemes.length)]
-    //     )
-    //   );
-    //   newRootTreeNode.children.push(newNode);
-    // });
-
-    console.log(currentFlowPlan.root.children[1]);
-
-    // const newNote = {
-    //   refId: newRefId,
-    //   title: noteTitle,
-    //   root: newRootTreeNode,
-    //   autogeneration: { stage_1: questons },
-    //   createdAt: new Date(),
-    //   updatedAt: new Date(),
-    // };
-    console.log(data.design);
-    handleAddNewChildNode(data.design, currentFlowPlan.root.children[1]);
-
-    console.log(currentFlowPlan.root.children[1]);
-    handleUpdateDb(currentFlowPlan.root, currentFlowPlan.refId);
-  };
-  // helper function for updating database
-  const handleUpdateDb = async (node, refId) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({ root: node, updatedAt: new Date() });
-  };
-
-  const handleAddNewChildNode = (plans, node) => {
-    if (plans.length === 0) return;
-    console.log(plans);
-    plans.forEach((plan) => {
-      const newRefId = v4();
-      const newNode = createNode(
-        newRefId,
-        plan.name,
-        [],
-        structuredClone(
-          nodeThemes[Math.floor(Math.random() * nodeThemes.length)]
-        ),
-        plan.description
-      );
-      node.children.push(newNode);
-      handleAddNewChildNode(plan.childs, newNode);
-    });
-  };
-
+  }, [currentNode.show, currentNode.location]);
   return (
     <div
       className={`${
         // when showSideNavbar is false translate sideNavbar to left
-        showBottomPanel ? "translate-y-full" : ""
+        !currentNode.show ? "translate-y-full" : ""
       } z-10 transition-all duration-200 w-[calc(100%_-_280px_-_280px)] grow-0 h-[400px] absolute bottom-0 bg-[var(--bg-primary-translucent)] text-gray-200 flex flex-col justify-center items-center gap-1 border-2 border-[var(--border-primary)]`}
     >
       <ToggleSideNavbarButton
-        setShowSideNavbar={setShowBottomPanel}
-        showSideNavbar={showBottomPanel}
+        setShowSideNavbar={setCurrentNode}
+        showSideNavbar={currentNode}
       />
-      <div className="w-full h-full flex flex-col justify-start items-center gap-1">
-        <h3 className="text-lg font-bold pt-2 text-[var(--text-primary)]">
-          Auto Genration Options
+      {node ? (
+        <div className="w-full h-full flex flex-col justify-start items-center gap-1">
+          <h3 className="w-full text-center border-b border-b-[var(--border-primary)] text-lg font-medium py-1 px-2 text-[var(--text-primary)] text-ellipsis overflow-hidden">
+            Auto Genration Options For {node?.title}
+          </h3>
+          <Autogeneration node={node} />
+        </div>
+      ) : (
+        <h3 className="w-full text-center text-lg font-medium py-1 px-2 text-[var(--text-primary)] text-ellipsis overflow-hidden flex justify-center items-center">
+          Select Node Using
+          <span className="w-5 h-5 inline-block ml-1">
+            <AiIcon />
+          </span>
+          !
         </h3>
-        {/* tabs */}
-        <div className="w-full h-8 flex justify-center items-center gap-2">
-          {tabs.map((tab, index) => (
-            <button
-              key={"tabs" + index}
-              onClick={() => setCurrentTab(tab)}
-              style={{
-                backgroundColor: currentTab === tab ? "var(--bg-tertiary)" : "",
-                borderColor:
-                  currentTab === tab
-                    ? "var(--border-primary)"
-                    : "var(--border-primary)",
-              }}
-              className="w-fit text-[var(--text-primary)] px-2 transition-colors h-full flex justify-center items-center  border-b-2 border-[var(--border-primary)]"
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-        {/* content */}
-        <div className="w-full overflow-y-auto h-full flex justify-center items-center gap-2">
-          {currentFlowPlan?.autogeneration &&
-          currentFlowPlan?.autogeneration[
-            Object.keys(currentFlowPlan?.autogeneration)[
-              tabs.indexOf(currentTab)
-            ]
-          ] ? (
-            <div className="w-full h-8 flex justify-center items-center gap-2">
-              <h1 className="text-[var(--text-primary)] px-2 transition-colors flex justify-center items-center  border-b-2 border-[var(--border-primary)]">
-                {currentTab} Generated
-              </h1>
-            </div>
-          ) : (
-            <div className="w-full p-2 h-full flex flex-col justify-center items-center gap-2">
-              <Autogeneration
-                currentTab={currentTab}
-                setCurrentTab={setCurrentTab}
-                planningQuestons={planningQuestons}
-                setPlanningQuestons={setPlanningQuestons}
-                noteTitle={noteTitle}
-                setNoteTitle={setNoteTitle}
-                problemStatement={problemStatement}
-                setProblemStatement={setProblemStatement}
-              />
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -364,68 +80,53 @@ const ToggleSideNavbarButton = ({ showSideNavbar, setShowSideNavbar }) => {
     <button
       className={`${
         // when showSideNavbar is false rotate close button to 180deg
-        showSideNavbar ? "-translate-y-[34px]" : "-translate-y-[34px]"
+        showSideNavbar.show ? "-translate-y-[34px]" : "-translate-y-[34px]"
       } outline-none transition-all duration-200 w-6 h-12 rounded-r-full absolute -rotate-90 top-0 z-10 bg-[var(--bg-tertiary)] flex justify-center items-center p-1 cursor-pointer border-r-2 border-t-2 border-b-2 border-[var(--border-primary)]`}
-      onClick={() => setShowSideNavbar((prev) => !prev)}
+      onClick={() =>
+        setShowSideNavbar((prev) => {
+          return {
+            ...prev,
+            show: !prev.show,
+          };
+        })
+      }
     >
       <BackIcon />
     </button>
   );
 };
 
-const Autogeneration = ({
-  currentTab,
-  setCurrentTab,
-  planningQuestons,
-  setPlanningQuestons,
-  noteTitle,
-  setNoteTitle,
-  problemStatement,
-  setProblemStatement,
-}) => {
+const Autogeneration = ({ node }) => {
   const [loading, setLoading] = useState(false);
-  const { openai } = useStateContext();
-  const { db, defaultNodeConfig } = useStateContext();
+  const {
+    db,
+    currentFlowPlan,
+    openai,
+    currentNode,
+    setCurrentFlowPlan,
+    setUpdate,
+  } = useStateContext();
+  const { handlePositionCalculation } = useFunctions();
+  const [projectName, setProjectName] = useState(
+    "Training and Placement Application"
+  );
+  const [problemStatement, setProblemStatement] = useState(
+    " Develop a comprehensive Training and Placement Application for colleges to automate student profile management, streamline job applications, coordinate training programs, organize placement events, facilitate communication, and provide analytics for data-driven decision-making. This application aims to improve the efficiency and transparency of the college placement process for students and recruiters."
+  );
+  const [extraPrompt, setExtraPrompt] = useState("");
+  const [error, setError] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
-  const handleAddNewChildNode = (plans, node) => {
+  const handleAddNewChildNode = async (plans, location) => {
     if (plans.length === 0) return;
     console.log(plans);
-    plans.forEach((plan) => {
-      const newRefId = v4();
-      const newNode = createNode(
-        newRefId,
-        plan.name,
-        [],
-        structuredClone(
-          nodeThemes[Math.floor(Math.random() * nodeThemes.length)]
-        ),
-        plan.description
-      );
-      node.children.push(newNode);
-      handleAddNewChildNode(plan.childs, newNode);
-    });
-  };
-
-  const handleCreateNewTree = async (data) => {
-    if (db === null) return;
-    const newRefId = v4();
-    const newRootTreeNode = createNode(
-      newRefId,
-      noteTitle,
-      [],
-      structuredClone(nodeThemes[Math.floor(Math.random() * nodeThemes.length)])
-    );
-
-    const sdlfc = [
-      "Planning",
-      "Design",
-      "Development",
-      "Testing",
-      "Deployment",
-      "Maintenance",
-    ];
-
-    sdlfc.forEach((plan) => {
+    for (const plan of plans) {
+      let root = currentFlowPlan.root;
+      let parentNode = currentFlowPlan.root;
+      // loop through location array to get parent node to edit
+      location.forEach((index) => {
+        parentNode = parentNode.children[index];
+      });
       const newRefId = v4();
       const newNode = createNode(
         newRefId,
@@ -435,230 +136,223 @@ const Autogeneration = ({
           nodeThemes[Math.floor(Math.random() * nodeThemes.length)]
         )
       );
-      newRootTreeNode.children.push(newNode);
-    });
-
-    const newNote = {
-      refId: newRefId,
-      title: noteTitle,
-      root: newRootTreeNode,
-      autogeneration: { stage_1: questons },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    handleAddNewChildNode(data, newRootTreeNode.children[0]);
-
-    console.log(newNote);
-
-    await db?.flowPlans.add(newNote);
+      parentNode.children.push(newNode);
+      handlePositionCalculation(root);
+      setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+      await handleUpdateDb(root, currentFlowPlan.refId);
+      setUpdate((prev) => prev + 1);
+      // update currentFlowPlan in indexedDB
+      await new Promise((resolve, reject) => {
+        // Simulating an asynchronous request with a timeout
+        setTimeout(() => {
+          resolve();
+        }, 2000); // Simulating a 1-second delay
+      });
+    }
   };
 
-  const handleGenerateQuestionForPlanning = async () => {
-    if (noteTitle === "" || problemStatement === "") return;
+  const handleAddDescription = async (description, location) => {
+    let root = currentFlowPlan.root;
+    let parentNode = currentFlowPlan.root;
+    // loop through location array to get parent node to edit
+    location.forEach((index) => {
+      parentNode = parentNode.children[index];
+    });
+    parentNode["description"] = description;
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateDb(root, currentFlowPlan.refId);
+    setUpdate((prev) => prev + 1);
+    // update currentFlowPlan in indexedDB
+  };
+
+  // helper function for updating database
+  const handleUpdateDb = async (node, refId) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({ root: node, updatedAt: new Date() });
+  };
+
+  const handleGenerateDescription = async () => {
+    setError(false);
+    if (projectName === "" || problemStatement === "") return;
     setLoading(true);
     let prompt = `
       Initialize:
-      1. you are going to behave like a api with returns only json data
-      2. you are going to  return project planning questionnaire for a software development cycle
+      1. you are going to behave like a api with returns only json data.
+      2. you are going to  create a description for given input in context of  software development life cycle.
       input:
-      1. project name: ${noteTitle}
+      generate description for: ${node.title} Phase
+      1. project name: ${projectName}
       2. problem statement: ${problemStatement}
+      3. Extra Instructions: ${extraPrompt}
       output:
-      {["questions":["generated question","generated suggested answer"],...]}
+      [description]
       constraints:
-      1. at least 6 to 7 questions should be generated
-      2. response should stricly only in output format
-      3. each element should have strictly generated question and its suggested answer
+      1. description should be at least 100 characters long.
+      2. response should strictly only in description returned in above defined output format.
     `;
 
-    const chatCompletion = await openai?.chat?.completions?.create({
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      model: "gpt-3.5-turbo",
-    });
-
-    console.log(chatCompletion);
-    const output = chatCompletion.choices[0].message.content;
-    console.log(output);
-    const questions = JSON.parse(output);
-    console.log(questions);
-    let tempQuestions = [];
-    questions.questions.forEach((question) => {
-      tempQuestions.push({
-        question: question[0],
-        answer: question[1],
-        required: true,
+    try {
+      console.log(prompt);
+      const chatCompletion = await openai?.chat?.completions?.create({
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.2,
+        model: "gpt-3.5-turbo",
       });
-    });
-    console.log(tempQuestions);
-    setPlanningQuestons(tempQuestions);
+
+      console.log(chatCompletion);
+      const output = chatCompletion.choices[0].message.content;
+      console.log(output);
+      const description = JSON.parse(output); // setNodeNameList(list.subpoints);
+      console.log(description);
+      await handleAddDescription(description.description, currentNode.location);
+    } catch (err) {
+      console.log(err);
+      setError(true);
+    }
     setLoading(false);
-    setCurrentTab("Planning");
   };
 
-  const handleGeneratePlanningSubtree = async () => {
-    if (planningQuestons.length === 0) return;
-    setLoading(true);
-    let questions = `[\n`
-    planningQuestons.forEach((q) => {
-      let question = []
-      question.push(q.question)
-      question.push(q.answer)
-      question = JSON.stringify(question)
-      questions += "\n" + question
-    });
-    questions += "\n]"
+  const handleGenerateTasks = async () => {};
 
+  const handleGenerateChilds = async () => {
+    setError(false);
+    if (projectName === "" || problemStatement === "") return;
+    setLoading(true);
     let prompt = `
       Initialize:
-      1. you are going to behave like a api with returns only json data
-      2. you are going to  create a tree structure for project planning in software development
+      1. you are going to behave like a api with returns only json data.
+      2. you are going to  create a array of sub points for given input in context of  software development life cycle.
       input:
-      Below is the array to questions to be used  only as  a context to generate the output in required format :-
-      ${questions}
+      generate sub points for: ${node.title} Phase 
+      ${extraPrompt}
       output:
-      [
-          [
-            "Planning",
-            "description",
-            [
-              "task1",
-              "task2",
-              ...
-            ],
-            [
-              [
-                "node1-child1",
-                "description",
-                [
-                  "task1",
-                  "task2",
-                  ...
-                ],
-                [
-                  [
-                  "node1-child1",
-                  "description",
-                  [
-                  "task1",
-                  "task2",
-                  ...
-                  ],
-                [childs]
-              ],
-                ]
-              ],
-              ...
-            ]
-          ],
-      ...
-        ]
+      [subpoint,...]
       constraints:
-      1. tree should be at least 4 to 5 level deep
-      2. response should only in  output format
-      3.  each node should have name, description about the node, taskslist
-    `
-    console.log(prompt);
-    const chatCompletion = await openai?.chat?.completions?.create({
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.8,
-      model: "gpt-3.5-turbo",
-    });
+      1. array of elements should be 5 to 4 in length at least.
+      2. response should strictly only in array of sub points returned in above defined output format.
+    `;
 
-    console.log(chatCompletion);
-    const output = chatCompletion.choices[0].message.content;
-    console.log(output);
-    const subtree = JSON.parse(output);
-    console.log(subtree);
-    // handleCreateNewTree(subtree);
+    try {
+      console.log(prompt);
+      const chatCompletion = await openai?.chat?.completions?.create({
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.2,
+        model: "gpt-3.5-turbo",
+      });
+
+      console.log(chatCompletion);
+      const output = chatCompletion.choices[0].message.content;
+      console.log(output);
+      const list = JSON.parse(output); // setNodeNameList(list.subpoints);
+      await handleAddNewChildNode(list.subpoints, currentNode.location);
+    } catch (err) {
+      console.log(err);
+      setError(true);
+    }
     setLoading(false);
-  }
+  };
+
+  useEffect(() => {
+    if (
+      currentFlowPlan === null ||
+      currentFlowPlan?.projectName === undefined ||
+      currentFlowPlan?.problemStatement === undefined
+    )
+      return;
+    setProjectName(currentFlowPlan.projectName);
+    setProblemStatement(currentFlowPlan.problemStatement);
+  }, [currentFlowPlan]);
+
   return (
-    <>
-      <div className="h-[250px] w-full overflow-y-auto bg-[var(--bg-secondary)] rounded-md p-2">
-        <div className="flex flex-col gap-2">
-          {currentTab === "Initialize" && (
-            <div className="flex flex-col gap-2 bg-[var(--bg-primary)] p-2 rounded-md">
-              <span className="text-[var(--text-primary)] text-sm ">
-                Project Name:*
-              </span>
-              <input
-                className="h-fit text-[var(--text-primary)] text-sm w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
-                value={noteTitle}
-                onChange={(e) => {
-                  setNoteTitle(e.target.value);
-                }}
-                required={true}
-                placeholder="Enter Project Name..."
-              ></input>
-              <span className="text-[var(--text-primary)] text-sm ">
-                Project Problem Statement:*
-              </span>
-              <textarea
-                className="h-fit text-[var(--text-primary)] text-sm w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
-                value={problemStatement}
-                onChange={(e) => setProblemStatement(e.target.value)}
-                required={true}
-                placeholder="Enter Project Problem Statement..."
-              ></textarea>
+    <div className="w-full h-full bg-[var(--bg-secondary)]">
+      <div className="h-[300px] w-full flex flex-col gap-2 overflow-y-auto bg-[var(--bg-secondary)] rounded-md p-2">
+        <div className="flex flex-1 flex-col gap-2">
+          <div className="flex flex-col gap-2 bg-[var(--bg-primary)] p-2 rounded-md">
+            <button
+              type="button"
+              className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+              onClick={() => setShowMore((prev) => !prev)}
+            >
+              Customize Prompt
+            </button>
+            {showMore && (
+              <>
+                <span className="text-[var(--text-primary)] text-sm ">
+                  Project Name:*
+                </span>
+                <input
+                  className="h-fit text-[var(--text-primary)] text-sm w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+                  value={projectName}
+                  onChange={(e) => {
+                    setProjectName(e.target.value);
+                  }}
+                  required={true}
+                  placeholder="Enter Project Name..."
+                ></input>
+                <span className="text-[var(--text-primary)] text-sm ">
+                  Project Problem Statement:*
+                </span>
+                <textarea
+                  className="h-fit text-[var(--text-primary)] text-sm w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+                  value={problemStatement}
+                  onChange={(e) => setProblemStatement(e.target.value)}
+                  required={true}
+                  placeholder="Enter Project Problem Statement..."
+                ></textarea>
+                <span className="text-[var(--text-primary)] text-sm ">
+                  Extra Information:
+                </span>
+                <textarea
+                  className="h-fit text-[var(--text-primary)] text-sm w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+                  value={extraPrompt}
+                  onChange={(e) => setExtraPrompt(e.target.value)}
+                  placeholder="Enter Extra Information..."
+                ></textarea>
+              </>
+            )}
+            <div className="flex gap-2">
               <button
                 type="button"
                 className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
-                onClick={handleGenerateQuestionForPlanning}
+                onClick={handleGenerateDescription}
               >
-                {loading ? "Loading..." : "Generate Questions For Planning"}
+                {loading ? "Loading..." : "Generate Description"}
+              </button>
+              <button
+                type="button"
+                className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+                onClick={handleGenerateTasks}
+              >
+                {loading ? "Loading..." : "Generate Tasks"}
               </button>
             </div>
-          )}
-          {currentTab === "Planning" && (
-            <div className="flex flex-col gap-2">
-              <h3 className="text-[var(--text-primary)] text-md font-medium tracking-wider">
-                Planning Questions
-              </h3>
-              {planningQuestons.map((question, i) => (
-                <div
-                  key={"question-" + i}
-                  className="flex flex-col gap-2 bg-[var(--bg-primary)] p-2 rounded-md"
-                >
-                  <span className="text-[var(--text-primary)] text-sm ">
-                    {question.question} {question.required && "*"}
-                  </span>
-                  <textarea
-                    className="h-fit text-[var(--text-primary)] text-sm w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
-                    value={question.answer}
-                    onChange={(e) => {
-                      let temp = [...planningQuestons];
-                      temp[i].answer = e.target.value;
-                      setPlanningQuestons(temp);
-                    }}
-                    required={question.required}
-                    placeholder="Enter answer..."
-                  ></textarea>
-                </div>
-              ))}
-              <div className="flex flex-col gap-2 bg-[var(--bg-primary)] p-2 rounded-md">
-                <button
-                  type="button"
-                  className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
-                  onClick={handleGeneratePlanningSubtree}
-                >
-                  {loading ? "Loading..." : "Generate Planning Subtree"}
-                </button>
-              </div>
-            </div>
-          )}
+            <button
+              type="button"
+              className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+              onClick={handleGenerateChilds}
+            >
+              {error
+                ? "Error Click To Re Generate Child Nodes"
+                : loading
+                ? "Loading..."
+                : "Generate Child Nodes"}
+            </button>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

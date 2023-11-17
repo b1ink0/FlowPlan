@@ -40,6 +40,10 @@ export function StateProvider({ children }) {
     location: null,
     type: "add",
   });
+  const [currentNode, setCurrentNode] = useState({
+    show: false,
+    location: null,
+  });
 
   // update state is used to update the flowPlans state
   const [update, setUpdate] = useState(0);
@@ -108,6 +112,8 @@ export function StateProvider({ children }) {
     setOpenai,
     showBottomPanel,
     setShowBottomPanel,
+    currentNode,
+    setCurrentNode
   };
   return (
     // Providing all the states and functions to update the states
