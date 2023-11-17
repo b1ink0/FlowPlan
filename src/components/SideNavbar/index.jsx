@@ -11,6 +11,8 @@ import DeleteIcon from "../../assets/Icons/DeleteIcon";
 import ShareIcon from "../../assets/Icons/ShareIcon";
 import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 import CloseBtnIcon from "../../assets/Icons/CloseBtnIcon";
+import { useWebSocket } from "../../hooks/useWebSocket";
+import nodeThemes from "../../assets/themes/nodeThemes.json";
 
 function SideNavbar() {
   // destructure state from context
@@ -354,7 +356,7 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
         required
         className="text-[var(--text-primary)] w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
       />
-      <Autogeneration />
+      {/* <Autogeneration noteTitle={noteTitle} /> */}
       <button
         type="submit"
         className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
@@ -365,8 +367,9 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
   );
 };
 
-const Autogeneration = () => {
+const Autogeneration = ({ noteTitle }) => {
   const [showAutogenration, setShowAutogenration] = useState(false);
+  const { showBottomPanel, setShowBottomPanel } = useStateContext();
   const [questons, setQuestons] = useState([
     {
       title: "Project Scope",
@@ -471,14 +474,136 @@ const Autogeneration = () => {
       ],
     },
   ]);
+
+  const { handleSendMessage, handleReceiveMessage } = useWebSocket();
+  const [message, setMessage] = useState({});
+  const { openai } = useStateContext();
+  const handleGenerate = async () => {
+    let s = `this questons answer will be given by users as a prompt generate a flow of planning using this context in a tree based form example {"planning": [{name: node name, description: description about node, childs: []...} like this only don't return any other text here node name is the name of node which will be genreated by using the answer to questions and tree should be 4 level deep :
+             use the below questions and answers to generate the flow for planning`;
+    questons.forEach((question, i) => {
+      s += `\n${question.title}\n`;
+      question.questions.forEach((question, j) => {
+        s += `\n${question.question}\n${question.answer}\n`;
+      });
+    });
+    console.log(s);
+    const chatCompletion = await openai?.chat?.completions?.create({
+      messages: [
+        {
+          role: "user",
+          content: s,
+        },
+      ],
+      model: "gpt-3.5-turbo",
+    });
+    console.log(chatCompletion);
+    const plan = JSON.parse(chatCompletion.choices[0].message.content);
+    console.log(plan);
+    Object.keys(plan).forEach((key) => {
+      handleCreateNewTree(plan[key]);
+    });
+    // handleSendMessage(
+    // JSON.stringify({
+    // message: s,
+    // c_id: "t",
+    // })
+    // );
+  };
+  useEffect(() => {
+    // handleReceiveMessage(setMessage);
+  }, []);
+  const { db, defaultNodeConfig } = useStateContext();
+
+  const handleAddNewChildNode = (plans, node) => {
+    if (plans.length === 0) return;
+    console.log(plans);
+    plans.forEach((plan) => {
+      const newRefId = v4();
+      const newNode = createNode(
+        newRefId,
+        plan.name,
+        [],
+        structuredClone(
+          nodeThemes[Math.floor(Math.random() * nodeThemes.length)]
+        ),
+        plan.description
+      );
+      node.children.push(newNode);
+      handleAddNewChildNode(plan.childs, newNode);
+    });
+  };
+
+  const handleCreateNewTree = async (data) => {
+    if (db === null) return;
+    const newRefId = v4();
+    const newRootTreeNode = createNode(
+      newRefId,
+      noteTitle,
+      [],
+      structuredClone(nodeThemes[Math.floor(Math.random() * nodeThemes.length)])
+    );
+
+    const sdlfc = [
+      "Planning",
+      "Design",
+      "Development",
+      "Testing",
+      "Deployment",
+      "Maintenance",
+    ];
+
+    sdlfc.forEach((plan) => {
+      const newRefId = v4();
+      const newNode = createNode(
+        newRefId,
+        plan,
+        [],
+        structuredClone(
+          nodeThemes[Math.floor(Math.random() * nodeThemes.length)]
+        )
+      );
+      newRootTreeNode.children.push(newNode);
+    });
+
+    const newNote = {
+      refId: newRefId,
+      title: noteTitle,
+      root: newRootTreeNode,
+      autogeneration: { stage_1: questons },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    handleAddNewChildNode(data, newRootTreeNode.children[0]);
+
+    console.log(newNote);
+
+    await db?.flowPlans.add(newNote);
+  };
+
+  useEffect(() => {
+    console.log(message);
+    if (Object.keys(message).length === 0) return;
+    try {
+      // const plan = JSON.parse(message?.message);
+      // console.log(plan);
+      // Object.keys(plan).forEach((key) => {
+      // handleCreateNewTree(key, plan[key]);
+      // });
+    } catch (error) {
+      console.error(error);
+    }
+  }, [message]);
   return (
     <>
       <button
         type="button"
-        onClick={() => setShowAutogenration((prev) => !prev)}
+        // onClick={() => setShowAutogenration((prev) => !prev)}
+        onClick={() => setShowBottomPanel((prev) => !prev)}
         className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
       >
-        {showAutogenration ? "Hide" : "Show"} Autogeneration
+        {/* {showAutogenration ? "Hide" : "Show"} Autogeneration */}
+        {showBottomPanel ? "Hide" : "Show"} Autogeneration
       </button>
       <div
         className="h-[500px] overflow-y-auto bg-[var(--bg-secondary)] rounded-md p-2"
@@ -521,6 +646,7 @@ const Autogeneration = () => {
         <button
           type="button"
           className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+          onClick={handleGenerate}
         >
           Generate
         </button>

@@ -77,6 +77,10 @@ export function StateProvider({ children }) {
   const [copyPasteNodeConfig, setCopyPasteNodeConfig] = useState({});
 
   const [ws, setWs] = useState(null);
+
+  const [openai, setOpenai] = useState(null);
+
+  const [showBottomPanel, setShowBottomPanel] = useState(false);
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -100,6 +104,10 @@ export function StateProvider({ children }) {
     setCopyPasteNodeConfig,
     ws,
     setWs,
+    openai,
+    setOpenai,
+    showBottomPanel,
+    setShowBottomPanel,
   };
   return (
     // Providing all the states and functions to update the states
