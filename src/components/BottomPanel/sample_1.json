@@ -1,0 +1,235 @@
+{
+    "design": [
+        {
+            "name": "System Architecture Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "Component Diagram",
+                    "description": "A visual representation of the high-level components and their relationships.",
+                    "childs": []
+                },
+                {
+                    "name": "System Boundary",
+                    "description": "Defining the scope of the system and its interfaces with external systems.",
+                    "childs": []
+                },
+                {
+                    "name": "Platform Selection",
+                    "description": "Choosing the technology stack and platforms for development.",
+                    "childs": []
+                }
+            ]
+        },
+        {
+            "name": "Database Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "Entity-Relationship Diagrams (ERD)",
+                    "description": "Illustrates the entities, attributes, and relationships within the database.",
+                    "childs": []
+                },
+                {
+                    "name": "Schema Definition",
+                    "description": "Specifying the structure and constraints of database tables.",
+                    "childs": []
+                },
+                {
+                    "name": "Indexing Strategy",
+                    "description": "Planning for efficient data retrieval through indexing.",
+                    "childs": []
+                }
+            ]
+        },
+        {
+            "name": "User Interface (UI) Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "Wireframes",
+                    "description": "Basic sketches of UI layouts and elements.",
+                    "childs": []
+                },
+                {
+                    "name": "Mock-ups",
+                    "description": "Detailed, static representations of UI screens.",
+                    "childs": []
+                },
+                {
+                    "name": "Prototypes",
+                    "description": "Interactive models of the user interface for usability testing.",
+                    "childs": []
+                }
+            ]
+        },
+        {
+            "name": "Functional Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "Use Case Diagrams",
+                    "description": "Visual representation of how users interact with the system.",
+                    "childs": []
+                },
+                {
+                    "name": "Flowcharts",
+                    "description": "Diagrams showing the flow of control and data in the software.",
+                    "childs": []
+                },
+                {
+                    "name": "Pseudocode",
+                    "description": "Human-readable code-like descriptions of algorithmic steps.",
+                    "childs": []
+                }
+            ]
+        },
+        {
+            "name": "Algorithm Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "Pseudocode",
+                    "description": "Algorithmic steps described in a structured, code-like manner.",
+                    "childs": []
+                },
+                {
+                    "name": "Flowcharts",
+                    "description": "Diagrams illustrating the flow of logic in algorithms.",
+                    "childs": []
+                },
+                {
+                    "name": "Performance Analysis",
+                    "description": "Evaluating algorithm efficiency and complexity.",
+                    "childs": []
+                }
+            ]
+        },
+        {
+            "name": "Data Flow Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "Data Flow Diagrams (DFD)",
+                    "description": "Visual representation of how data moves through the system.",
+                    "childs": []
+                },
+                {
+                    "name": "Data Transformation Rules",
+                    "description": "Describing how data is processed and transformed.",
+                    "childs": []
+                },
+                {
+                    "name": "Data Mapping",
+                    "description": "Defining data sources, destinations, and transformations.",
+                    "childs": []
+                }
+            ]
+        },
+        {
+            "name": "Security Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "Access Control Lists (ACL)",
+                    "description": "Defining who has access to what data and functions.",
+                    "childs": []
+                },
+                {
+                    "name": "Encryption Algorithms",
+                    "description": "Selecting encryption methods for data protection.",
+                    "childs": []
+                },
+                {
+                    "name": "Threat Modeling",
+                    "description": "Identifying potential security risks and countermeasures.",
+                    "childs": []
+                }
+            ]
+        },
+        {
+            "name": "Error Handling and Recovery Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "Exception Handling",
+                    "description": "Defining how the software should handle errors and exceptions.",
+                    "childs": []
+                },
+                {
+                    "name": "Logging Mechanisms",
+                    "description": "Establishing procedures for recording errors and issues.",
+                    "childs": []
+                },
+                {
+                    "name": "Backup and Recovery Plans",
+                    "description": "Strategies for data backup and system recovery.",
+                    "childs": []
+                }
+            ]
+        },
+        {
+            "name": "Performance and Scalability Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "Load Testing Plans",
+                    "description": "Strategies for evaluating the software's performance under stress.",
+                    "childs": []
+                },
+                {
+                    "name": "Caching Strategies",
+                    "description": "Implementing techniques to enhance performance.",
+                    "childs": []
+                },
+                {
+                    "name": "Horizontal and Vertical Scaling",
+                    "description": "Planning for system expansion.",
+                    "childs": []
+                }
+            ]
+        },
+        {
+            "name": "Documentation Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "Design Documents",
+                    "description": "Creating detailed documents that explain design decisions.",
+                    "childs": []
+                },
+                {
+                    "name": "API Documentation",
+                    "description": "Describing how to use and interact with APIs.",
+                    "childs": []
+                },
+                {
+                    "name": "User Manuals",
+                    "description": "Guides for users to understand and operate the software.",
+                    "childs": []
+                }
+            ]
+        },
+        {
+            "name": "Integration Design",
+            "description": "",
+            "childs": [
+                {
+                    "name": "API Specifications",
+                    "description": "Defining the structure and functionality of APIs.",
+                    "childs": []
+                },
+                {
+                    "name": "Data Mapping",
+                    "description": "Matching data formats between different systems.",
+                    "childs": []
+                },
+                {
+                    "name": "Message Queue Design",
+                    "description": "Establishing communication protocols for integration.",
+                    "childs": []
+                }
+            ]
+        }
+    ]
+}

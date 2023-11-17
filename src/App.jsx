@@ -4,6 +4,7 @@ import Home from "./components/Home";
 import { useStateContext } from "./context/StateContext";
 import { useEffect } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
+import OpenAI from "openai";
 
 // Initialize Database
 const initializeDb = new Dexie("FlowPlan");
@@ -13,7 +14,7 @@ initializeDb.version(1).stores({
 });
 
 const App = () => {
-  const { setDb, setWs } = useStateContext();
+  const { setDb, setWs, setOpenai } = useStateContext();
   const { handleCreateWebSocket } = useWebSocket();
   // Initialize Database on App Load
   useEffect(() => {
@@ -23,9 +24,16 @@ const App = () => {
       // Set Database to Context
       setDb(initDb);
       // Create WebSocket
-      const ws = handleCreateWebSocket();
+      // const ws = handleCreateWebSocket();
       // Set WebSocket to Context
-      setWs(ws);
+      // setWs(ws);
+      // Create OpenAI Instance
+      const openai = new OpenAI({
+        apiKey: "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",
+        dangerouslyAllowBrowser: true,
+      });
+      // Set OpenAI to Context
+      setOpenai(openai);
     };
     init();
   }, []);

@@ -9,6 +9,7 @@ import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 import { useStateContext } from "../../context/StateContext";
 import { useFunctions } from "../../hooks/useFunctions";
 import ReorderNode from "../ReorderNode";
+import DetailNode from "../DetailNode";
 
 function DisplayNode({ node }) {
   // destructure state from context
@@ -81,7 +82,7 @@ function Node({
 
   // local state
   const [deleteMenu, setDeleteMenu] = useState(false);
-
+  const [showDetailNode, setShowDetailNode] = useState(false);
   // for init animation
   // here first translate is calculated so that the node is placed at the same position as of its parent
   const handleInitTranslate = () => {
@@ -215,7 +216,13 @@ function Node({
         key={"reorder-" + node.id}
         handleIfNodeIsChildOfMoveNode={handleIfNodeIsChildOfMoveNode}
       />
-
+      <DetailNode
+        node={node}
+        translate={translate}
+        treeConfig={treeConfig}
+        showDetailNode={showDetailNode}
+        setShowDetailNode={setShowDetailNode}
+      />
       {/* Node Component */}
       <div
         className="absolute duration-500"
@@ -260,6 +267,8 @@ function Node({
           <div className="w-full h-full flex flex-col justify-between items-center">
             {/* Node Title */}
             <h3
+              onMouseEnter={() => setShowDetailNode(true)}
+              onMouseLeave={() => setShowDetailNode(false)}
               style={{
                 fontSize: `${node?.config?.titleConfig?.fontSize}px`,
                 textDecoration: `${

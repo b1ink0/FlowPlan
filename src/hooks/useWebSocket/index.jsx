@@ -20,7 +20,7 @@ export const useWebSocket = () => {
   const handleReceiveMessage = (setData) => {
     ws.onmessage = (event) => {
       console.log(event.data);
-      setData(event.data);
+      setData(JSON.parse(event.data));
     };
   };
 

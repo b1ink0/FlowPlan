@@ -1,0 +1,308 @@
+[
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#6E42DD",
+            "borderColor": "#A62C15",
+            "buttonColor": "#1A3764",
+            "pathColor": "#919050",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#9853B4",
+            "borderColor": "#15041A",
+            "buttonColor": "#307557",
+            "pathColor": "#B8B186",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#A91A3D",
+            "borderColor": "#A1246A",
+            "buttonColor": "#620E2B",
+            "pathColor": "#E380E9",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#2B2753",
+            "borderColor": "#EE94BC",
+            "buttonColor": "#6F2E23",
+            "pathColor": "#8BFE7E",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#4B06AE",
+            "borderColor": "#62BC33",
+            "buttonColor": "#C77E51",
+            "pathColor": "#538A04",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#052D56",
+            "borderColor": "#E26C38",
+            "buttonColor": "#457671",
+            "pathColor": "#558333",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#94A3DA",
+            "borderColor": "#CF4182",
+            "buttonColor": "#9830C0",
+            "pathColor": "#9C76B4",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#0254C4",
+            "borderColor": "#A36811",
+            "buttonColor": "#8664F9",
+            "pathColor": "#255275",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#8D50AD",
+            "borderColor": "#EA8A38",
+            "buttonColor": "#1CA021",
+            "pathColor": "#A62C59",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#38608E",
+            "borderColor": "#3C4A1A",
+            "buttonColor": "#80A6FB",
+            "pathColor": "#19C623",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#302B9A",
+            "borderColor": "#86A175",
+            "buttonColor": "#D31082",
+            "pathColor": "#F1CECA",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#4C19E3",
+            "borderColor": "#97E0FD",
+            "buttonColor": "#C665C9",
+            "pathColor": "#75AA76",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#C95382",
+            "borderColor": "#CE7B5E",
+            "buttonColor": "#F285A5",
+            "pathColor": "#F02AD1",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#126782",
+            "borderColor": "#DFB2FE",
+            "buttonColor": "#B9760F",
+            "pathColor": "#C6A2C6",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#76076C",
+            "borderColor": "#47536C",
+            "buttonColor": "#D96785",
+            "pathColor": "#FDBCD9",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#4A6D55",
+            "borderColor": "#63E04E",
+            "buttonColor": "#5FC542",
+            "pathColor": "#35AB5F",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#BD5198",
+            "borderColor": "#D3F143",
+            "buttonColor": "#5A4363",
+            "pathColor": "#5AD8A8",
+            "opacity": 100
+        }
+    },
+    {
+        "titleConfig": {
+            "fontSize": 24,
+            "strickthrough": false,
+            "italic": false,
+            "bold": false,
+            "color": "var(--text-primary)",
+            "fontFamily": "var(--font-primary)"
+        },
+        "nodeConfig": {
+            "backgroundColor": "#145EC5",
+            "borderColor": "#EBEE59",
+            "buttonColor": "#0BD4F3",
+            "pathColor": "#B7BE05",
+            "opacity": 100
+        }
+    }
+]

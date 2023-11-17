@@ -1,8 +1,9 @@
 // Define a function for creating a new node
-function createNode(id, title, data = [], config = {}) {
+function createNode(id, title, data = [], config = {}, description = "") {
   return {
     id,
     title,
+    description,
     data,
     config,
     expanded: true,
