@@ -91,6 +91,7 @@ function Node({
   // local state
   const [deleteMenu, setDeleteMenu] = useState(false);
   const [showDetailNode, setShowDetailNode] = useState(false);
+  const [overWriteShowDetailNode, setOverWriteShowDetailNode] = useState(false);
   // for init animation
   // here first translate is calculated so that the node is placed at the same position as of its parent
   const handleInitTranslate = () => {
@@ -282,7 +283,10 @@ function Node({
             {/* Node Title */}
             <h3
               onMouseEnter={() => setShowDetailNode(true)}
-              onMouseLeave={() => setShowDetailNode(false)}
+              onMouseLeave={() =>
+                overWriteShowDetailNode ? null : setShowDetailNode(false)
+              }
+              onClick={() => setOverWriteShowDetailNode((prev) => !prev)}
               style={{
                 fontSize: `${node?.config?.titleConfig?.fontSize}px`,
                 textDecoration: `${
