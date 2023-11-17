@@ -68,16 +68,18 @@ function Navbar() {
           onChange={handleSearch}
           className="text-[var(--text-primary)] w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
         />
-        <div className="absolute top-10 left-0 w-full bg-[var(--bg-secondary)] rounded-md shadow-md border-2 border-[var(--border-primary)]">
-          {searchResults.map((result, index) => (
-            <div
-              key={index}
-              className="px-2 py-1 hover:bg-[var(--bg-tertiary)] cursor-pointer border-b-2 border-[var(--border-primary)] "
-            >
-              {result.title}
-            </div>
-          ))}
-        </div>
+        {searchResults.length > 0 && (
+          <div className="max-h-[400px] overflow-y-auto absolute top-10 left-0 w-full bg-[var(--bg-secondary)] rounded-md shadow-md border-2 border-[var(--border-primary)]">
+            {searchResults.map((result, index) => (
+              <div
+                key={index}
+                className="px-2 py-1 hover:bg-[var(--bg-tertiary)] cursor-pointer border-b-2 border-[var(--border-primary)] "
+              >
+                {result.title}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

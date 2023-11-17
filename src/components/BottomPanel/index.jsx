@@ -56,9 +56,10 @@ function BottomPanel() {
         showSideNavbar={currentNode}
       />
       {node ? (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1">
-          <h3 className="w-full text-center border-b border-b-[var(--border-primary)] text-lg font-medium py-1 px-2 text-[var(--text-primary)] text-ellipsis overflow-hidden">
-            Auto Genration Options For {node?.title}
+        <div className="w-full h-full flex flex-col justify-start items-center">
+          <h3 className="w-full h-fit text-center border-b border-b-[var(--border-primary)] text-lg font-medium py-1 px-2 text-[var(--text-primary)]">
+            {/* Auto Genration Options For:  */}
+            {node?.title}
           </h3>
           <Autogeneration node={node} />
         </div>
@@ -165,6 +166,27 @@ const Autogeneration = ({ node }) => {
     // update currentFlowPlan in indexedDB
   };
 
+  const handleAddTasks = async (tasks, location) => {
+    let root = currentFlowPlan.root;
+    let parentNode = currentFlowPlan.root;
+    // loop through location array to get parent node to edit
+    location.forEach((index) => {
+      parentNode = parentNode.children[index];
+    });
+    let newTasks = [];
+    tasks.forEach((task) => {
+      newTasks.push({
+        title: task,
+        done: false,
+      });
+    });
+    parentNode["tasks"] = newTasks;
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateDb(root, currentFlowPlan.refId);
+    setUpdate((prev) => prev + 1);
+    // update currentFlowPlan in indexedDB
+  };
+
   // helper function for updating database
   const handleUpdateDb = async (node, refId) => {
     await db.flowPlans
@@ -219,7 +241,55 @@ const Autogeneration = ({ node }) => {
     setLoading(false);
   };
 
-  const handleGenerateTasks = async () => {};
+  const handleGenerateTasks = async () => {
+    setError(false);
+    if (projectName === "" || problemStatement === "") return;
+    setLoading(true);
+    let prompt = `
+      Initialize:
+      1. you are going to behave like a api with returns only json data.
+      2. you are going to  create a array of tasks for given input in context of  software development life cycle.
+      input:
+      generate tasks for: ${node.title} Phase
+      1. project name: ${projectName}
+      2. problem statement: ${problemStatement}
+      3. Extra Instructions: ${extraPrompt}
+      output:
+      [task1,task2,...]
+      constraints:
+      1. array of elements should be 7 to 10 in length at least.
+      2. response should strictly only in array of tasks returned in above defined output format.
+    `;
+
+    try {
+      console.log(prompt);
+      const chatCompletion = await openai?.chat?.completions?.create({
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.2,
+        model: "gpt-3.5-turbo",
+      });
+
+      console.log(chatCompletion);
+      const output = chatCompletion.choices[0].message.content;
+      console.log(output);
+      const list = JSON.parse(output); // setNodeNameList(list.subpoints);
+      console.log(list);
+      if (list?.tasks?.length > 0) {
+        await handleAddTasks(list.tasks, currentNode.location);
+      } else {
+        await handleAddTasks(list, currentNode.location);
+      }
+    } catch (err) {
+      console.log(err);
+      setError(true);
+    }
+    setLoading(false);
+  };
 
   const handleGenerateChilds = async () => {
     setError(false);
@@ -326,27 +396,30 @@ const Autogeneration = ({ node }) => {
               <button
                 type="button"
                 className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+                disabled={loading}
                 onClick={handleGenerateDescription}
               >
-                {loading ? "Loading..." : "Generate Description"}
+                {loading ? "Generating..." : "Generate Description"}
               </button>
               <button
                 type="button"
                 className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+                disabled={loading}
                 onClick={handleGenerateTasks}
               >
-                {loading ? "Loading..." : "Generate Tasks"}
+                {loading ? "Generating..." : "Generate Tasks"}
               </button>
             </div>
             <button
               type="button"
               className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
               onClick={handleGenerateChilds}
+              disabled={loading}
             >
               {error
                 ? "Error Click To Re Generate Child Nodes"
                 : loading
-                ? "Loading..."
+                ? "Generating..."
                 : "Generate Child Nodes"}
             </button>
           </div>
