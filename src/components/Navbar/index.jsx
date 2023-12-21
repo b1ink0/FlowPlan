@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import { useToggleTheme } from "../../hooks/useToggleTheme";
 import ThemeIcon from "../../assets/Icons/ThemeIcon";
 import SettingsIcon from "../../assets/Icons/SettingsIcon";
 import BackgroundIcon from "../../assets/Icons/BackgroundIcon";
 import SelectedIcon from "../../assets/Icons/SelectedIcon";
+import BackIcon from "../../assets/Icons/BackIcon";
 
 function Navbar() {
   const { setMove, settings, setSettings } = useStateContext();
@@ -108,17 +109,35 @@ const BackgroundSettings = () => {
     setCurrentGlobalBackground(background);
     localStorage.setItem("currentGlobalBackground", JSON.stringify(background));
   };
+  const [index, setIndex] = useState(0);
+  const scrollContainerRef = useRef(null);
+
+  const nextBackground = () => {
+    setIndex((prevIndex) => (prevIndex + 1) % globalBackgrounds.length);
+    scrollContainerRef.current.scrollLeft += 100; // Adjust the scroll distance as needed
+  };
+
+  const prevBackground = () => {
+    setIndex(
+      (prevIndex) =>
+        (prevIndex - 1 + globalBackgrounds.length) % globalBackgrounds.length
+    );
+    scrollContainerRef.current.scrollLeft -= 100; // Adjust the scroll distance as needed
+  };
 
   return (
     <div className="w-full h-fit overflow-hidden rounded-md bg-[var(--bg-primary)] border-2 border-[var(--border-primary)]">
-      <div class="small-scroll-bar snap-mandatory snap-x flex shrink-0 overflow-x-auto pb-2 relative">
+      <div
+        ref={scrollContainerRef}
+        className="small-scroll-bar snap-mandatory snap-x flex shrink-0 overflow-x-auto pb-2 relative"
+      >
         {globalBackgrounds.map((background, index) => (
           <div
             key={"background-" + index}
-            class="snap-center shrink-0 w-full h-[80px] cursor-pointer flex justify-center items-center relative"
+            className="snap-center shrink-0 w-full h-[80px] cursor-pointer flex justify-center items-center relative"
           >
             <div
-              class="shrink-0 w-full h-[80px] cursor-pointer flex justify-center items-center relative"
+              className="shrink-0 w-full h-[80px] cursor-pointer flex justify-center items-center relative"
               style={{
                 backgroundImage: background.backgroundImage,
                 backgroundRepeat: background.backgroundRepeat,
@@ -137,8 +156,42 @@ const BackgroundSettings = () => {
           </div>
         ))}
       </div>
-      <div className="flex flex-col text-sm">
-        <div className="flex justify-between items-center gap-2 px-1 py-1">
+
+      <div className="flex flex-col text-sm p-1 gap-1">
+        <div className="flex justify-between items-center gap-2 rounded-md">
+          <button
+            className="w--8 h-6 flex justify-center items-center  rounded-md bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
+            onClick={prevBackground}
+          >
+            <span className="flex justify-center items-center w-4 h-5 rotate-180">
+              <BackIcon />
+            </span>
+          </button>
+          <div>
+            {
+              globalBackgrounds.map((background, index) => (
+                <span
+                  key={"background-" + index}
+                  className={`w-3 h-3 rounded-full inline-block ${
+                    background.backgroundImage ===
+                    currentGlobalBackground.backgroundImage
+                      ? "bg-[var(--logo-primary)]"
+                      : "bg-[var(--bg-secondary)]"
+                  }`}
+                ></span>
+              ))[index]
+            }
+          </div>
+          <button
+            className="w-8 h-6 rounded-md bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
+            onClick={nextBackground}
+          >
+            <span className="flex justify-center items-center w-4 h-5">
+              <BackIcon />
+            </span>
+          </button>
+        </div>
+        <div className="flex justify-between  items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
           <span className="text-[var(--text-primary)]">Opacity:</span>
           <input
             type="number"
@@ -154,10 +207,10 @@ const BackgroundSettings = () => {
                     : currentGlobalBackground.opacity,
               })
             }
-            className="w-[80px] h-6 rounded-md bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+            className="w-[80px] h-6 rounded-md bg-[var(--bg-primary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
           />
         </div>
-        <div className="flex justify-between items-center gap-2 px-1 py-1">
+        <div className="flex justify-between items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
           <span className="text-[var(--text-primary)]">BG Size:</span>
           <input
             type="text"
@@ -168,10 +221,10 @@ const BackgroundSettings = () => {
                 backgroundSize: e.target.value,
               })
             }
-            className="w-[80px] h-6 rounded-md bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+            className="w-[80px] h-6 rounded-md bg-[var(--bg-primary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
           />
         </div>
-        <div className="flex justify-between items-center gap-2 px-1 py-1">
+        <div className="flex justify-between items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
           <span className="text-[var(--text-primary)]">BG Repeat:</span>
           <select
             value={currentGlobalBackground.backgroundRepeat}
@@ -181,7 +234,7 @@ const BackgroundSettings = () => {
                 backgroundRepeat: e.target.value,
               })
             }
-            className="w-[80px] text-xs h-6 rounded-md bg-[var(--bg-secondary)] px-1 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+            className="w-[80px] text-xs h-6 rounded-md bg-[var(--bg-primary)] px-1 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
           >
             <option value="repeat">Repeat</option>
             <option value="no-repeat">No Repeat</option>
@@ -189,7 +242,7 @@ const BackgroundSettings = () => {
             <option value="repeat-y">Repeat Y</option>
           </select>
         </div>
-        <div className="flex justify-between items-center gap-2 px-1 py-1">
+        <div className="flex justify-between items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
           <span className="text-[var(--text-primary)]">BG Position:</span>
           <select
             value={currentGlobalBackground.backgroundPosition}
@@ -199,7 +252,7 @@ const BackgroundSettings = () => {
                 backgroundPosition: e.target.value,
               })
             }
-            className="w-[80px] text-xs h-6 rounded-md bg-[var(--bg-secondary)] px-1 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+            className="w-[80px] text-xs h-6 rounded-md bg-[var(--bg-primary)] px-1 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
           >
             <option value="center">Center</option>
             <option value="left">Left</option>
