@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import BackIcon from "../../assets/Icons/BackIcon";
 import { useStateContext } from "../../context/StateContext";
 import OpenAI from "openai";
-import sample_1 from "./sample_1.json";
-import sample_2 from "./sample_2.json";
 import nodeThemes from "../../assets/themes/nodeThemes.json";
 import { v4 } from "uuid";
 import { createNode } from "../../hooks/useTree";
