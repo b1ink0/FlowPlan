@@ -1,5 +1,8 @@
 // @ts-check
 import React, { useContext, useState } from "react";
+import bg_1 from "../assets/backgrounds/bg-1.png";
+import bg_2 from "../assets/backgrounds/bg-2.png";
+import bg_3 from "../assets/backgrounds/bg-3.jpg";
 
 // Creating Context
 const StateContext = React.createContext();
@@ -75,6 +78,45 @@ export function StateProvider({ children }) {
   };
 
   const [copyPasteNodeConfig, setCopyPasteNodeConfig] = useState({});
+  const [globalBackgrounds, setGlobalBackgrounds] = useState([
+    {
+      backgroundImage: "url(" + bg_1 + ")",
+      backgroundRepeat: "repeat",
+      backgroundSize: "300px",
+      backgroundPosition: "center",
+      opacity: "0.2",
+    },
+    {
+      backgroundImage: "url(" + bg_2 + ")",
+      backgroundRepeat: "repeat",
+      backgroundSize: "150px",
+      backgroundPosition: "center",
+      opacity: "0.2",
+    },
+    {
+      backgroundImage: "url(" + bg_3 + ")",
+      backgroundRepeat: "no-repeat",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      opacity: "0.2",
+    },
+  ]);
+  const [currentGlobalBackground, setCurrentGlobalBackground] = useState(() => {
+    const currentGlobalBackground = localStorage.getItem(
+      "currentGlobalBackground"
+    );
+    if (currentGlobalBackground) {
+      return JSON.parse(currentGlobalBackground);
+    } else {
+      return {
+        backgroundImage: "url(" + bg_1 + ")",
+        backgroundRepeat: "repeat",
+        backgroundSize: "300px",
+        backgroundPosition: "center",
+        opacity: "0.2",
+      };
+    }
+  });
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -95,7 +137,11 @@ export function StateProvider({ children }) {
     setAnimation,
     defaultNodeConfig,
     copyPasteNodeConfig,
-    setCopyPasteNodeConfig 
+    setCopyPasteNodeConfig,
+    globalBackgrounds,
+    setGlobalBackgrounds,
+    currentGlobalBackground,
+    setCurrentGlobalBackground,
   };
   return (
     // Providing all the states and functions to update the states

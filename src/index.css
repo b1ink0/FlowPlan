@@ -146,6 +146,10 @@ body {
   border-radius: 20px;
 }
 
+.small-scroll-bar::-webkit-scrollbar {
+  height: 10px;
+}
+
 .hide-scroll-bar {
   scrollbar-width: none;
 }
