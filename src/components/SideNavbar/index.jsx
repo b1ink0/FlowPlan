@@ -376,7 +376,7 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
         type="text"
         value={noteTitle}
         onChange={(e) => setNoteTitle(e.target.value)}
-        placeholder="Enter note title..."
+        placeholder="Enter title..."
         required
         className="text-[var(--text-primary)] w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
       />
