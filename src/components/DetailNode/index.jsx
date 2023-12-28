@@ -11,7 +11,7 @@ function DetailNode({
   treeConfig,
 }) {
   const { config } = node;
-  const { db, currentFlowPlan, setCurrentFlowPlan } = useStateContext();
+  const { db, currentFlowPlan, setCurrentFlowPlan, setUpdate } = useStateContext();
   const [showMoreDescription, setShowMoreDescription] = useState(false);
   if (!showDetailNode) return null;
 
