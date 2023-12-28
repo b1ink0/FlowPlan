@@ -113,11 +113,13 @@ const BackgroundSettings = () => {
   const scrollContainerRef = useRef(null);
 
   const nextBackground = () => {
+    if (globalBackgrounds.length - 1 === index) return;
     setIndex((prevIndex) => (prevIndex + 1) % globalBackgrounds.length);
     scrollContainerRef.current.scrollLeft += 100; // Adjust the scroll distance as needed
   };
 
   const prevBackground = () => {
+    if (index === 0) return;
     setIndex(
       (prevIndex) =>
         (prevIndex - 1 + globalBackgrounds.length) % globalBackgrounds.length
@@ -162,6 +164,7 @@ const BackgroundSettings = () => {
           <button
             className="w--8 h-6 flex justify-center items-center  rounded-md bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
             onClick={prevBackground}
+            disabled={index === 0 ? true : false}
           >
             <span className="flex justify-center items-center w-4 h-5 rotate-180">
               <BackIcon />
@@ -185,6 +188,7 @@ const BackgroundSettings = () => {
           <button
             className="w-8 h-6 rounded-md bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
             onClick={nextBackground}
+            disabled={globalBackgrounds.length === index ? true : false}
           >
             <span className="flex justify-center items-center w-4 h-5">
               <BackIcon />
