@@ -4,6 +4,7 @@ import { useStateContext } from "../../context/StateContext";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import ResetIcon from "../../assets/Icons/ResetIcon";
 import DisplayNode from "../DisplayNode";
+import Background from "../Background";
 
 const DisplayTree = ({ node }) => {
   // destructure state from context
@@ -13,7 +14,8 @@ const DisplayTree = ({ node }) => {
   const { treeConfig } = settings;
 
   return (
-    <div className="hide-scroll-bar relative h-full grow bg-[var(--bg-primary)] flex justify-center items-center overflow-hidden cursor-grab">
+    <div className="hide-scroll-bar relative h-full grow  flex justify-center items-center overflow-hidden cursor-grab">
+      <Background />
       {/* Transform component for zoom and drag */}
       <TransformWrapper
         minScale={0.1}
@@ -36,7 +38,7 @@ const DisplayTree = ({ node }) => {
                       ? "flex-start"
                       : "center",
                 }}
-                className=" active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative bg-[var(--bg-primary)] flex  transition-all duration-100 p-2"
+                className=" active:cursor-grabbing min-w-[100vw] min-h-[100vh] relative  flex  transition-all duration-100 p-2"
               >
                 {/* Svg for paths */}
                 <Svg
@@ -256,7 +258,7 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
       adjust1 = (nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) / 2;
       adjust3 = 24;
       // else starting point is parentPosition.x - adjust1 and parentPosition.y + adjust1 * 2
-      y1 = parentPosition.x - adjust1 ;
+      y1 = parentPosition.x - adjust1;
       x1 = parentPosition.y + adjust1 * 2 + adjust3 - 1;
       y2 = parentPosition.x - adjust1;
       x2 = parentPosition.y + adjust2 - adjust1 * 2;
