@@ -29,7 +29,7 @@ const App = () => {
       // setWs(ws);
       // Create OpenAI Instance
       const openai = new OpenAI({
-        apiKey: "",
+        apiKey: import.meta.env.VITE_OPEN_AI_API_KEY,
         dangerouslyAllowBrowser: true,
       });
       // Set OpenAI to Context
