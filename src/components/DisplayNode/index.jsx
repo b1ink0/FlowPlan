@@ -64,8 +64,15 @@ function Node({
   parent = null,
 }) {
   // destructure state from context
-  const { settings, setAddEditNode, move, setMove, update, animation } =
-    useStateContext();
+  const {
+    settings,
+    setAddEditNode,
+    move,
+    setMove,
+    update,
+    animation,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
 
   // destructure node config from settings
   const { nodeConfig, treeConfig } = settings;
@@ -136,6 +143,10 @@ function Node({
           location: location,
           type: type,
         });
+        break;
+
+      case "displayDocView":
+        setCurrentFlowPlanNode(node);
         break;
       // if type is delete then delete node without its children its children become children of the node's parent
       case "delete":
@@ -278,6 +289,7 @@ function Node({
                 borderColor: `${node?.config?.nodeConfig?.borderColor}`,
               }}
               className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
+              onClick={() => handleNode("displayDocView")}
             >
               {node?.title}
             </h3>
