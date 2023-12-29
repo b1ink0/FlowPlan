@@ -36,6 +36,7 @@ export function StateProvider({ children }) {
 
   // currentFlowPlan state contains the current selected note
   const [currentFlowPlan, setCurrentFlowPlan] = useState(null);
+  const [currentFlowPlanNode, setCurrentFlowPlanNode] = useState(null);
 
   // addEditNode state contains the information to show the add/edit node modal
   const [addEditNode, setAddEditNode] = useState({
@@ -127,6 +128,8 @@ export function StateProvider({ children }) {
     setFlowPlans,
     currentFlowPlan,
     setCurrentFlowPlan,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
     addEditNode,
     setAddEditNode,
     update,
