@@ -24,29 +24,48 @@ import ColorIcon from "../../assets/Icons/ColorIcon";
 import RandomIcon from "../../assets/Icons/RandomIcon";
 import FontIcon from "../../assets/Icons/FontIcon";
 import ResetToDefaultIcon from "../../assets/Icons/ResetToDefaultIcon";
+import LeftAlignIcon from "../../assets/Icons/LeftAlignIcon";
+import CenterAlignIcon from "../../assets/Icons/CenterAlignIcon";
+import RightAlignIcon from "../../assets/Icons/RightAlignIcon";
+import { v4 } from "uuid";
+import EditIcon from "../../assets/Icons/EditIcon";
+import DeleteIcon from "../../assets/Icons/DeleteIcon";
 
 function DisplayDocView() {
-  const { currentFlowPlanNode, setCurrentFlowPlanNode, defaultNodeConfig } =
-    useStateContext();
-  const { config } = currentFlowPlanNode;
+  const {
+    currentFlowPlan,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+    defaultNodeConfig,
+  } = useStateContext();
+  const config = currentFlowPlanNode?.config;
   const [currentFieldType, setCurrentFieldType] = useState(null);
-  const [node, setNode] = useState(currentFlowPlanNode);
+  const [currentField, setCurrentField] = useState(null);
+  const [node, setNode] = useState(null);
 
-  const handleNode = (type) => {
-    switch (type) {
-      case "displayDocView":
-        setCurrentFieldType(null);
-        break;
-      default:
-        break;
-    }
+  const handleEditField = (field, i) => {
+    setCurrentFieldType(field.type);
+    setCurrentField({
+      ...field,
+      index: i,
+    });
   };
 
+  useEffect(() => {
+    if (!currentFlowPlanNode) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    setNode(node);
+    console.log(node);
+  }, [currentFlowPlanNode]);
   return (
     <div
       className={`${
         // if addEditNode.show is true then show component else hide component
-        !currentFlowPlanNode ? "translate-x-full" : ""
+        !node ? "translate-x-full" : ""
       } z-10 transition-all duration-200 w-1/2 grow-0 h-full absolute right-0 top-0 bg-[var(--bg-primary-translucent)] text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
       <button
@@ -68,25 +87,88 @@ function DisplayDocView() {
             fontFamily: `${config?.titleConfig?.fontFamily}`,
             borderColor: `${config?.nodeConfig?.borderColor}`,
           }}
-          className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
-          onClick={() => handleNode("displayDocView")}
+          className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300"
         >
-          {currentFlowPlanNode?.title}
+          {node?.title}
         </h3>
         <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
           {node?.data?.length ? (
-            <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1"></div>
+            <div></div>
           ) : (
             <div className="flex justify-center items-center flex-col">
-              <span>＞﹏＜</span>
               <p className="text-[var(--text-primary)]">
                 Add Something From Below Menu
               </p>
             </div>
           )}
-          <AddEditField node={node} setNode={setNode} type={currentFieldType} />
-          <div className="shrink-0 w-full h-full flex flex-col justify-start items-center gap-2 overflow-y-auto">
-            <MenuButtons setType={setCurrentFieldType} />
+
+          <div className="shrink-0 w-full h-full flex flex-col justify-start items-center gap-0 overflow-y-auto">
+            {node?.data?.map((field, i) =>
+              field.type === "heading" ? (
+                <div className="w-full">
+                  <h3
+                    key={"field-id-" + field.type + "-" + i}
+                    style={{
+                      fontSize: `${field?.config?.fontSize}px`,
+                      textDecoration: `${
+                        field?.config?.strickthrough ? "line-through" : "none"
+                      }`,
+                      fontStyle: `${
+                        field?.config?.italic ? "italic" : "normal"
+                      }`,
+                      fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+                      color: `${field?.config?.color}`,
+                      fontFamily: `${field?.config?.fontFamily}`,
+                      borderColor: `${field?.config?.nodeConfig?.borderColor}`,
+                      textAlign: `${field?.config?.align}`,
+                      display:
+                        field?.id === currentField?.id ? "none" : "block",
+                    }}
+                    className="relative group text-[var(--text-primary)] w-full h-fit text-center text-2xl transition-colors duration-300 cursor-pointer"
+                    onDoubleClick={() => handleEditField(field, i)}
+                  >
+                    {field?.data?.text}
+                    <span className="group-hover:opacity-100 opacity-0  transition-opacity absolute flex justify-center items-center w-8 h-full right-1 top-0">
+                      <button
+                        onClick={() => handleEditField(field, i)}
+                        className="w-full h-8 bg-[var(--bg-tertiary)] px-1 rounded-md"
+                      >
+                        <EditIcon />
+                      </button>
+                    </span>
+                  </h3>
+                  {currentField?.id === field?.id && (
+                    <AddEditField
+                      setCurrentFieldType={setCurrentFieldType}
+                      node={node}
+                      setNode={setNode}
+                      type={currentFieldType}
+                      currentField={currentField}
+                      setCurrentField={setCurrentField}
+                      currentFieldType={currentFieldType}
+                    />
+                  )}
+                </div>
+              ) : (
+                ""
+              )
+            )}
+            {!currentField?.id && (
+              <AddEditField
+                setCurrentFieldType={setCurrentFieldType}
+                node={node}
+                setNode={setNode}
+                type={currentFieldType}
+                currentField={currentField}
+                setCurrentField={setCurrentField}
+                currentFieldType={currentFieldType}
+              />
+            )}
+
+            <MenuButtons
+              setCurrentField={setCurrentField}
+              setType={setCurrentFieldType}
+            />
           </div>
         </div>
       </div>
@@ -94,7 +176,7 @@ function DisplayDocView() {
   );
 }
 
-const MenuButtons = ({ setType }) => {
+const MenuButtons = ({ setType, setCurrentField }) => {
   const buttons = [
     {
       type: "heading",
@@ -159,6 +241,7 @@ const MenuButtons = ({ setType }) => {
   ];
 
   const handleButtonClick = (text) => {
+    setCurrentField(null);
     setType(text);
   };
 
@@ -197,10 +280,39 @@ const ToolTip = ({ text }) => {
   );
 };
 
-const AddEditField = ({ type, node, setNode }) => {
-  switch (type) {
+const AddEditField = ({
+  setCurrentFieldType,
+  currentFieldType,
+  type,
+  node,
+  setNode,
+  currentField,
+  setCurrentField,
+}) => {
+  const { currentFlowPlan, setCurrentFlowPlan, defaultNodeConfig } =
+    useStateContext();
+  useEffect(() => {
+    if (currentField) return;
+    setCurrentField({
+      type: type,
+      data: {
+        text: "",
+      },
+      config: { ...defaultNodeConfig.titleConfig, align: "left" },
+    });
+  }, [type]);
+  switch (currentField?.type) {
     case "heading":
-      return <InputTitle node={node} setNode={setNode} config={node.config} />;
+      return (
+        <InputTitle
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          node={node}
+          setNode={setNode}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
+      );
     case "paragraph":
       return (
         <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
@@ -312,59 +424,72 @@ const AddEditField = ({ type, node, setNode }) => {
       break;
   }
 };
-const InputTitle = ({ node, setNode, inputRef, config }) => {
+const InputTitle = ({
+  setCurrentFieldType,
+  node,
+  setNode,
+  currentField,
+  setCurrentField,
+}) => {
   const handleTitleChange = (e) => {
-    setNode({
-      ...node,
-      data: [
-        ...node.data,
-        {
-          type: "heading",
-          data: e.target.value,
-          config: {
-            ...config,
-            titleConfig: {
-              ...config.titleConfig,
-            },
-          },
-        },
-      ],
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        text: e.target.value,
+      },
     });
   };
   return (
-    <div className="w-full flex flex-col justify-center items-start gap-1 px-2">
-      <label
-        htmlFor="title"
-        className="text-[var(--text-primary)] text-sm font-medium"
-      >
-        Title:
-      </label>
+    <div className="w-full flex flex-col justify-center items-start gap-0">
       <input
-        ref={inputRef}
         type="text"
-        value={node.title}
+        autoFocus={true}
+        value={currentField?.data?.text ?? ""}
         onChange={handleTitleChange}
-        placeholder="Enter note title..."
+        placeholder="Enter heading..."
         required
-        className="text-[var(--text-primary)] w-full px-2 py-1 rounded-md bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+        className="text-[var(--text-primary)] w-full rounded-md bg-transparent focus:outline-none focus:border-transparent"
         style={{
-          fontSize: `${config?.titleConfig?.fontSize}px`,
+          fontSize: `${currentField?.config?.fontSize}px`,
           textDecoration: `${
-            config?.titleConfig?.strickthrough ? "line-through" : "none"
+            currentField?.config?.strickthrough ? "line-through" : "none"
           }`,
-          fontStyle: `${config?.titleConfig?.italic ? "italic" : "normal"}`,
-          fontWeight: `${config?.titleConfig?.bold ? "bold" : "normal"}`,
-          fontFamily: `${config?.titleConfig?.fontFamily}`,
-          color: `${config?.titleConfig?.color}`,
+          fontStyle: `${currentField?.config?.italic ? "italic" : "normal"}`,
+          fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+          fontFamily: `${currentField?.config?.fontFamily}`,
+          color: `${currentField?.config?.color}`,
+          textAlign: `${currentField?.config?.align}`,
         }}
       />
-      <InputTitleButtons config={config} node={node} setNode={setNode} />
+      <InputTitleButtons
+        config={currentField?.config}
+        node={node}
+        setNode={setNode}
+        currentField={currentField}
+        setCurrentField={setCurrentField}
+        setCurrentFieldType={setCurrentFieldType}
+      />
     </div>
   );
 };
 
-const InputTitleButtons = ({ config, node, setNode }) => {
-  const { defaultNodeConfig } = useStateContext();
+const InputTitleButtons = ({
+  config,
+  node,
+  setNode,
+  currentField,
+  setCurrentField,
+  setCurrentFieldType,
+}) => {
+  const {
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    defaultNodeConfig,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
   const { handleGetRandomColor } = useFunctions();
   const {
     ref: fontSizeRef,
@@ -380,6 +505,11 @@ const InputTitleButtons = ({ config, node, setNode }) => {
     ref: fontFamilyRef,
     isActive: fontFamilyActive,
     setIsActive: setFontFamilyActive,
+  } = useClickOutside(false);
+  const {
+    ref: alignRef,
+    isActive: alignActive,
+    setIsActive: setAlignActive,
   } = useClickOutside(false);
 
   const fontSizes = [10, 12, 14, 16, 18, 20, 22, 24, 26];
@@ -406,6 +536,24 @@ const InputTitleButtons = ({ config, node, setNode }) => {
     "Arial Black",
     "Impact",
   ];
+  const aligns = [
+    {
+      a: "L",
+      type: "left",
+      icon: <LeftAlignIcon />,
+    },
+    {
+      a: "C",
+      type: "center",
+      icon: <CenterAlignIcon />,
+    },
+    {
+      a: "R",
+      type: "right",
+      icon: <RightAlignIcon />,
+    },
+  ];
+
   const handleFontSizeClick = () => {
     setFontSizeActive((prev) => !prev);
   };
@@ -414,82 +562,62 @@ const InputTitleButtons = ({ config, node, setNode }) => {
   };
   const handleFontSizeChange = (e) => {
     e.stopPropagation();
-    setNode({
-      ...node,
+    setCurrentField({
+      ...currentField,
       config: {
-        ...config,
-        titleConfig: {
-          ...config.titleConfig,
-          fontSize: parseInt(e.target.value),
-        },
+        ...currentField.config,
+        fontSize: parseInt(e.target.value),
       },
     });
     setFontSizeActive(false);
   };
   const handleColorChange = (e) => {
     e.stopPropagation();
-    setNode({
-      ...node,
+    setCurrentField({
+      ...currentField,
       config: {
-        ...config,
-
-        titleConfig: {
-          ...config.titleConfig,
-          color: e.target.value,
-        },
+        ...currentField.config,
+        color: e.target.value,
       },
     });
     setColorActive(false);
   };
   const handleActiveColorChange = (e) => {
     e.stopPropagation();
-    setNode({
-      ...node,
+    setCurrentField({
+      ...currentField,
       config: {
-        ...config,
-        titleConfig: {
-          ...config.titleConfig,
-          color: e.target.value,
-        },
+        ...currentField.config,
+        color: e.target.value,
       },
     });
   };
 
   const handleStrickthroughClick = () => {
-    setNode({
-      ...node,
+    setCurrentField({
+      ...currentField,
       config: {
-        ...config,
-        titleConfig: {
-          ...config.titleConfig,
-          strickthrough: !config.titleConfig.strickthrough,
-        },
+        ...currentField.config,
+        strickthrough: !currentField.config.strickthrough,
       },
     });
   };
   const handleItalicClick = () => {
-    setNode({
-      ...node,
+    setCurrentField({
+      ...currentField,
       config: {
-        ...config,
-
-        titleConfig: {
-          ...config.titleConfig,
-          italic: !config.titleConfig.italic,
-        },
+        ...currentField.config,
+        italic: !currentField.config.italic,
       },
     });
   };
 
   const handleBoldClick = () => {
-    setNode({
-      ...node,
+    setCurrentField({
+      ...currentField,
       config: {
-        ...config,
-        titleConfig: {
-          ...config.titleConfig,
-          bold: !config.titleConfig.bold,
-        },
+        ...currentField.config,
+        bold: !currentField.config.bold,
       },
     });
   };
@@ -500,45 +628,105 @@ const InputTitleButtons = ({ config, node, setNode }) => {
 
   const handleFontFamilytChange = (e) => {
     e.stopPropagation();
-    setNode({
-      ...node,
+    setCurrentField({
+      ...currentField,
       config: {
-        ...config,
-        titleConfig: {
-          ...config.titleConfig,
-          fontFamily: e.target.value,
-        },
+        ...currentField.config,
+        fontFamily: e.target.value,
       },
     });
     setFontFamilyActive(false);
   };
 
-  const handleSetTitleColor = (color) => {
-    setNode({
-      ...node,
+  const handleAlignClick = () => {
+    setAlignActive((prev) => !prev);
+  };
+
+  const handleAlignChange = (e) => {
+    e.stopPropagation();
+    setCurrentField({
+      ...currentField,
       config: {
-        ...config,
-        titleConfig: {
-          ...config.titleConfig,
-          color: color,
-        },
+        ...currentField.config,
+        align: e.target.value,
+      },
+    });
+    setAlignActive(false);
+  };
+
+  const handleSetTitleColor = (color) => {
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        color: color,
       },
     });
   };
 
   const handleResetToDefaultTitleConfig = () => {
-    setNode({
-      ...node,
+    setCurrentField({
+      ...currentField,
       config: {
-        ...config,
-        titleConfig: {
-          ...defaultNodeConfig.titleConfig,
-        },
+        ...defaultNodeConfig.titleConfig,
       },
     });
   };
+
+  const handleCancel = () => {
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleSave = async (index = null) => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    if (index !== null) {
+      node.data[index] = currentField;
+    } else {
+      node.data.push({ ...currentField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  const handleDelete = async (index) => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data.splice(index, 1);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
   return (
-    <div className="w-full mt-1 flex justify-center items-center gap-2">
+    <div className="w-full mt-0 flex flex-wrap justify-center items-center gap-2">
+      <button
+        type="button"
+        onClick={handleCancel}
+        className="w-14 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+      >
+        Cancel
+      </button>
       <div className="relative">
         <button
           type="button"
@@ -547,7 +735,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
         >
           <FontsizeIcon />
           <span className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
-            {config?.titleConfig?.fontSize}
+            {config?.fontSize}
           </span>
         </button>
         {fontSizeActive && (
@@ -562,9 +750,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
                 style={{
                   fontSize: `${fontSize}px`,
                   backgroundColor: `${
-                    config?.titleConfig?.fontSize === fontSize
-                      ? "var(--btn-edit)"
-                      : ""
+                    config?.fontSize === fontSize ? "var(--btn-edit)" : ""
                   }`,
                 }}
               >
@@ -572,7 +758,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
                   className="w-full h-full bg-blue-500 absolute opacity-0"
                   type="radio"
                   value={fontSize}
-                  checked={config?.titleConfig?.fontSize === fontSize}
+                  checked={config?.fontSize === fontSize}
                   onChange={handleFontSizeChange}
                 />
                 {fontSize}
@@ -590,7 +776,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
         <span
           style={{
             textDecoration: `${
-              config?.titleConfig?.strickthrough ? "line-through" : "none"
+              config?.strickthrough ? "line-through" : "none"
             }`,
           }}
           className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
@@ -606,7 +792,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
         <ItalicIcon />
         <span
           style={{
-            fontStyle: `${config?.titleConfig?.italic ? "italic" : "normal"}`,
+            fontStyle: `${config?.italic ? "italic" : "normal"}`,
           }}
           className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
         >
@@ -621,7 +807,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
         <BoldIcon />
         <span
           style={{
-            fontWeight: `${config?.titleConfig?.bold ? "bold" : "normal"}`,
+            fontWeight: `${config?.bold ? "bold" : "normal"}`,
           }}
           className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
         >
@@ -638,7 +824,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
           <span
             className="absolute w-3 h-3 rounded-full inline-block -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
             style={{
-              background: config?.titleConfig?.color,
+              background: config?.color,
             }}
           ></span>
         </button>
@@ -659,7 +845,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
                   className="w-full h-full absolute opacity-0 cursor-pointer"
                   type="radio"
                   value={color}
-                  checked={config?.titleConfig?.color === color}
+                  checked={config?.color === color}
                   onChange={handleColorChange}
                 />
               </label>
@@ -697,7 +883,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
           <FontIcon />
           <span
             style={{
-              fontFamily: `${config?.titleConfig?.fontFamily}`,
+              fontFamily: `${config?.fontFamily}`,
             }}
             className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
           >
@@ -716,9 +902,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
                 style={{
                   fontFamily: `${fontFamily}`,
                   backgroundColor: `${
-                    config?.titleConfig?.fontFamily === fontFamily
-                      ? "var(--btn-edit)"
-                      : ""
+                    config?.fontFamily === fontFamily ? "var(--btn-edit)" : ""
                   }`,
                 }}
               >
@@ -727,10 +911,58 @@ const InputTitleButtons = ({ config, node, setNode }) => {
                   className="w-full h-full bg-blue-500 absolute opacity-0"
                   type="radio"
                   value={fontFamily}
-                  checked={config?.titleConfig?.fontFamily === fontFamily}
+                  checked={config?.fontFamily === fontFamily}
                   onChange={handleFontFamilytChange}
                 />
                 Aa
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={handleAlignClick}
+          className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
+        >
+          {config?.align ? (
+            aligns.find((item) => item.type === config?.align)?.icon
+          ) : (
+            <LeftAlignIcon />
+          )}
+          <span className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
+            {config?.align
+              ? aligns.find((item) => item.type === config?.align)?.a
+              : "L"}
+          </span>
+        </button>
+        {alignActive && (
+          <div
+            ref={alignRef}
+            className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+          >
+            {aligns.map((align) => (
+              <label
+                key={`align-id-${align.type}`}
+                className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                style={{
+                  backgroundColor: `${
+                    config?.align === align.type ? "var(--btn-add)" : ""
+                  }`,
+                }}
+              >
+                <input
+                  title={align.type}
+                  className="w-full h-full bg-blue-500 absolute opacity-0"
+                  type="radio"
+                  value={align.type}
+                  checked={config?.align === align.type}
+                  onChange={handleAlignChange}
+                />
+                <span className="w-5 h-5 flex justify-center items-center">
+                  {align.icon}
+                </span>
               </label>
             ))}
           </div>
@@ -743,6 +975,23 @@ const InputTitleButtons = ({ config, node, setNode }) => {
         className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300 relative"
       >
         <ResetToDefaultIcon />
+      </button>
+      {currentField?.id && (
+        <button
+          type="button"
+          onClick={() => handleDelete(currentField.index)}
+          className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+        >
+          <DeleteIcon />
+        </button>
+      )}
+
+      <button
+        type="button"
+        className="w-14 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+        onClick={() => handleSave(currentField?.index ?? null)}
+      >
+        Save
       </button>
     </div>
   );

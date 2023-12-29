@@ -146,7 +146,7 @@ function Node({
         break;
 
       case "displayDocView":
-        setCurrentFlowPlanNode(node);
+        setCurrentFlowPlanNode(location);
         break;
       // if type is delete then delete node without its children its children become children of the node's parent
       case "delete":
