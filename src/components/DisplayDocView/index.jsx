@@ -30,6 +30,12 @@ import RightAlignIcon from "../../assets/Icons/RightAlignIcon";
 import { v4 } from "uuid";
 import EditIcon from "../../assets/Icons/EditIcon";
 import DeleteIcon from "../../assets/Icons/DeleteIcon";
+import ArrowDot from "../../assets/Icons/ArrowDot";
+import DotIcon from "../../assets/Icons/DotIcon";
+import BorderDot from "../../assets/Icons/BorderDot";
+import SquareDot from "../../assets/Icons/SquareDot";
+import DiamondDot from "../../assets/Icons/DiamondDot";
+import StarDot from "../../assets/Icons/StarDot";
 
 function DisplayDocView() {
   const {
@@ -38,10 +44,35 @@ function DisplayDocView() {
     setCurrentFlowPlanNode,
     defaultNodeConfig,
   } = useStateContext();
-  const config = currentFlowPlanNode?.config;
   const [currentFieldType, setCurrentFieldType] = useState(null);
   const [currentField, setCurrentField] = useState(null);
   const [node, setNode] = useState(null);
+  const listStyles = [
+    {
+      type: "filledCircle",
+      icon: <DotIcon />,
+    },
+    {
+      type: "emptyCircle",
+      icon: <BorderDot />,
+    },
+    {
+      type: "filledSquare",
+      icon: <SquareDot />,
+    },
+    {
+      type: "filledDiamond",
+      icon: <DiamondDot />,
+    },
+    {
+      type: "filledStar",
+      icon: <StarDot />,
+    },
+    {
+      type: "filledArrow",
+      icon: <ArrowDot />,
+    },
+  ];
 
   const handleEditField = (field, i) => {
     setCurrentFieldType(field.type);
@@ -82,15 +113,19 @@ function DisplayDocView() {
       <div className="w-full h-full flex flex-col justify-start items-center gap-1">
         <h3
           style={{
-            fontSize: `${config?.titleConfig?.fontSize}px`,
+            fontSize: `${node?.config?.titleConfig?.fontSize}px`,
             textDecoration: `${
-              config?.titleConfig?.strickthrough ? "line-through" : "none"
+              node?.config?.titleConfig?.strickthrough ? "line-through" : "none"
             }`,
-            fontStyle: `${config?.titleConfig?.italic ? "italic" : "normal"}`,
-            fontWeight: `${config?.titleConfig?.bold ? "bold" : "normal"}`,
-            color: `${config?.titleConfig?.color}`,
-            fontFamily: `${config?.titleConfig?.fontFamily}`,
-            borderColor: `${config?.nodeConfig?.borderColor}`,
+            fontStyle: `${
+              node?.config?.titleConfig?.italic ? "italic" : "normal"
+            }`,
+            fontWeight: `${
+              node?.config?.titleConfig?.bold ? "bold" : "normal"
+            }`,
+            color: `${node?.config?.titleConfig?.color}`,
+            fontFamily: `${node?.config?.titleConfig?.fontFamily}`,
+            borderColor: `${node?.config?.nodeConfig?.borderColor}`,
           }}
           className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300"
         >
@@ -107,7 +142,7 @@ function DisplayDocView() {
             </div>
           )}
 
-          <div className="shrink-0 w-full h-full flex flex-col justify-start items-center gap-0 overflow-y-auto">
+          <div className="shrink-0 w-full h-full flex flex-col justify-start items-center gap-1">
             {node?.data?.map((field, i) => (
               <div
                 key={"field-id-" + field.type + "-" + i}
@@ -134,7 +169,7 @@ function DisplayDocView() {
                         display:
                           field?.id === currentField?.id ? "none" : "block",
                       }}
-                      className="relative group text-[var(--text-primary)] w-full h-fit text-center text-2xl transition-colors duration-300 cursor-pointer"
+                      className="relative p-1 bg-[var(--bg-secondary)] rounded-md group text-[var(--text-primary)] w-full h-fit text-center text-2xl transition-colors duration-300 cursor-pointer"
                       onDoubleClick={() => handleEditField(field, i)}
                     >
                       {field?.data?.text}
@@ -143,7 +178,7 @@ function DisplayDocView() {
                 )}
                 {field.type === "paragraph" && (
                   <p
-                    className="w-full"
+                    className="w-full bg-[var(--bg-secondary)] p-1 rounded-md"
                     onDoubleClick={() => handleEditField(field, i)}
                     style={{
                       textDecoration: `${
@@ -166,7 +201,54 @@ function DisplayDocView() {
                     {field?.data?.text}
                   </p>
                 )}
-                <span className="group-hover:opacity-100 opacity-0  transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-0">
+                {field.type === "unorderedList" && (
+                  <div
+                    style={{
+                      display: field?.id === currentField?.id ? "none" : "flex",
+                    }}
+                    className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+                  >
+                    {field?.data?.list?.map((item, j) => (
+                      <div
+                        key={`shown-list-item-${j}`}
+                        className="w-full flex justify-center items-center text-sm"
+                        onDoubleClick={() => handleEditField(field, i)}
+                      >
+                        <span className="w-3 h-3 mr-1 block">
+                          {
+                            listStyles?.find(
+                              (listStyle) =>
+                                listStyle.type === field.config?.listStyle
+                            )?.icon
+                          }
+                        </span>
+                        <span
+                          className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                          style={{
+                            fontSize: `${field?.config?.fontSize}px`,
+                            textDecoration: `${
+                              field?.config?.strickthrough
+                                ? "line-through"
+                                : "none"
+                            }`,
+                            fontStyle: `${
+                              field?.config?.italic ? "italic" : "normal"
+                            }`,
+                            fontWeight: `${
+                              field?.config?.bold ? "bold" : "normal"
+                            }`,
+                            fontFamily: `${field?.config?.fontFamily}`,
+                            color: `${field?.config?.color}`,
+                            textAlign: `${field?.config?.align}`,
+                          }}
+                        >
+                          {item}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <span className="group-hover:opacity-100 opacity-0  transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1">
                   <button
                     onClick={() => handleEditField(field, i)}
                     className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
@@ -187,6 +269,7 @@ function DisplayDocView() {
                 )}
               </div>
             ))}
+
             {!currentField?.id && (
               <AddEditField
                 setCurrentFieldType={setCurrentFieldType}
@@ -335,6 +418,14 @@ const AddEditField = ({
           align: "left",
           fontSize: 16,
         };
+      case "unorderedList":
+        return {
+          ...defaultNodeConfig.titleConfig,
+          align: "left",
+          fontSize: 16,
+          listStyle: "filledCircle",
+        };
+      // case "taskList":
       default:
         break;
     }
@@ -345,6 +436,7 @@ const AddEditField = ({
       type: type,
       data: {
         text: "",
+        list: [],
       },
       config: handleGetConfig(type),
     });
@@ -353,6 +445,7 @@ const AddEditField = ({
     case "heading":
       return (
         <InputTitle
+          handleGetDefaultConfig={handleGetConfig}
           currentField={currentField}
           setCurrentField={setCurrentField}
           node={node}
@@ -364,6 +457,7 @@ const AddEditField = ({
     case "paragraph":
       return (
         <Paragraph
+          handleGetDefaultConfig={handleGetConfig}
           currentField={currentField}
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
@@ -372,13 +466,13 @@ const AddEditField = ({
       );
     case "unorderedList":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <input
-            type="text"
-            placeholder="Unordered List"
-            className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font-bold border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
-          />
-        </div>
+        <UnorderedList
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     case "taskList":
       return (
@@ -477,6 +571,7 @@ const InputTitle = ({
   setNode,
   currentField,
   setCurrentField,
+  handleGetDefaultConfig,
 }) => {
   const {
     db,
@@ -528,7 +623,7 @@ const InputTitle = ({
   return (
     <form
       onSubmit={(e) => handleSave(e, currentField?.index ?? null)}
-      className="w-full flex flex-col justify-center items-start gap-0"
+      className="w-full flex flex-col justify-center items-start gap-0 bg-[var(--bg-secondary)] rounded-md"
     >
       <input
         type="text"
@@ -537,7 +632,7 @@ const InputTitle = ({
         onChange={handleTitleChange}
         placeholder="Enter heading..."
         required
-        className="text-[var(--text-primary)] w-full rounded-md bg-transparent focus:outline-none focus:border-transparent"
+        className="text-[var(--text-primary)] bg-[var(--bg-secondary)] p-1 w-full rounded-md focus:outline-none focus:border-transparent"
         style={{
           fontSize: `${currentField?.config?.fontSize}px`,
           textDecoration: `${
@@ -551,6 +646,7 @@ const InputTitle = ({
         }}
       />
       <InputTitleButtons
+        handleGetDefaultConfig={handleGetDefaultConfig}
         config={currentField?.config}
         node={node}
         setNode={setNode}
@@ -572,6 +668,7 @@ const InputTitleButtons = ({
   setCurrentFieldType,
   handleSave,
   type,
+  handleGetDefaultConfig,
 }) => {
   const {
     db,
@@ -601,6 +698,11 @@ const InputTitleButtons = ({
     ref: alignRef,
     isActive: alignActive,
     setIsActive: setAlignActive,
+  } = useClickOutside(false);
+  const {
+    ref: listStyleRef,
+    isActive: listStyleActive,
+    setIsActive: setListStyleActive,
   } = useClickOutside(false);
 
   const fontSizes = [10, 12, 14, 16, 18, 20, 22, 24, 26];
@@ -642,6 +744,32 @@ const InputTitleButtons = ({
       a: "R",
       type: "right",
       icon: <RightAlignIcon />,
+    },
+  ];
+  const listStyles = [
+    {
+      type: "filledCircle",
+      icon: <DotIcon />,
+    },
+    {
+      type: "emptyCircle",
+      icon: <BorderDot />,
+    },
+    {
+      type: "filledSquare",
+      icon: <SquareDot />,
+    },
+    {
+      type: "filledDiamond",
+      icon: <DiamondDot />,
+    },
+    {
+      type: "filledStar",
+      icon: <StarDot />,
+    },
+    {
+      type: "filledArrow",
+      icon: <ArrowDot />,
     },
   ];
 
@@ -759,9 +887,24 @@ const InputTitleButtons = ({
     setCurrentField({
       ...currentField,
       config: {
-        ...defaultNodeConfig.titleConfig,
+        ...handleGetDefaultConfig(type),
       },
     });
+  };
+
+  const handleListStyleClick = () => {
+    setListStyleActive((prev) => !prev);
+  };
+  const handleListStyleChange = (e) => {
+    e.stopPropagation();
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        listStyle: e.target.value,
+      },
+    });
+    setListStyleActive(false);
   };
 
   const handleCancel = () => {
@@ -793,14 +936,70 @@ const InputTitleButtons = ({
   };
 
   return (
-    <div className="w-full my-1  flex flex-wrap justify-center items-center gap-2">
+    <div className="w-full mt-2 mb-1  flex flex-wrap justify-center items-center gap-2">
       <button
         type="button"
         onClick={handleCancel}
-        className="w-14 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+        className="w-14 h-8 group flex justify-center items-center relative text-xs text-[var(--text-primary)] bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
       >
         Cancel
       </button>
+
+      {currentField?.type === "unorderedList" && (
+        <div className="relative">
+          <button
+            type="button"
+            onClick={handleListStyleClick}
+            className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
+          >
+            {
+              listStyles?.find(
+                (listStyle) => listStyle.type === currentField.config?.listStyle
+              )?.icon
+            }
+            <span className="absolute w-2 h-2 -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
+              {
+                listStyles?.find(
+                  (listStyle) =>
+                    listStyle.type === currentField.config?.listStyle
+                )?.icon
+              }
+            </span>
+          </button>
+          {listStyleActive && (
+            <div
+              ref={listStyleRef}
+              className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+            >
+              {listStyles.map((listStyle) => (
+                <label
+                  key={`listStyle-id-${listStyle?.type}`}
+                  className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                  style={{
+                    backgroundColor: `${
+                      currentField?.config?.listStyle === listStyle.type
+                        ? "var(--btn-edit)"
+                        : ""
+                    }`,
+                  }}
+                >
+                  <input
+                    className="w-full h-full bg-blue-500 absolute opacity-0"
+                    type="radio"
+                    value={listStyle.type}
+                    checked={currentField?.config?.listStyle === listStyle.type}
+                    onChange={handleListStyleChange}
+                  />
+                  <span className="absolute w-4 h-4 rounded-full inline-block text-[var(--text-primary)] text-xs font-medium">
+                    {listStyle.icon}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {currentField.type === "heading" && (
         <div className="relative">
           <button
@@ -997,54 +1196,57 @@ const InputTitleButtons = ({
           </div>
         )}
       </div>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={handleAlignClick}
-          className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
-        >
-          {config?.align ? (
-            aligns.find((item) => item.type === config?.align)?.icon
-          ) : (
-            <LeftAlignIcon />
-          )}
-          <span className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
-            {config?.align
-              ? aligns.find((item) => item.type === config?.align)?.a
-              : "L"}
-          </span>
-        </button>
-        {alignActive && (
-          <div
-            ref={alignRef}
-            className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+      {(currentField.type === "heading" ||
+        currentField.type === "paragraph") && (
+        <div className="relative">
+          <button
+            type="button"
+            onClick={handleAlignClick}
+            className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
           >
-            {aligns.map((align) => (
-              <label
-                key={`align-id-${align.type}`}
-                className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
-                style={{
-                  backgroundColor: `${
-                    config?.align === align.type ? "var(--btn-add)" : ""
-                  }`,
-                }}
-              >
-                <input
-                  title={align.type}
-                  className="w-full h-full bg-blue-500 absolute opacity-0"
-                  type="radio"
-                  value={align.type}
-                  checked={config?.align === align.type}
-                  onChange={handleAlignChange}
-                />
-                <span className="w-5 h-5 flex justify-center items-center">
-                  {align.icon}
-                </span>
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
+            {config?.align ? (
+              aligns.find((item) => item.type === config?.align)?.icon
+            ) : (
+              <LeftAlignIcon />
+            )}
+            <span className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
+              {config?.align
+                ? aligns.find((item) => item.type === config?.align)?.a
+                : "L"}
+            </span>
+          </button>
+          {alignActive && (
+            <div
+              ref={alignRef}
+              className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+            >
+              {aligns.map((align) => (
+                <label
+                  key={`align-id-${align.type}`}
+                  className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                  style={{
+                    backgroundColor: `${
+                      config?.align === align.type ? "var(--btn-add)" : ""
+                    }`,
+                  }}
+                >
+                  <input
+                    title={align.type}
+                    className="w-full h-full bg-blue-500 absolute opacity-0"
+                    type="radio"
+                    value={align.type}
+                    checked={config?.align === align.type}
+                    onChange={handleAlignChange}
+                  />
+                  <span className="w-5 h-5 flex justify-center items-center">
+                    {align.icon}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <button
         type="button"
         onClick={handleResetToDefaultTitleConfig}
@@ -1065,7 +1267,7 @@ const InputTitleButtons = ({
 
       <button
         type="submit"
-        className="w-14 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+        className="w-14 h-8 text-[var(--text-primary)] group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
         onClick={(e) => handleSave(e, currentField?.index ?? null)}
       >
         Save
@@ -1079,6 +1281,7 @@ const Paragraph = ({
   setCurrentField,
   currentFieldType,
   setCurrentFieldType,
+  handleGetDefaultConfig,
 }) => {
   const textareaRef = useRef(null);
   const {
@@ -1141,7 +1344,7 @@ const Paragraph = ({
   return (
     <form
       onSubmit={handleSave}
-      className="w-full h-fit flex flex-col justify-start items-center"
+      className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md"
     >
       <textarea
         type="text"
@@ -1150,7 +1353,7 @@ const Paragraph = ({
         value={currentField?.data?.text}
         onChange={handleParaChange}
         required
-        className="w-full h-fit bg-transparent text-[var(--text-primary)] border-t-2 border-b-2 border-[var(--border-primary)] text-sm outline-none transition-colors duration-300 cursor-pointer resize-none"
+        className="w-full h-fit bg-[var(--bg-secondary)] p-1 text-[var(--text-primary)] text-sm outline-none transition-colors duration-300 cursor-pointer resize-none"
         ref={textareaRef}
         style={{
           fontSize: `${currentField?.config?.fontSize}px`,
@@ -1173,8 +1376,194 @@ const Paragraph = ({
         setCurrentFieldType={setCurrentFieldType}
         handleSave={handleSave}
         type={currentField.type}
+        handleGetDefaultConfig={handleGetDefaultConfig}
       />
     </form>
   );
 };
+
+const UnorderedList = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+}) => {
+  const {
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    defaultNodeConfig,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
+
+  const [list, setList] = useState(currentField?.data?.list ?? []);
+  const [item, setItem] = useState("");
+  const listStyles = [
+    {
+      type: "filledCircle",
+      icon: <DotIcon />,
+    },
+    {
+      type: "emptyCircle",
+      icon: <BorderDot />,
+    },
+    {
+      type: "filledSquare",
+      icon: <SquareDot />,
+    },
+    {
+      type: "filledDiamond",
+      icon: <DiamondDot />,
+    },
+    {
+      type: "filledStar",
+      icon: <StarDot />,
+    },
+    {
+      type: "filledArrow",
+      icon: <ArrowDot />,
+    },
+  ];
+
+  const handleItemChange = (e, i = null) => {
+    let newList = [...list];
+    if (i !== null) {
+      newList[i] = e.target.value;
+      setList(newList);
+    } else {
+      setItem(e.target.value);
+    }
+    console.log(list);
+  };
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    setList((prev) => [...prev, item]);
+    setItem("");
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    let finalList = item === "" ? list : [...list, item];
+    if (finalList.length === 0) {
+      return;
+    }
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        list: finalList,
+      },
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else {
+      node.data.push({ ...finalField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  return (
+    <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
+      {list.map((item, i) => (
+        <div
+          key={`list-item-${i}`}
+          className="w-full flex justify-center items-center text-sm"
+        >
+          <span className="w-3 h-3 mr-1 block">
+            {
+              listStyles?.find(
+                (listStyle) => listStyle.type === currentField.config?.listStyle
+              )?.icon
+            }
+          </span>
+          <input
+            required
+            type="text"
+            placeholder="Enter List Item..."
+            value={item}
+            onChange={(e) => handleItemChange(e, i)}
+            className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+            style={{
+              fontSize: `${currentField?.config?.fontSize}px`,
+              textDecoration: `${
+                currentField?.config?.strickthrough ? "line-through" : "none"
+              }`,
+              fontStyle: `${
+                currentField?.config?.italic ? "italic" : "normal"
+              }`,
+              fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+              fontFamily: `${currentField?.config?.fontFamily}`,
+              color: `${currentField?.config?.color}`,
+              textAlign: `${currentField?.config?.align}`,
+            }}
+          />
+        </div>
+      ))}
+
+      <form
+        onSubmit={handleAdd}
+        className="w-full flex justify-center items-center text-sm"
+      >
+        <span className="w-3 h-3 mr-1 block">
+          {
+            listStyles?.find(
+              (listStyle) => listStyle.type === currentField.config?.listStyle
+            )?.icon
+          }
+        </span>
+        <input
+          required
+          autoFocus
+          type="text"
+          placeholder="Enter List Item..."
+          value={item}
+          onChange={handleItemChange}
+          className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+          style={{
+            fontSize: `${currentField?.config?.fontSize}px`,
+            textDecoration: `${
+              currentField?.config?.strickthrough ? "line-through" : "none"
+            }`,
+            fontStyle: `${currentField?.config?.italic ? "italic" : "normal"}`,
+            fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+            fontFamily: `${currentField?.config?.fontFamily}`,
+            color: `${currentField?.config?.color}`,
+            textAlign: `${currentField?.config?.align}`,
+          }}
+        />
+      </form>
+      <InputTitleButtons
+        handleSave={handleSave}
+        config={currentField?.config}
+        currentField={currentField}
+        setCurrentField={setCurrentField}
+        setCurrentFieldType={setCurrentFieldType}
+        type={currentField.type}
+        handleGetDefaultConfig={handleGetDefaultConfig}
+      />
+    </div>
+  );
+};
+
 export default DisplayDocView;
