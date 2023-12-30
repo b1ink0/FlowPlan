@@ -36,6 +36,10 @@ import BorderDot from "../../assets/Icons/BorderDot";
 import SquareDot from "../../assets/Icons/SquareDot";
 import DiamondDot from "../../assets/Icons/DiamondDot";
 import StarDot from "../../assets/Icons/StarDot";
+import CheckedIcon from "../../assets/Icons/CheckedIcon";
+import UncheckedIcon from "../../assets/Icons/UncheckedIcon";
+import RomanLIstIcon from "../../assets/Icons/RomanLIstIcon";
+import AlphabetListIcon from "../../assets/Icons/AlphabetListIcon";
 
 function DisplayDocView() {
   const {
@@ -73,6 +77,67 @@ function DisplayDocView() {
       icon: <ArrowDot />,
     },
   ];
+  const numberListStyles = [
+    {
+      type: "number",
+      a: "1",
+      icon: (n) => n + 1,
+    },
+    {
+      type: "roman",
+      a: "i",
+      icon: (n) => handleNumberToRoman(n + 1),
+    },
+    {
+      type: "alphabet",
+      a: "A",
+      icon: (n) => handleNumberToAlphabet(n + 1),
+    },
+  ];
+
+  const handleNumberToRoman = (num) => {
+    const romanNumerals = [
+      { value: 1000, numeral: "M" },
+      { value: 900, numeral: "CM" },
+      { value: 500, numeral: "D" },
+      { value: 400, numeral: "CD" },
+      { value: 100, numeral: "C" },
+      { value: 90, numeral: "XC" },
+      { value: 50, numeral: "L" },
+      { value: 40, numeral: "XL" },
+      { value: 10, numeral: "X" },
+      { value: 9, numeral: "IX" },
+      { value: 5, numeral: "V" },
+      { value: 4, numeral: "IV" },
+      { value: 1, numeral: "I" },
+    ];
+
+    let result = "";
+
+    for (const pair of romanNumerals) {
+      while (num >= pair.value) {
+        result += pair.numeral;
+        num -= pair.value;
+      }
+    }
+
+    return result;
+  };
+  const handleNumberToAlphabet = (num) => {
+    if (num < 1) {
+      return "Number out of range (>= 1)";
+    }
+
+    let result = "";
+    console.log(num);
+    while (num > 0) {
+      const remainder = (num - 1) % 26;
+      result = String.fromCharCode(65 + remainder) + result;
+      num = Math.floor((num - 1) / 26);
+    }
+    console.log(result);
+    return result;
+  };
 
   const handleEditField = (field, i) => {
     setCurrentFieldType(field.type);
@@ -214,7 +279,12 @@ function DisplayDocView() {
                         className="w-full flex justify-center items-center text-sm"
                         onDoubleClick={() => handleEditField(field, i)}
                       >
-                        <span className="w-3 h-3 mr-1 block">
+                        <span
+                          style={{
+                            color: `${field?.config?.color}`,
+                          }}
+                          className="w-3 h-3 mr-1 block"
+                        >
                           {
                             listStyles?.find(
                               (listStyle) =>
@@ -248,14 +318,119 @@ function DisplayDocView() {
                     ))}
                   </div>
                 )}
-                <span className="group-hover:opacity-100 opacity-0  transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1">
-                  <button
-                    onClick={() => handleEditField(field, i)}
-                    className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
+                {field.type === "taskList" && (
+                  <div
+                    style={{
+                      display: field?.id === currentField?.id ? "none" : "flex",
+                    }}
+                    className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
                   >
-                    <EditIcon />
-                  </button>
-                </span>
+                    {field?.data?.list?.map((item, j) => (
+                      <div
+                        key={`shown-list-item-${j}`}
+                        className="w-full flex justify-center items-center text-sm"
+                        onDoubleClick={() => handleEditField(field, i)}
+                      >
+                        <span
+                          style={{
+                            color: `${field?.config?.color}`,
+                          }}
+                          className="w-5 h-5 mr-1 block cursor-pointer group"
+                        >
+                          {item?.completed ? (
+                            <CheckedIcon />
+                          ) : (
+                            <UncheckedIcon />
+                          )}
+                        </span>
+                        <span
+                          className="w-full text-[var(--text-primary)] cursor- bg-transparent outline-none"
+                          style={{
+                            fontSize: `${field?.config?.fontSize}px`,
+                            textDecoration: `${
+                              field?.config?.strickthrough
+                                ? "line-through"
+                                : "none"
+                            }`,
+                            fontStyle: `${
+                              field?.config?.italic ? "italic" : "normal"
+                            }`,
+                            fontWeight: `${
+                              field?.config?.bold ? "bold" : "normal"
+                            }`,
+                            fontFamily: `${field?.config?.fontFamily}`,
+                            color: `${field?.config?.color}`,
+                            textAlign: `${field?.config?.align}`,
+                          }}
+                        >
+                          {item?.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {field.type === "numberList" && (
+                  <div
+                    style={{
+                      display: field?.id === currentField?.id ? "none" : "flex",
+                    }}
+                    className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+                  >
+                    {field?.data?.list?.map((item, j) => (
+                      <div
+                        key={`shown-list-item-${j}`}
+                        className="w-full flex justify-center items-center text-sm"
+                        onDoubleClick={() => handleEditField(field, i)}
+                      >
+                        <span
+                          style={{
+                            color: `${field?.config?.color}`,
+                          }}
+                          className="w-3 h-full mr-1  flex justify-center items-center"
+                        >
+                          {numberListStyles
+                            ?.find(
+                              (listStyle) =>
+                                listStyle.type === field?.config?.listStyle
+                            )
+                            ?.icon(j) + "."}
+                        </span>
+                        <span
+                          className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                          style={{
+                            fontSize: `${field?.config?.fontSize}px`,
+                            textDecoration: `${
+                              field?.config?.strickthrough
+                                ? "line-through"
+                                : "none"
+                            }`,
+                            fontStyle: `${
+                              field?.config?.italic ? "italic" : "normal"
+                            }`,
+                            fontWeight: `${
+                              field?.config?.bold ? "bold" : "normal"
+                            }`,
+                            fontFamily: `${field?.config?.fontFamily}`,
+                            color: `${field?.config?.color}`,
+                            textAlign: `${field?.config?.align}`,
+                          }}
+                        >
+                          {item}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!currentField?.id && (
+                  <span className="group-hover:opacity-100 opacity-0 transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1">
+                    <button
+                      onClick={() => handleEditField(field, i)}
+                      className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
+                    >
+                      <EditIcon />
+                    </button>
+                  </span>
+                )}
                 {currentField?.id === field?.id && (
                   <AddEditField
                     setCurrentFieldType={setCurrentFieldType}
@@ -425,7 +600,19 @@ const AddEditField = ({
           fontSize: 16,
           listStyle: "filledCircle",
         };
-      // case "taskList":
+      case "taskList":
+        return {
+          ...defaultNodeConfig.titleConfig,
+          align: "left",
+          fontSize: 16,
+        };
+      case "numberList":
+        return {
+          ...defaultNodeConfig.titleConfig,
+          align: "left",
+          fontSize: 16,
+          listStyle: "number",
+        };
       default:
         break;
     }
@@ -476,24 +663,23 @@ const AddEditField = ({
       );
     case "taskList":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <input
-            type="text"
-            placeholder="Task List"
-            className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font-bold border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
-          />
-        </div>
+        <TaskList
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     case "numberList":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <input
-            type="text"
-            placeholder="Number List"
-            className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font
-                    -bold border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
-          />
-        </div>
+        <NumberList
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     case "link":
       return (
@@ -704,6 +890,11 @@ const InputTitleButtons = ({
     isActive: listStyleActive,
     setIsActive: setListStyleActive,
   } = useClickOutside(false);
+  const {
+    ref: numberListStyleRef,
+    isActive: numberListStyleActive,
+    setIsActive: setNumberListStyleActive,
+  } = useClickOutside(false);
 
   const fontSizes = [10, 12, 14, 16, 18, 20, 22, 24, 26];
   const colors = [
@@ -770,6 +961,23 @@ const InputTitleButtons = ({
     {
       type: "filledArrow",
       icon: <ArrowDot />,
+    },
+  ];
+  const numberListStyles = [
+    {
+      type: "number",
+      a: "1",
+      icon: <NumberListIcon />,
+    },
+    {
+      type: "roman",
+      a: "i",
+      icon: <RomanLIstIcon />,
+    },
+    {
+      type: "alphabet",
+      a: "A",
+      icon: <AlphabetListIcon />,
     },
   ];
 
@@ -906,7 +1114,20 @@ const InputTitleButtons = ({
     });
     setListStyleActive(false);
   };
-
+  const handleNumberListStyleClick = () => {
+    setNumberListStyleActive((prev) => !prev);
+  };
+  const handleNumberListStyleChange = (e) => {
+    e.stopPropagation();
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        listStyle: e.target.value,
+      },
+    });
+    setNumberListStyleActive(false);
+  };
   const handleCancel = () => {
     setCurrentFieldType(null);
     setCurrentField(null);
@@ -991,6 +1212,61 @@ const InputTitleButtons = ({
                     onChange={handleListStyleChange}
                   />
                   <span className="absolute w-4 h-4 rounded-full inline-block text-[var(--text-primary)] text-xs font-medium">
+                    {listStyle.icon}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {currentField?.type === "numberList" && (
+        <div className="relative">
+          <button
+            type="button"
+            onClick={handleNumberListStyleClick}
+            className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-[6px] rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
+          >
+            {
+              numberListStyles?.find(
+                (listStyle) => listStyle.type === currentField.config?.listStyle
+              )?.icon
+            }
+            <span className="absolute w-2 h-2 -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
+              {
+                numberListStyles?.find(
+                  (listStyle) =>
+                    listStyle.type === currentField.config?.listStyle
+                )?.a
+              }
+            </span>
+          </button>
+          {numberListStyleActive && (
+            <div
+              ref={numberListStyleRef}
+              className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+            >
+              {numberListStyles.map((listStyle) => (
+                <label
+                  key={`listStyle-id-${listStyle?.type}`}
+                  className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                  style={{
+                    backgroundColor: `${
+                      currentField?.config?.listStyle === listStyle.type
+                        ? "var(--btn-edit)"
+                        : ""
+                    }`,
+                  }}
+                >
+                  <input
+                    className="w-full h-full bg-blue-500 absolute opacity-0"
+                    type="radio"
+                    value={listStyle.type}
+                    checked={currentField?.config?.listStyle === listStyle.type}
+                    onChange={handleNumberListStyleChange}
+                  />
+                  <span className="absolute w-6 h-6 rounded-full inline-block text-[var(--text-primary)] text-xs font-medium">
                     {listStyle.icon}
                   </span>
                 </label>
@@ -1483,14 +1759,25 @@ const UnorderedList = ({
     setCurrentField(null);
   };
 
+  const handleDelete = async (index) => {
+    let newList = [...list];
+    newList.splice(index, 1);
+    setList(newList);
+  };
+
   return (
     <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
       {list.map((item, i) => (
         <div
           key={`list-item-${i}`}
-          className="w-full flex justify-center items-center text-sm"
+          className="group w-full flex justify-center items-center text-sm relative"
         >
-          <span className="w-3 h-3 mr-1 block">
+          <span
+            style={{
+              color: `${currentField?.config?.color}`,
+            }}
+            className="w-3 h-3 mr-1 block"
+          >
             {
               listStyles?.find(
                 (listStyle) => listStyle.type === currentField.config?.listStyle
@@ -1518,6 +1805,13 @@ const UnorderedList = ({
               textAlign: `${currentField?.config?.align}`,
             }}
           />
+          <button
+            type="button"
+            onClick={() => handleDelete(i)}
+            className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+          >
+            <DeleteIcon />
+          </button>
         </div>
       ))}
 
@@ -1525,12 +1819,451 @@ const UnorderedList = ({
         onSubmit={handleAdd}
         className="w-full flex justify-center items-center text-sm"
       >
-        <span className="w-3 h-3 mr-1 block">
+        <span
+          style={{
+            color: `${currentField?.config?.color}`,
+          }}
+          className="w-3 h-3 mr-1 block"
+        >
           {
             listStyles?.find(
               (listStyle) => listStyle.type === currentField.config?.listStyle
             )?.icon
           }
+        </span>
+        <input
+          required
+          autoFocus
+          type="text"
+          placeholder="Enter List Item..."
+          value={item}
+          onChange={handleItemChange}
+          className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+          style={{
+            fontSize: `${currentField?.config?.fontSize}px`,
+            textDecoration: `${
+              currentField?.config?.strickthrough ? "line-through" : "none"
+            }`,
+            fontStyle: `${currentField?.config?.italic ? "italic" : "normal"}`,
+            fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+            fontFamily: `${currentField?.config?.fontFamily}`,
+            color: `${currentField?.config?.color}`,
+            textAlign: `${currentField?.config?.align}`,
+          }}
+        />
+      </form>
+      <InputTitleButtons
+        handleSave={handleSave}
+        config={currentField?.config}
+        currentField={currentField}
+        setCurrentField={setCurrentField}
+        setCurrentFieldType={setCurrentFieldType}
+        type={currentField.type}
+        handleGetDefaultConfig={handleGetDefaultConfig}
+      />
+    </div>
+  );
+};
+
+const TaskList = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+}) => {
+  const {
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    defaultNodeConfig,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
+  const [list, setList] = useState(currentField?.data?.list ?? []);
+  const [item, setItem] = useState({
+    text: "",
+    completed: false,
+  });
+
+  const handleItemChange = (e, i = null) => {
+    let newList = [...list];
+    if (i !== null) {
+      newList[i] = {
+        ...newList[i],
+        text: e.target.value,
+      };
+
+      setList(newList);
+    } else {
+      setItem({
+        ...item,
+        text: e.target.value,
+      });
+    }
+  };
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    setList((prev) => [...prev, item]);
+    setItem({
+      text: "",
+      completed: false,
+    });
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    let finalList = item.text === "" ? list : [...list, item];
+    if (finalList.length === 0) {
+      return;
+    }
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        list: finalList,
+      },
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else {
+      node.data.push({ ...finalField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  const handleCompleteToggle = (e, index = null) => {
+    console.log(index);
+    if (index !== null) {
+      let newList = [...list];
+      newList[index] = {
+        ...newList[index],
+        completed: !newList[index].completed,
+      };
+      setList(newList);
+    } else {
+      setItem((prev) => ({ ...prev, completed: !prev.completed }));
+    }
+  };
+
+  const handleDelete = async (index) => {
+    let newList = [...list];
+    newList.splice(index, 1);
+    setList(newList);
+  };
+  return (
+    <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
+      {list.map((item, i) => (
+        <div
+          key={`list-item-${i}`}
+          className="group w-full flex justify-center items-center text-sm relative"
+        >
+          <span
+            style={{
+              color: `${currentField?.config?.color}`,
+            }}
+            className="w-5 h-5 mr-1 block cursor-pointer"
+            onClick={(e) => handleCompleteToggle(e, i)}
+          >
+            {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
+          </span>
+          <input
+            required
+            type="text"
+            placeholder="Enter List Item..."
+            value={item?.text}
+            onChange={(e) => handleItemChange(e, i)}
+            className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+            style={{
+              fontSize: `${currentField?.config?.fontSize}px`,
+              textDecoration: `${
+                currentField?.config?.strickthrough ? "line-through" : "none"
+              }`,
+              fontStyle: `${
+                currentField?.config?.italic ? "italic" : "normal"
+              }`,
+              fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+              fontFamily: `${currentField?.config?.fontFamily}`,
+              color: `${currentField?.config?.color}`,
+              textAlign: `${currentField?.config?.align}`,
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => handleDelete(i)}
+            className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+          >
+            <DeleteIcon />
+          </button>
+        </div>
+      ))}
+
+      <form
+        onSubmit={handleAdd}
+        className="w-full flex justify-center items-center text-sm"
+      >
+        <span
+          style={{
+            color: `${currentField?.config?.color}`,
+          }}
+          className="w-5 h-5 mr-1 block cursor-pointer"
+          onClick={handleCompleteToggle}
+        >
+          {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
+        </span>
+        <input
+          required
+          autoFocus
+          type="text"
+          placeholder="Enter List Item..."
+          value={item.text}
+          onChange={handleItemChange}
+          className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+          style={{
+            fontSize: `${currentField?.config?.fontSize}px`,
+            textDecoration: `${
+              currentField?.config?.strickthrough ? "line-through" : "none"
+            }`,
+            fontStyle: `${currentField?.config?.italic ? "italic" : "normal"}`,
+            fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+            fontFamily: `${currentField?.config?.fontFamily}`,
+            color: `${currentField?.config?.color}`,
+            textAlign: `${currentField?.config?.align}`,
+          }}
+        />
+      </form>
+      <InputTitleButtons
+        handleSave={handleSave}
+        config={currentField?.config}
+        currentField={currentField}
+        setCurrentField={setCurrentField}
+        setCurrentFieldType={setCurrentFieldType}
+        type={currentField.type}
+        handleGetDefaultConfig={handleGetDefaultConfig}
+      />
+    </div>
+  );
+};
+
+const NumberList = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+}) => {
+  const {
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    defaultNodeConfig,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
+  const [list, setList] = useState(currentField?.data?.list ?? []);
+  const [item, setItem] = useState("");
+  const listStyles = [
+    {
+      type: "number",
+      icon: (n) => n + 1,
+    },
+    {
+      type: "roman",
+      icon: (n) => handleNumberToRoman(n + 1),
+    },
+    {
+      type: "alphabet",
+      icon: (n) => handleNumberToAlphabet(n + 1),
+    },
+  ];
+
+  const handleNumberToRoman = (num) => {
+    const romanNumerals = [
+      { value: 1000, numeral: "M" },
+      { value: 900, numeral: "CM" },
+      { value: 500, numeral: "D" },
+      { value: 400, numeral: "CD" },
+      { value: 100, numeral: "C" },
+      { value: 90, numeral: "XC" },
+      { value: 50, numeral: "L" },
+      { value: 40, numeral: "XL" },
+      { value: 10, numeral: "X" },
+      { value: 9, numeral: "IX" },
+      { value: 5, numeral: "V" },
+      { value: 4, numeral: "IV" },
+      { value: 1, numeral: "I" },
+    ];
+
+    let result = "";
+
+    for (const pair of romanNumerals) {
+      while (num >= pair.value) {
+        result += pair.numeral;
+        num -= pair.value;
+      }
+    }
+
+    return result;
+  };
+  const handleNumberToAlphabet = (num) => {
+    if (num < 1) {
+      return "Number out of range (>= 1)";
+    }
+
+    let result = "";
+    console.log(num);
+    while (num > 0) {
+      const remainder = (num - 1) % 26;
+      result = String.fromCharCode(65 + remainder) + result;
+      num = Math.floor((num - 1) / 26);
+    }
+    console.log(result);
+    return result;
+  };
+
+  const handleItemChange = (e, i = null) => {
+    let newList = [...list];
+    if (i !== null) {
+      newList[i] = e.target.value;
+      setList(newList);
+    } else {
+      setItem(e.target.value);
+    }
+  };
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    setList((prev) => [...prev, item]);
+    setItem("");
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    let finalList = item === "" ? list : [...list, item];
+    if (finalList.length === 0) {
+      return;
+    }
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        list: finalList,
+      },
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else {
+      node.data.push({ ...finalField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  const handleDelete = async (index) => {
+    let newList = [...list];
+    newList.splice(index, 1);
+    setList(newList);
+  };
+  return (
+    <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
+      {list.map((item, i) => (
+        <div
+          key={`list-item-${i}`}
+          className="group w-full flex justify-center items-center text-sm relative"
+        >
+          <span
+            style={{
+              color: `${currentField?.config?.color}`,
+            }}
+            className="w-3 h-full mr-1  flex justify-center items-center"
+          >
+            {listStyles
+              ?.find(
+                (listStyle) => listStyle.type === currentField.config?.listStyle
+              )
+              ?.icon(i) + "."}
+          </span>
+          <input
+            required
+            type="text"
+            placeholder="Enter List Item..."
+            value={item}
+            onChange={(e) => handleItemChange(e, i)}
+            className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+            style={{
+              fontSize: `${currentField?.config?.fontSize}px`,
+              textDecoration: `${
+                currentField?.config?.strickthrough ? "line-through" : "none"
+              }`,
+              fontStyle: `${
+                currentField?.config?.italic ? "italic" : "normal"
+              }`,
+              fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+              fontFamily: `${currentField?.config?.fontFamily}`,
+              color: `${currentField?.config?.color}`,
+              textAlign: `${currentField?.config?.align}`,
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => handleDelete(i)}
+            className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+          >
+            <DeleteIcon />
+          </button>
+        </div>
+      ))}
+      <form
+        onSubmit={handleAdd}
+        className="w-full flex justify-center items-center text-sm"
+      >
+        <span
+          style={{
+            color: `${currentField?.config?.color}`,
+          }}
+          className="w-3 h-full mr-1  flex justify-center items-center"
+        >
+          {listStyles
+            ?.find(
+              (listStyle) => listStyle.type === currentField.config?.listStyle
+            )
+            ?.icon(list.length) + "."}
         </span>
         <input
           required
