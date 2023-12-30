@@ -129,13 +129,11 @@ function DisplayDocView() {
     }
 
     let result = "";
-    console.log(num);
     while (num > 0) {
       const remainder = (num - 1) % 26;
       result = String.fromCharCode(65 + remainder) + result;
       num = Math.floor((num - 1) / 26);
     }
-    console.log(result);
     return result;
   };
 
@@ -421,6 +419,52 @@ function DisplayDocView() {
                     ))}
                   </div>
                 )}
+                {field.type === "link" && (
+                  <div
+                    style={{
+                      display: field?.id === currentField?.id ? "none" : "flex",
+                    }}
+                    onDoubleClick={() => handleEditField(field, i)}
+                    className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+                  >
+                    <div className="w-full flex justify-center items-center overflow-x-hidden">
+                      <span
+                        style={{
+                          color: `${field?.config?.color}`,
+                        }}
+                        className="w-3 h-5 mr-1 block"
+                      >
+                        <LinkIcon />
+                      </span>
+                      <a
+                        href={field?.data?.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none hover:underline break-all"
+                        style={{
+                          fontSize: `${field?.config?.fontSize}px`,
+                          textDecoration: `${
+                            field?.config?.strickthrough
+                              ? "line-through"
+                              : "none"
+                          }`,
+                          fontStyle: `${
+                            field?.config?.italic ? "italic" : "normal"
+                          }`,
+                          fontWeight: `${
+                            field?.config?.bold ? "bold" : "normal"
+                          }`,
+                          fontFamily: `${field?.config?.fontFamily}`,
+                          color: `${field?.config?.color}`,
+                          textAlign: `${field?.config?.align}`,
+                        }}
+                      >
+                        {field?.data?.link}
+                      </a>
+                    </div>
+                    <LinkPreview link={field?.data?.link} />
+                  </div>
+                )}
                 {!currentField?.id && (
                   <span className="group-hover:opacity-100 opacity-0 transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1">
                     <button
@@ -613,6 +657,13 @@ const AddEditField = ({
           fontSize: 16,
           listStyle: "number",
         };
+      case "link":
+        return {
+          ...defaultNodeConfig.titleConfig,
+          align: "left",
+          fontSize: 14,
+          color: "#94edff",
+        };
       default:
         break;
     }
@@ -624,6 +675,7 @@ const AddEditField = ({
       data: {
         text: "",
         list: [],
+        link: "",
       },
       config: handleGetConfig(type),
     });
@@ -683,13 +735,13 @@ const AddEditField = ({
       );
     case "link":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <input
-            type="text"
-            placeholder="Link"
-            className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font-bold border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
-          />
-        </div>
+        <Link
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     case "image":
       return (
@@ -2295,6 +2347,278 @@ const NumberList = ({
         type={currentField.type}
         handleGetDefaultConfig={handleGetDefaultConfig}
       />
+    </div>
+  );
+};
+
+const Link = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+}) => {
+  const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
+    useStateContext();
+
+  const [link, setLink] = useState(currentField?.data?.link ?? "");
+  const [isValidLink, setIsValidLink] = useState(true);
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const handleLinkChange = (e) => {
+    if (e.target.value === "") {
+      setIsValidLink(true);
+    } else {
+      setIsValidLink(e.target.value.match(/^(ftp|http|https):\/\/[^ "]+$/));
+    }
+    setLink(e.target.value);
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    if (link === "") return;
+    if (!isValidLink) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        link: link,
+      },
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else {
+      node.data.push({ ...finalField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  const handlePreview = async () => {
+    setPreview(null);
+    setLoading(true);
+    if (link === "") return setLoading(false);
+    if (!isValidLink) return setLoading(false);
+    try {
+      const url = "https://get-website-preview.vercel.app" + "?link=" + link;
+      const data = await fetch(url, {
+        method: "GET",
+        // mode: "no-cors",
+      });
+      console.log(data);
+      let res = await data.json();
+      if (!res.success) {
+        setPreview(null);
+        setLoading(false);
+        return;
+      }
+      console.log(res);
+      setPreview(res.data);
+      setLoading(false);
+    } catch (e) {
+      console.log(e);
+      setPreview(null);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    handlePreview();
+  }, [link]);
+
+  return (
+    <form
+      onSubmit={handleSave}
+      className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md"
+    >
+      <div className="w-full flex justify-center items-center p-1">
+        <span className="w-3 h-3 flex justify-center items-center">
+          <LinkIcon />
+        </span>
+        <input
+          type="text"
+          autoFocus={true}
+          placeholder="Link"
+          value={link}
+          onChange={handleLinkChange}
+          required
+          className="w-full h-fit bg-[var(--bg-secondary)] p-1 text-[var(--text-primary)] text-sm outline-none transition-colors duration-300 cursor-pointer resize-none"
+          style={{
+            fontSize: `${currentField?.config?.fontSize}px`,
+            textDecoration: `${
+              currentField?.config?.strickthrough ? "line-through" : "none"
+            }`,
+            fontStyle: `${currentField?.config?.italic ? "italic" : "normal"}`,
+            fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+            fontFamily: `${currentField?.config?.fontFamily}`,
+            color: `${currentField?.config?.color}`,
+            textAlign: `${currentField?.config?.align}`,
+          }}
+        />
+      </div>
+      {loading ? (
+        <div className="w-full h-full flex justify-center items-center">
+          Loading Preview...
+        </div>
+      ) : (
+        <div className="w-full h-fit flex justify-center items-center flex-col p-1">
+          {preview?.title && (
+            <h1 className="w-full text-[var(--text-primary)]  text-sm font-bold">
+              {preview.title}
+            </h1>
+          )}
+          {preview?.description && (
+            <p className="w-full text-start text-[var(--text-primary)] text-xs">
+              {preview.description}
+            </p>
+          )}
+          {preview?.previewImages?.length > 0 &&
+            preview.previewImages.map((image, i) => (
+              <div
+                key={`preview-image-${i}-`}
+                className="w-full h-fit relative flex justify-center items-center"
+              >
+                <img
+                  key={`preview-image-${i}`}
+                  src={image}
+                  alt="preview"
+                  className="mt-2 rounded-md object-contain"
+                />
+                <div className="w-fit absolute bottom-0 left-0 bg-slate-600/50 flex justify-center items-center px-1 gap-1 rounded-tr-md">
+                  {preview?.favicon && (
+                    <img
+                      src={preview.favicon}
+                      alt="favicon"
+                      className="w-5 h-5 rounded-full"
+                    />
+                  )}
+                  {preview?.siteName && (
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {preview.siteName}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
+      {!isValidLink && (
+        <span className="text-[var(--btn-delete)] text-xs font-bold">
+          Enter a Valid Link!
+        </span>
+      )}
+      <InputTitleButtons
+        config={currentField?.config}
+        currentField={currentField}
+        setCurrentField={setCurrentField}
+        setCurrentFieldType={setCurrentFieldType}
+        handleSave={handleSave}
+        type={currentField.type}
+        handleGetDefaultConfig={handleGetDefaultConfig}
+      />
+    </form>
+  );
+};
+
+const LinkPreview = ({ link }) => {
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const handlePreview = async () => {
+    setPreview(null);
+    setLoading(true);
+    if (link === "") return;
+    try {
+      const url = "https://get-website-preview.vercel.app" + "?link=" + link;
+      const data = await fetch(url, {
+        method: "GET",
+      });
+      let res = await data.json();
+      if (!res.success) {
+        setPreview(null);
+        setLoading(false);
+        return;
+      }
+      setPreview(res.data);
+      setLoading(false);
+    } catch (e) {
+      console.log(e);
+      setPreview(null);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    handlePreview();
+  }, [link]);
+
+  return (
+    <div className="w-full h-fit flex justify-center items-center flex-col p-1">
+      {loading ? (
+        <div className="w-full h-full flex justify-center items-center animate-pulse">
+          Loading...
+        </div>
+      ) : (
+        <>
+          {preview?.title && (
+            <h1 className="w-full text-[var(--text-primary)]  text-sm font-bold">
+              {preview.title}
+            </h1>
+          )}
+          {preview?.description && (
+            <p className="w-full text-[var(--text-primary)] text-xs text-start">
+              {preview.description}
+            </p>
+          )}
+          {preview?.previewImages?.length > 0 &&
+            preview.previewImages.map((image, i) => (
+              <div
+                key={`preview-image-${i}-`}
+                className="w-full h-fit relative flex justify-center items-center"
+              >
+                <img
+                  key={`preview-image-${i}`}
+                  src={image}
+                  alt="preview"
+                  className="mt-2 rounded-md object-contain"
+                />
+                <div className="w-fit absolute bottom-0 left-0 bg-slate-600/50 flex justify-center items-center px-1 gap-1 rounded-tr-md">
+                  {preview?.favicon && (
+                    <img
+                      src={preview.favicon}
+                      alt="favicon"
+                      className="w-5 h-5 rounded-full"
+                    />
+                  )}
+                  {preview?.siteName && (
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {preview.siteName}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+        </>
+      )}
     </div>
   );
 };
