@@ -1,5 +1,5 @@
 // @ts-check
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import CloseBtnIcon from "../../assets/Icons/CloseBtnIcon";
 import TextIcon from "../../assets/Icons/TextIcon";
@@ -51,6 +51,11 @@ function DisplayDocView() {
     });
   };
 
+  const handleCloseDocView = () => {
+    setCurrentFlowPlanNode(null);
+    setNode(null);
+  };
+
   useEffect(() => {
     if (!currentFlowPlanNode) return;
     let root = currentFlowPlan.root;
@@ -70,7 +75,7 @@ function DisplayDocView() {
     >
       <button
         className="absolute top-0 right-0 w-8 h-8 rounded-full"
-        onClick={() => setCurrentFlowPlanNode(null)}
+        onClick={handleCloseDocView}
       >
         <CloseBtnIcon />
       </button>
@@ -103,13 +108,44 @@ function DisplayDocView() {
           )}
 
           <div className="shrink-0 w-full h-full flex flex-col justify-start items-center gap-0 overflow-y-auto">
-            {node?.data?.map((field, i) =>
-              field.type === "heading" ? (
-                <div className="w-full">
-                  <h3
-                    key={"field-id-" + field.type + "-" + i}
+            {node?.data?.map((field, i) => (
+              <div
+                key={"field-id-" + field.type + "-" + i}
+                className="group w-full relative"
+              >
+                {field.type === "heading" && (
+                  <div className="w-full">
+                    <h3
+                      style={{
+                        fontSize: `${field?.config?.fontSize}px`,
+                        textDecoration: `${
+                          field?.config?.strickthrough ? "line-through" : "none"
+                        }`,
+                        fontStyle: `${
+                          field?.config?.italic ? "italic" : "normal"
+                        }`,
+                        fontWeight: `${
+                          field?.config?.bold ? "bold" : "normal"
+                        }`,
+                        color: `${field?.config?.color}`,
+                        fontFamily: `${field?.config?.fontFamily}`,
+                        borderColor: `${field?.config?.nodeConfig?.borderColor}`,
+                        textAlign: `${field?.config?.align}`,
+                        display:
+                          field?.id === currentField?.id ? "none" : "block",
+                      }}
+                      className="relative group text-[var(--text-primary)] w-full h-fit text-center text-2xl transition-colors duration-300 cursor-pointer"
+                      onDoubleClick={() => handleEditField(field, i)}
+                    >
+                      {field?.data?.text}
+                    </h3>
+                  </div>
+                )}
+                {field.type === "paragraph" && (
+                  <p
+                    className="w-full"
+                    onDoubleClick={() => handleEditField(field, i)}
                     style={{
-                      fontSize: `${field?.config?.fontSize}px`,
                       textDecoration: `${
                         field?.config?.strickthrough ? "line-through" : "none"
                       }`,
@@ -123,36 +159,34 @@ function DisplayDocView() {
                       textAlign: `${field?.config?.align}`,
                       display:
                         field?.id === currentField?.id ? "none" : "block",
+                      whiteSpace: "pre-wrap",
+                      lineHeight: "1.25rem",
                     }}
-                    className="relative group text-[var(--text-primary)] w-full h-fit text-center text-2xl transition-colors duration-300 cursor-pointer"
-                    onDoubleClick={() => handleEditField(field, i)}
                   >
                     {field?.data?.text}
-                    <span className="group-hover:opacity-100 opacity-0  transition-opacity absolute flex justify-center items-center w-8 h-full right-1 top-0">
-                      <button
-                        onClick={() => handleEditField(field, i)}
-                        className="w-full h-8 bg-[var(--bg-tertiary)] px-1 rounded-md"
-                      >
-                        <EditIcon />
-                      </button>
-                    </span>
-                  </h3>
-                  {currentField?.id === field?.id && (
-                    <AddEditField
-                      setCurrentFieldType={setCurrentFieldType}
-                      node={node}
-                      setNode={setNode}
-                      type={currentFieldType}
-                      currentField={currentField}
-                      setCurrentField={setCurrentField}
-                      currentFieldType={currentFieldType}
-                    />
-                  )}
-                </div>
-              ) : (
-                ""
-              )
-            )}
+                  </p>
+                )}
+                <span className="group-hover:opacity-100 opacity-0  transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-0">
+                  <button
+                    onClick={() => handleEditField(field, i)}
+                    className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
+                  >
+                    <EditIcon />
+                  </button>
+                </span>
+                {currentField?.id === field?.id && (
+                  <AddEditField
+                    setCurrentFieldType={setCurrentFieldType}
+                    node={node}
+                    setNode={setNode}
+                    type={currentFieldType}
+                    currentField={currentField}
+                    setCurrentField={setCurrentField}
+                    currentFieldType={currentFieldType}
+                  />
+                )}
+              </div>
+            ))}
             {!currentField?.id && (
               <AddEditField
                 setCurrentFieldType={setCurrentFieldType}
@@ -240,13 +274,13 @@ const MenuButtons = ({ setType, setCurrentField }) => {
     },
   ];
 
-  const handleButtonClick = (text) => {
+  const handleButtonClick = (type) => {
     setCurrentField(null);
-    setType(text);
+    setType((prev) => (prev === null ? type : null));
   };
 
   return (
-    <div className="w-fit rounded-md h-fit flex justify-center items-center flex-wrap gap-2 p-1 bg-[var(--bg-secondary)]">
+    <div className="w-fit rounded-md h-fit flex justify-center items-center flex-wrap gap-2 p-1 bg-[var(--bg-secondary)] mt-2">
       {buttons.map((button, i) => (
         <Button
           key={i}
@@ -291,6 +325,20 @@ const AddEditField = ({
 }) => {
   const { currentFlowPlan, setCurrentFlowPlan, defaultNodeConfig } =
     useStateContext();
+  const handleGetConfig = (type) => {
+    switch (type) {
+      case "heading":
+        return { ...defaultNodeConfig.titleConfig, align: "left" };
+      case "paragraph":
+        return {
+          ...defaultNodeConfig.titleConfig,
+          align: "left",
+          fontSize: 16,
+        };
+      default:
+        break;
+    }
+  };
   useEffect(() => {
     if (currentField) return;
     setCurrentField({
@@ -298,7 +346,7 @@ const AddEditField = ({
       data: {
         text: "",
       },
-      config: { ...defaultNodeConfig.titleConfig, align: "left" },
+      config: handleGetConfig(type),
     });
   }, [type]);
   switch (currentField?.type) {
@@ -315,13 +363,12 @@ const AddEditField = ({
       );
     case "paragraph":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <textarea
-            type="text"
-            placeholder="Paragraph"
-            className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font-bold border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
-          />
-        </div>
+        <Paragraph
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     case "unorderedList":
       return (
@@ -431,6 +478,15 @@ const InputTitle = ({
   currentField,
   setCurrentField,
 }) => {
+  const {
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    defaultNodeConfig,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
+
   const handleTitleChange = (e) => {
     setCurrentField({
       ...currentField,
@@ -440,8 +496,40 @@ const InputTitle = ({
       },
     });
   };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    if (index !== null) {
+      node.data[index] = currentField;
+    } else {
+      node.data.push({ ...currentField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
   return (
-    <div className="w-full flex flex-col justify-center items-start gap-0">
+    <form
+      onSubmit={(e) => handleSave(e, currentField?.index ?? null)}
+      className="w-full flex flex-col justify-center items-start gap-0"
+    >
       <input
         type="text"
         autoFocus={true}
@@ -469,8 +557,9 @@ const InputTitle = ({
         currentField={currentField}
         setCurrentField={setCurrentField}
         setCurrentFieldType={setCurrentFieldType}
+        handleSave={handleSave}
       />
-    </div>
+    </form>
   );
 };
 
@@ -481,6 +570,8 @@ const InputTitleButtons = ({
   currentField,
   setCurrentField,
   setCurrentFieldType,
+  handleSave,
+  type,
 }) => {
   const {
     db,
@@ -688,23 +779,6 @@ const InputTitleButtons = ({
       });
   };
 
-  const handleSave = async (index = null) => {
-    let root = currentFlowPlan.root;
-    let node = root;
-    currentFlowPlanNode.forEach((i) => {
-      node = node.children[i];
-    });
-    if (index !== null) {
-      node.data[index] = currentField;
-    } else {
-      node.data.push({ ...currentField, id: v4() });
-    }
-    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
-    setCurrentFieldType(null);
-    setCurrentField(null);
-  };
-
   const handleDelete = async (index) => {
     let root = currentFlowPlan.root;
     let node = root;
@@ -719,7 +793,7 @@ const InputTitleButtons = ({
   };
 
   return (
-    <div className="w-full mt-0 flex flex-wrap justify-center items-center gap-2">
+    <div className="w-full my-1  flex flex-wrap justify-center items-center gap-2">
       <button
         type="button"
         onClick={handleCancel}
@@ -727,46 +801,49 @@ const InputTitleButtons = ({
       >
         Cancel
       </button>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={handleFontSizeClick}
-          className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
-        >
-          <FontsizeIcon />
-          <span className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
-            {config?.fontSize}
-          </span>
-        </button>
-        {fontSizeActive && (
-          <div
-            ref={fontSizeRef}
-            className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+      {currentField.type === "heading" && (
+        <div className="relative">
+          <button
+            type="button"
+            onClick={handleFontSizeClick}
+            className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
           >
-            {fontSizes.map((fontSize) => (
-              <label
-                key={`fontsize-id-${fontSize}`}
-                className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
-                style={{
-                  fontSize: `${fontSize}px`,
-                  backgroundColor: `${
-                    config?.fontSize === fontSize ? "var(--btn-edit)" : ""
-                  }`,
-                }}
-              >
-                <input
-                  className="w-full h-full bg-blue-500 absolute opacity-0"
-                  type="radio"
-                  value={fontSize}
-                  checked={config?.fontSize === fontSize}
-                  onChange={handleFontSizeChange}
-                />
-                {fontSize}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
+            <FontsizeIcon />
+            <span className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
+              {config?.fontSize}
+            </span>
+          </button>
+          {fontSizeActive && (
+            <div
+              ref={fontSizeRef}
+              className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+            >
+              {fontSizes.map((fontSize) => (
+                <label
+                  key={`fontsize-id-${fontSize}`}
+                  className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                  style={{
+                    fontSize: `${fontSize}px`,
+                    backgroundColor: `${
+                      config?.fontSize === fontSize ? "var(--btn-edit)" : ""
+                    }`,
+                  }}
+                >
+                  <input
+                    className="w-full h-full bg-blue-500 absolute opacity-0"
+                    type="radio"
+                    value={fontSize}
+                    checked={config?.fontSize === fontSize}
+                    onChange={handleFontSizeChange}
+                  />
+                  {fontSize}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <button
         type="button"
         className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
@@ -987,13 +1064,117 @@ const InputTitleButtons = ({
       )}
 
       <button
-        type="button"
+        type="submit"
         className="w-14 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
-        onClick={() => handleSave(currentField?.index ?? null)}
+        onClick={(e) => handleSave(e, currentField?.index ?? null)}
       >
         Save
       </button>
     </div>
+  );
+};
+
+const Paragraph = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+}) => {
+  const textareaRef = useRef(null);
+  const {
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    defaultNodeConfig,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
+
+  const handleParaChange = (e) => {
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        text: e.target.value,
+      },
+    });
+  };
+
+  const handleTextareaChange = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto"; // Reset the height to auto
+      textarea.style.height = `${textarea.scrollHeight}px`; // Set the new height
+    }
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    if (index !== null) {
+      node.data[index] = currentField;
+    } else {
+      node.data.push({ ...currentField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+  useEffect(() => {
+    handleTextareaChange();
+  }, [currentField?.data?.text]);
+  return (
+    <form
+      onSubmit={handleSave}
+      className="w-full h-fit flex flex-col justify-start items-center"
+    >
+      <textarea
+        type="text"
+        autoFocus={true}
+        placeholder="Paragraph"
+        value={currentField?.data?.text}
+        onChange={handleParaChange}
+        required
+        className="w-full h-fit bg-transparent text-[var(--text-primary)] border-t-2 border-b-2 border-[var(--border-primary)] text-sm outline-none transition-colors duration-300 cursor-pointer resize-none"
+        ref={textareaRef}
+        style={{
+          fontSize: `${currentField?.config?.fontSize}px`,
+          textDecoration: `${
+            currentField?.config?.strickthrough ? "line-through" : "none"
+          }`,
+          fontStyle: `${currentField?.config?.italic ? "italic" : "normal"}`,
+          fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+          fontFamily: `${currentField?.config?.fontFamily}`,
+          color: `${currentField?.config?.color}`,
+          textAlign: `${currentField?.config?.align}`,
+          height: "auto",
+          overflowY: "hidden",
+        }}
+      />
+      <InputTitleButtons
+        config={currentField?.config}
+        currentField={currentField}
+        setCurrentField={setCurrentField}
+        setCurrentFieldType={setCurrentFieldType}
+        handleSave={handleSave}
+        type={currentField.type}
+      />
+    </form>
   );
 };
 export default DisplayDocView;
