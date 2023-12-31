@@ -128,7 +128,6 @@ const AddEditNode = () => {
         config: defaultNodeConfig,
       });
     }
-    console.log("run");
     // focus on input element after 200ms
     setTimeout(() => {
       inputRef?.current?.focus();
@@ -200,7 +199,6 @@ const Form = ({
 }) => {
   const [config, setConfig] = useState(null);
   useEffect(() => {
-    console.log("S", node.config);
     setConfig(node.config);
   }, [node.config]);
 
@@ -588,6 +586,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
               <input
                 className="w-full h-full absolute opacity-0 cursor-pointer"
                 type="color"
+                value={config?.titleConfig?.color}
                 onChange={handleActiveColorChange}
               />
             </label>

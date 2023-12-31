@@ -52,91 +52,6 @@ function DisplayDocView() {
   const [currentFieldType, setCurrentFieldType] = useState(null);
   const [currentField, setCurrentField] = useState(null);
   const [node, setNode] = useState(null);
-  const listStyles = [
-    {
-      type: "filledCircle",
-      icon: <DotIcon />,
-    },
-    {
-      type: "emptyCircle",
-      icon: <BorderDot />,
-    },
-    {
-      type: "filledSquare",
-      icon: <SquareDot />,
-    },
-    {
-      type: "filledDiamond",
-      icon: <DiamondDot />,
-    },
-    {
-      type: "filledStar",
-      icon: <StarDot />,
-    },
-    {
-      type: "filledArrow",
-      icon: <ArrowDot />,
-    },
-  ];
-  const numberListStyles = [
-    {
-      type: "number",
-      a: "1",
-      icon: (n) => n + 1,
-    },
-    {
-      type: "roman",
-      a: "i",
-      icon: (n) => handleNumberToRoman(n + 1),
-    },
-    {
-      type: "alphabet",
-      a: "A",
-      icon: (n) => handleNumberToAlphabet(n + 1),
-    },
-  ];
-
-  const handleNumberToRoman = (num) => {
-    const romanNumerals = [
-      { value: 1000, numeral: "M" },
-      { value: 900, numeral: "CM" },
-      { value: 500, numeral: "D" },
-      { value: 400, numeral: "CD" },
-      { value: 100, numeral: "C" },
-      { value: 90, numeral: "XC" },
-      { value: 50, numeral: "L" },
-      { value: 40, numeral: "XL" },
-      { value: 10, numeral: "X" },
-      { value: 9, numeral: "IX" },
-      { value: 5, numeral: "V" },
-      { value: 4, numeral: "IV" },
-      { value: 1, numeral: "I" },
-    ];
-
-    let result = "";
-
-    for (const pair of romanNumerals) {
-      while (num >= pair.value) {
-        result += pair.numeral;
-        num -= pair.value;
-      }
-    }
-
-    return result;
-  };
-  const handleNumberToAlphabet = (num) => {
-    if (num < 1) {
-      return "Number out of range (>= 1)";
-    }
-
-    let result = "";
-    while (num > 0) {
-      const remainder = (num - 1) % 26;
-      result = String.fromCharCode(65 + remainder) + result;
-      num = Math.floor((num - 1) / 26);
-    }
-    return result;
-  };
 
   const handleEditField = (field, i) => {
     setCurrentFieldType(field.type);
@@ -205,279 +120,19 @@ function DisplayDocView() {
               </p>
             </div>
           )}
-
           {node?.data?.map((field, i) => (
-            <div
+            <DocRenderView
               key={"field-id-" + field.type + "-" + i}
-              className="group w-full relative"
-            >
-              {field.type === "heading" && (
-                <div className="w-full">
-                  <h3
-                    style={{
-                      fontSize: `${field?.config?.fontSize}px`,
-                      textDecoration: `${
-                        field?.config?.strickthrough ? "line-through" : "none"
-                      }`,
-                      fontStyle: `${
-                        field?.config?.italic ? "italic" : "normal"
-                      }`,
-                      fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
-                      color: `${field?.config?.color}`,
-                      fontFamily: `${field?.config?.fontFamily}`,
-                      borderColor: `${field?.config?.nodeConfig?.borderColor}`,
-                      textAlign: `${field?.config?.align}`,
-                      display:
-                        field?.id === currentField?.id ? "none" : "block",
-                    }}
-                    className="relative p-1 bg-[var(--bg-secondary)] rounded-md group text-[var(--text-primary)] w-full h-fit text-center text-2xl transition-colors duration-300 cursor-pointer"
-                    onDoubleClick={() => handleEditField(field, i)}
-                  >
-                    {field?.data?.text}
-                  </h3>
-                </div>
-              )}
-              {field.type === "paragraph" && (
-                <p
-                  className="w-full bg-[var(--bg-secondary)] p-1 rounded-md"
-                  onDoubleClick={() => handleEditField(field, i)}
-                  style={{
-                    textDecoration: `${
-                      field?.config?.strickthrough ? "line-through" : "none"
-                    }`,
-                    fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
-                    fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
-                    color: `${field?.config?.color}`,
-                    fontFamily: `${field?.config?.fontFamily}`,
-                    borderColor: `${field?.config?.nodeConfig?.borderColor}`,
-                    textAlign: `${field?.config?.align}`,
-                    display: field?.id === currentField?.id ? "none" : "block",
-                    whiteSpace: "pre-wrap",
-                    lineHeight: "1.25rem",
-                  }}
-                >
-                  {field?.data?.text}
-                </p>
-              )}
-              {field.type === "unorderedList" && (
-                <div
-                  style={{
-                    display: field?.id === currentField?.id ? "none" : "flex",
-                  }}
-                  className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
-                >
-                  {field?.data?.list?.map((item, j) => (
-                    <div
-                      key={`shown-list-item-${j}`}
-                      className="w-full flex justify-center items-center text-sm"
-                      onDoubleClick={() => handleEditField(field, i)}
-                    >
-                      <span
-                        style={{
-                          color: `${field?.config?.color}`,
-                        }}
-                        className="w-3 h-3 mr-1 block"
-                      >
-                        {
-                          listStyles?.find(
-                            (listStyle) =>
-                              listStyle.type === field.config?.listStyle
-                          )?.icon
-                        }
-                      </span>
-                      <span
-                        className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-                        style={{
-                          fontSize: `${field?.config?.fontSize}px`,
-                          textDecoration: `${
-                            field?.config?.strickthrough
-                              ? "line-through"
-                              : "none"
-                          }`,
-                          fontStyle: `${
-                            field?.config?.italic ? "italic" : "normal"
-                          }`,
-                          fontWeight: `${
-                            field?.config?.bold ? "bold" : "normal"
-                          }`,
-                          fontFamily: `${field?.config?.fontFamily}`,
-                          color: `${field?.config?.color}`,
-                          textAlign: `${field?.config?.align}`,
-                        }}
-                      >
-                        {item}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {field.type === "taskList" && (
-                <div
-                  style={{
-                    display: field?.id === currentField?.id ? "none" : "flex",
-                  }}
-                  className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
-                >
-                  {field?.data?.list?.map((item, j) => (
-                    <div
-                      key={`shown-list-item-${j}`}
-                      className="w-full flex justify-center items-center text-sm"
-                      onDoubleClick={() => handleEditField(field, i)}
-                    >
-                      <span
-                        style={{
-                          color: `${field?.config?.color}`,
-                        }}
-                        className="w-5 h-5 mr-1 block cursor-pointer group"
-                      >
-                        {item?.completed ? <CheckedIcon /> : <UncheckedIcon />}
-                      </span>
-                      <span
-                        className="w-full text-[var(--text-primary)] cursor- bg-transparent outline-none"
-                        style={{
-                          fontSize: `${field?.config?.fontSize}px`,
-                          textDecoration: `${
-                            field?.config?.strickthrough
-                              ? "line-through"
-                              : "none"
-                          }`,
-                          fontStyle: `${
-                            field?.config?.italic ? "italic" : "normal"
-                          }`,
-                          fontWeight: `${
-                            field?.config?.bold ? "bold" : "normal"
-                          }`,
-                          fontFamily: `${field?.config?.fontFamily}`,
-                          color: `${field?.config?.color}`,
-                          textAlign: `${field?.config?.align}`,
-                        }}
-                      >
-                        {item?.text}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {field.type === "numberList" && (
-                <div
-                  style={{
-                    display: field?.id === currentField?.id ? "none" : "flex",
-                  }}
-                  className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
-                >
-                  {field?.data?.list?.map((item, j) => (
-                    <div
-                      key={`shown-list-item-${j}`}
-                      className="w-full flex justify-center items-center text-sm"
-                      onDoubleClick={() => handleEditField(field, i)}
-                    >
-                      <span
-                        style={{
-                          color: `${field?.config?.color}`,
-                        }}
-                        className="w-3 h-full mr-1  flex justify-center items-center"
-                      >
-                        {numberListStyles
-                          ?.find(
-                            (listStyle) =>
-                              listStyle.type === field?.config?.listStyle
-                          )
-                          ?.icon(j) + "."}
-                      </span>
-                      <span
-                        className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-                        style={{
-                          fontSize: `${field?.config?.fontSize}px`,
-                          textDecoration: `${
-                            field?.config?.strickthrough
-                              ? "line-through"
-                              : "none"
-                          }`,
-                          fontStyle: `${
-                            field?.config?.italic ? "italic" : "normal"
-                          }`,
-                          fontWeight: `${
-                            field?.config?.bold ? "bold" : "normal"
-                          }`,
-                          fontFamily: `${field?.config?.fontFamily}`,
-                          color: `${field?.config?.color}`,
-                          textAlign: `${field?.config?.align}`,
-                        }}
-                      >
-                        {item}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {field.type === "link" && (
-                <div
-                  style={{
-                    display: field?.id === currentField?.id ? "none" : "flex",
-                  }}
-                  onDoubleClick={() => handleEditField(field, i)}
-                  className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
-                >
-                  <div className="w-full flex justify-center items-center overflow-x-hidden">
-                    <span
-                      style={{
-                        color: `${field?.config?.color}`,
-                      }}
-                      className="w-3 h-5 mr-1 block"
-                    >
-                      <LinkIcon />
-                    </span>
-                    <a
-                      href={field?.data?.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none hover:underline break-all"
-                      style={{
-                        fontSize: `${field?.config?.fontSize}px`,
-                        textDecoration: `${
-                          field?.config?.strickthrough ? "line-through" : "none"
-                        }`,
-                        fontStyle: `${
-                          field?.config?.italic ? "italic" : "normal"
-                        }`,
-                        fontWeight: `${
-                          field?.config?.bold ? "bold" : "normal"
-                        }`,
-                        fontFamily: `${field?.config?.fontFamily}`,
-                        color: `${field?.config?.color}`,
-                        textAlign: `${field?.config?.align}`,
-                      }}
-                    >
-                      {field?.data?.link}
-                    </a>
-                  </div>
-                  {field?.config?.preview && (
-                    <LinkPreview link={field?.data?.link} />
-                  )}
-                </div>
-              )}
-              {!currentField?.id && (
-                <span className="group-hover:opacity-100 opacity-0 transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1">
-                  <button
-                    onClick={() => handleEditField(field, i)}
-                    className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
-                  >
-                    <EditIcon />
-                  </button>
-                </span>
-              )}
-              {currentField?.id === field?.id && (
-                <AddEditField
-                  setCurrentFieldType={setCurrentFieldType}
-                  node={node}
-                  setNode={setNode}
-                  type={currentFieldType}
-                  currentField={currentField}
-                  setCurrentField={setCurrentField}
-                  currentFieldType={currentFieldType}
-                />
-              )}
-            </div>
+              field={field}
+              i={i}
+              node={node}
+              setNode={setNode}
+              currentField={currentField}
+              setCurrentField={setCurrentField}
+              currentFieldType={currentFieldType}
+              setCurrentFieldType={setCurrentFieldType}
+              handleEditField={handleEditField}
+            />
           ))}
 
           {!currentField?.id && (
@@ -501,6 +156,352 @@ function DisplayDocView() {
     </div>
   );
 }
+
+const DocRenderView = ({
+  field,
+  i,
+  node,
+  setNode,
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleEditField,
+}) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const listStyles = [
+    {
+      type: "filledCircle",
+      icon: <DotIcon />,
+    },
+    {
+      type: "emptyCircle",
+      icon: <BorderDot />,
+    },
+    {
+      type: "filledSquare",
+      icon: <SquareDot />,
+    },
+    {
+      type: "filledDiamond",
+      icon: <DiamondDot />,
+    },
+    {
+      type: "filledStar",
+      icon: <StarDot />,
+    },
+    {
+      type: "filledArrow",
+      icon: <ArrowDot />,
+    },
+  ];
+  const numberListStyles = [
+    {
+      type: "number",
+      a: "1",
+      icon: (n) => n + 1,
+    },
+    {
+      type: "roman",
+      a: "i",
+      icon: (n) => handleNumberToRoman(n + 1),
+    },
+    {
+      type: "alphabet",
+      a: "A",
+      icon: (n) => handleNumberToAlphabet(n + 1),
+    },
+  ];
+  const handleNumberToRoman = (num) => {
+    const romanNumerals = [
+      { value: 1000, numeral: "M" },
+      { value: 900, numeral: "CM" },
+      { value: 500, numeral: "D" },
+      { value: 400, numeral: "CD" },
+      { value: 100, numeral: "C" },
+      { value: 90, numeral: "XC" },
+      { value: 50, numeral: "L" },
+      { value: 40, numeral: "XL" },
+      { value: 10, numeral: "X" },
+      { value: 9, numeral: "IX" },
+      { value: 5, numeral: "V" },
+      { value: 4, numeral: "IV" },
+      { value: 1, numeral: "I" },
+    ];
+
+    let result = "";
+
+    for (const pair of romanNumerals) {
+      while (num >= pair.value) {
+        result += pair.numeral;
+        num -= pair.value;
+      }
+    }
+
+    return result;
+  };
+  const handleNumberToAlphabet = (num) => {
+    if (num < 1) {
+      return "Number out of range (>= 1)";
+    }
+
+    let result = "";
+    while (num > 0) {
+      const remainder = (num - 1) % 26;
+      result = String.fromCharCode(65 + remainder) + result;
+      num = Math.floor((num - 1) / 26);
+    }
+    return result;
+  };
+
+  return (
+    <div
+      onMouseEnter={() => setShowMenu(true)}
+      onMouseLeave={() => setShowMenu(false)}
+      className="group w-full relative"
+    >
+      {field.type === "heading" && (
+        <div className="w-full">
+          <h3
+            style={{
+              fontSize: `${field?.config?.fontSize}px`,
+              textDecoration: `${
+                field?.config?.strickthrough ? "line-through" : "none"
+              }`,
+              fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+              fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+              color: `${field?.config?.color}`,
+              fontFamily: `${field?.config?.fontFamily}`,
+              borderColor: `${field?.config?.nodeConfig?.borderColor}`,
+              textAlign: `${field?.config?.align}`,
+              display: field?.id === currentField?.id ? "none" : "block",
+            }}
+            className="relative p-1 bg-[var(--bg-secondary)] rounded-md group text-[var(--text-primary)] w-full h-fit text-center text-2xl transition-colors duration-300 cursor-pointer"
+            onDoubleClick={() => handleEditField(field, i)}
+          >
+            {field?.data?.text}
+          </h3>
+        </div>
+      )}
+      {field.type === "paragraph" && (
+        <p
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md"
+          onDoubleClick={() => handleEditField(field, i)}
+          style={{
+            textDecoration: `${
+              field?.config?.strickthrough ? "line-through" : "none"
+            }`,
+            fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+            fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+            color: `${field?.config?.color}`,
+            fontFamily: `${field?.config?.fontFamily}`,
+            borderColor: `${field?.config?.nodeConfig?.borderColor}`,
+            textAlign: `${field?.config?.align}`,
+            display: field?.id === currentField?.id ? "none" : "block",
+            whiteSpace: "pre-wrap",
+            lineHeight: "1.25rem",
+          }}
+        >
+          {field?.data?.text}
+        </p>
+      )}
+      {field.type === "unorderedList" && (
+        <div
+          style={{
+            display: field?.id === currentField?.id ? "none" : "flex",
+          }}
+          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+        >
+          {field?.data?.list?.map((item, j) => (
+            <div
+              key={`shown-list-item-${j}`}
+              className="w-full flex justify-center items-center text-sm"
+              onDoubleClick={() => handleEditField(field, i)}
+            >
+              <span
+                style={{
+                  color: `${field?.config?.color}`,
+                }}
+                className="w-3 h-3 mr-1 block"
+              >
+                {
+                  listStyles?.find(
+                    (listStyle) => listStyle.type === field.config?.listStyle
+                  )?.icon
+                }
+              </span>
+              <span
+                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                style={{
+                  fontSize: `${field?.config?.fontSize}px`,
+                  textDecoration: `${
+                    field?.config?.strickthrough ? "line-through" : "none"
+                  }`,
+                  fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+                  fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+                  fontFamily: `${field?.config?.fontFamily}`,
+                  color: `${field?.config?.color}`,
+                  textAlign: `${field?.config?.align}`,
+                }}
+              >
+                {item}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {field.type === "taskList" && (
+        <div
+          style={{
+            display: field?.id === currentField?.id ? "none" : "flex",
+          }}
+          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+        >
+          {field?.data?.list?.map((item, j) => (
+            <div
+              key={`shown-list-item-${j}`}
+              className="w-full flex justify-center items-center text-sm"
+              onDoubleClick={() => handleEditField(field, i)}
+            >
+              <span
+                style={{
+                  color: `${field?.config?.color}`,
+                }}
+                className="w-5 h-5 mr-1 block cursor-pointer group"
+              >
+                {item?.completed ? <CheckedIcon /> : <UncheckedIcon />}
+              </span>
+              <span
+                className="w-full text-[var(--text-primary)] cursor- bg-transparent outline-none"
+                style={{
+                  fontSize: `${field?.config?.fontSize}px`,
+                  textDecoration: `${
+                    field?.config?.strickthrough ? "line-through" : "none"
+                  }`,
+                  fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+                  fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+                  fontFamily: `${field?.config?.fontFamily}`,
+                  color: `${field?.config?.color}`,
+                  textAlign: `${field?.config?.align}`,
+                }}
+              >
+                {item?.text}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {field.type === "numberList" && (
+        <div
+          style={{
+            display: field?.id === currentField?.id ? "none" : "flex",
+          }}
+          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+        >
+          {field?.data?.list?.map((item, j) => (
+            <div
+              key={`shown-list-item-${j}`}
+              className="w-full flex justify-center items-center text-sm"
+              onDoubleClick={() => handleEditField(field, i)}
+            >
+              <span
+                style={{
+                  color: `${field?.config?.color}`,
+                }}
+                className="w-3 h-full mr-1  flex justify-center items-center"
+              >
+                {numberListStyles
+                  ?.find(
+                    (listStyle) => listStyle.type === field?.config?.listStyle
+                  )
+                  ?.icon(j) + "."}
+              </span>
+              <span
+                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                style={{
+                  fontSize: `${field?.config?.fontSize}px`,
+                  textDecoration: `${
+                    field?.config?.strickthrough ? "line-through" : "none"
+                  }`,
+                  fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+                  fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+                  fontFamily: `${field?.config?.fontFamily}`,
+                  color: `${field?.config?.color}`,
+                  textAlign: `${field?.config?.align}`,
+                }}
+              >
+                {item}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {field.type === "link" && (
+        <div
+          style={{
+            display: field?.id === currentField?.id ? "none" : "flex",
+          }}
+          onDoubleClick={() => handleEditField(field, i)}
+          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+        >
+          <div className="w-full flex justify-center items-center overflow-x-hidden">
+            <span
+              style={{
+                color: `${field?.config?.color}`,
+              }}
+              className="w-3 h-5 mr-1 block"
+            >
+              <LinkIcon />
+            </span>
+            <a
+              href={field?.data?.link}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none hover:underline break-all"
+              style={{
+                fontSize: `${field?.config?.fontSize}px`,
+                textDecoration: `${
+                  field?.config?.strickthrough ? "line-through" : "none"
+                }`,
+                fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+                fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+                fontFamily: `${field?.config?.fontFamily}`,
+                color: `${field?.config?.color}`,
+                textAlign: `${field?.config?.align}`,
+              }}
+            >
+              {field?.data?.link}
+            </a>
+          </div>
+          {field?.config?.preview && <LinkPreview link={field?.data?.link} />}
+        </div>
+      )}
+      
+        <span
+          style={{opacity: showMenu ? 1 : 0}}
+          className="transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1"
+        >
+          <button
+            onClick={() => handleEditField(field, i)}
+            className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
+          >
+            <EditIcon />
+          </button>
+        </span>
+      {currentField?.id === field?.id && (
+        <AddEditField
+          setCurrentFieldType={setCurrentFieldType}
+          node={node}
+          setNode={setNode}
+          type={currentFieldType}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+        />
+      )}
+    </div>
+  );
+};
 
 const MenuButtons = ({ setType, setCurrentField }) => {
   const buttons = [
@@ -1480,6 +1481,7 @@ const InputTitleButtons = ({
               <input
                 className="w-full h-full absolute opacity-0 cursor-pointer"
                 type="color"
+                value={config?.color}
                 onChange={handleActiveColorChange}
               />
             </label>
