@@ -40,6 +40,7 @@ import CheckedIcon from "../../assets/Icons/CheckedIcon";
 import UncheckedIcon from "../../assets/Icons/UncheckedIcon";
 import RomanLIstIcon from "../../assets/Icons/RomanLIstIcon";
 import AlphabetListIcon from "../../assets/Icons/AlphabetListIcon";
+import PreviewIcon from "../../assets/Icons/PreviewIcon";
 
 function DisplayDocView() {
   const {
@@ -194,7 +195,7 @@ function DisplayDocView() {
         >
           {node?.title}
         </h3>
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
+        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-9 overflow-x-hidden">
           {node?.data?.length ? (
             <div></div>
           ) : (
@@ -205,45 +206,16 @@ function DisplayDocView() {
             </div>
           )}
 
-          <div className="shrink-0 w-full h-full flex flex-col justify-start items-center gap-1">
-            {node?.data?.map((field, i) => (
-              <div
-                key={"field-id-" + field.type + "-" + i}
-                className="group w-full relative"
-              >
-                {field.type === "heading" && (
-                  <div className="w-full">
-                    <h3
-                      style={{
-                        fontSize: `${field?.config?.fontSize}px`,
-                        textDecoration: `${
-                          field?.config?.strickthrough ? "line-through" : "none"
-                        }`,
-                        fontStyle: `${
-                          field?.config?.italic ? "italic" : "normal"
-                        }`,
-                        fontWeight: `${
-                          field?.config?.bold ? "bold" : "normal"
-                        }`,
-                        color: `${field?.config?.color}`,
-                        fontFamily: `${field?.config?.fontFamily}`,
-                        borderColor: `${field?.config?.nodeConfig?.borderColor}`,
-                        textAlign: `${field?.config?.align}`,
-                        display:
-                          field?.id === currentField?.id ? "none" : "block",
-                      }}
-                      className="relative p-1 bg-[var(--bg-secondary)] rounded-md group text-[var(--text-primary)] w-full h-fit text-center text-2xl transition-colors duration-300 cursor-pointer"
-                      onDoubleClick={() => handleEditField(field, i)}
-                    >
-                      {field?.data?.text}
-                    </h3>
-                  </div>
-                )}
-                {field.type === "paragraph" && (
-                  <p
-                    className="w-full bg-[var(--bg-secondary)] p-1 rounded-md"
-                    onDoubleClick={() => handleEditField(field, i)}
+          {node?.data?.map((field, i) => (
+            <div
+              key={"field-id-" + field.type + "-" + i}
+              className="group w-full relative"
+            >
+              {field.type === "heading" && (
+                <div className="w-full">
+                  <h3
                     style={{
+                      fontSize: `${field?.config?.fontSize}px`,
                       textDecoration: `${
                         field?.config?.strickthrough ? "line-through" : "none"
                       }`,
@@ -257,190 +229,64 @@ function DisplayDocView() {
                       textAlign: `${field?.config?.align}`,
                       display:
                         field?.id === currentField?.id ? "none" : "block",
-                      whiteSpace: "pre-wrap",
-                      lineHeight: "1.25rem",
                     }}
+                    className="relative p-1 bg-[var(--bg-secondary)] rounded-md group text-[var(--text-primary)] w-full h-fit text-center text-2xl transition-colors duration-300 cursor-pointer"
+                    onDoubleClick={() => handleEditField(field, i)}
                   >
                     {field?.data?.text}
-                  </p>
-                )}
-                {field.type === "unorderedList" && (
-                  <div
-                    style={{
-                      display: field?.id === currentField?.id ? "none" : "flex",
-                    }}
-                    className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
-                  >
-                    {field?.data?.list?.map((item, j) => (
-                      <div
-                        key={`shown-list-item-${j}`}
-                        className="w-full flex justify-center items-center text-sm"
-                        onDoubleClick={() => handleEditField(field, i)}
-                      >
-                        <span
-                          style={{
-                            color: `${field?.config?.color}`,
-                          }}
-                          className="w-3 h-3 mr-1 block"
-                        >
-                          {
-                            listStyles?.find(
-                              (listStyle) =>
-                                listStyle.type === field.config?.listStyle
-                            )?.icon
-                          }
-                        </span>
-                        <span
-                          className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-                          style={{
-                            fontSize: `${field?.config?.fontSize}px`,
-                            textDecoration: `${
-                              field?.config?.strickthrough
-                                ? "line-through"
-                                : "none"
-                            }`,
-                            fontStyle: `${
-                              field?.config?.italic ? "italic" : "normal"
-                            }`,
-                            fontWeight: `${
-                              field?.config?.bold ? "bold" : "normal"
-                            }`,
-                            fontFamily: `${field?.config?.fontFamily}`,
-                            color: `${field?.config?.color}`,
-                            textAlign: `${field?.config?.align}`,
-                          }}
-                        >
-                          {item}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {field.type === "taskList" && (
-                  <div
-                    style={{
-                      display: field?.id === currentField?.id ? "none" : "flex",
-                    }}
-                    className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
-                  >
-                    {field?.data?.list?.map((item, j) => (
-                      <div
-                        key={`shown-list-item-${j}`}
-                        className="w-full flex justify-center items-center text-sm"
-                        onDoubleClick={() => handleEditField(field, i)}
-                      >
-                        <span
-                          style={{
-                            color: `${field?.config?.color}`,
-                          }}
-                          className="w-5 h-5 mr-1 block cursor-pointer group"
-                        >
-                          {item?.completed ? (
-                            <CheckedIcon />
-                          ) : (
-                            <UncheckedIcon />
-                          )}
-                        </span>
-                        <span
-                          className="w-full text-[var(--text-primary)] cursor- bg-transparent outline-none"
-                          style={{
-                            fontSize: `${field?.config?.fontSize}px`,
-                            textDecoration: `${
-                              field?.config?.strickthrough
-                                ? "line-through"
-                                : "none"
-                            }`,
-                            fontStyle: `${
-                              field?.config?.italic ? "italic" : "normal"
-                            }`,
-                            fontWeight: `${
-                              field?.config?.bold ? "bold" : "normal"
-                            }`,
-                            fontFamily: `${field?.config?.fontFamily}`,
-                            color: `${field?.config?.color}`,
-                            textAlign: `${field?.config?.align}`,
-                          }}
-                        >
-                          {item?.text}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {field.type === "numberList" && (
-                  <div
-                    style={{
-                      display: field?.id === currentField?.id ? "none" : "flex",
-                    }}
-                    className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
-                  >
-                    {field?.data?.list?.map((item, j) => (
-                      <div
-                        key={`shown-list-item-${j}`}
-                        className="w-full flex justify-center items-center text-sm"
-                        onDoubleClick={() => handleEditField(field, i)}
-                      >
-                        <span
-                          style={{
-                            color: `${field?.config?.color}`,
-                          }}
-                          className="w-3 h-full mr-1  flex justify-center items-center"
-                        >
-                          {numberListStyles
-                            ?.find(
-                              (listStyle) =>
-                                listStyle.type === field?.config?.listStyle
-                            )
-                            ?.icon(j) + "."}
-                        </span>
-                        <span
-                          className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-                          style={{
-                            fontSize: `${field?.config?.fontSize}px`,
-                            textDecoration: `${
-                              field?.config?.strickthrough
-                                ? "line-through"
-                                : "none"
-                            }`,
-                            fontStyle: `${
-                              field?.config?.italic ? "italic" : "normal"
-                            }`,
-                            fontWeight: `${
-                              field?.config?.bold ? "bold" : "normal"
-                            }`,
-                            fontFamily: `${field?.config?.fontFamily}`,
-                            color: `${field?.config?.color}`,
-                            textAlign: `${field?.config?.align}`,
-                          }}
-                        >
-                          {item}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {field.type === "link" && (
-                  <div
-                    style={{
-                      display: field?.id === currentField?.id ? "none" : "flex",
-                    }}
-                    onDoubleClick={() => handleEditField(field, i)}
-                    className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
-                  >
-                    <div className="w-full flex justify-center items-center overflow-x-hidden">
+                  </h3>
+                </div>
+              )}
+              {field.type === "paragraph" && (
+                <p
+                  className="w-full bg-[var(--bg-secondary)] p-1 rounded-md"
+                  onDoubleClick={() => handleEditField(field, i)}
+                  style={{
+                    textDecoration: `${
+                      field?.config?.strickthrough ? "line-through" : "none"
+                    }`,
+                    fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+                    fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+                    color: `${field?.config?.color}`,
+                    fontFamily: `${field?.config?.fontFamily}`,
+                    borderColor: `${field?.config?.nodeConfig?.borderColor}`,
+                    textAlign: `${field?.config?.align}`,
+                    display: field?.id === currentField?.id ? "none" : "block",
+                    whiteSpace: "pre-wrap",
+                    lineHeight: "1.25rem",
+                  }}
+                >
+                  {field?.data?.text}
+                </p>
+              )}
+              {field.type === "unorderedList" && (
+                <div
+                  style={{
+                    display: field?.id === currentField?.id ? "none" : "flex",
+                  }}
+                  className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+                >
+                  {field?.data?.list?.map((item, j) => (
+                    <div
+                      key={`shown-list-item-${j}`}
+                      className="w-full flex justify-center items-center text-sm"
+                      onDoubleClick={() => handleEditField(field, i)}
+                    >
                       <span
                         style={{
                           color: `${field?.config?.color}`,
                         }}
-                        className="w-3 h-5 mr-1 block"
+                        className="w-3 h-3 mr-1 block"
                       >
-                        <LinkIcon />
+                        {
+                          listStyles?.find(
+                            (listStyle) =>
+                              listStyle.type === field.config?.listStyle
+                          )?.icon
+                        }
                       </span>
-                      <a
-                        href={field?.data?.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none hover:underline break-all"
+                      <span
+                        className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
                         style={{
                           fontSize: `${field?.config?.fontSize}px`,
                           textDecoration: `${
@@ -459,53 +305,197 @@ function DisplayDocView() {
                           textAlign: `${field?.config?.align}`,
                         }}
                       >
-                        {field?.data?.link}
-                      </a>
+                        {item}
+                      </span>
                     </div>
-                    <LinkPreview link={field?.data?.link} />
-                  </div>
-                )}
-                {!currentField?.id && (
-                  <span className="group-hover:opacity-100 opacity-0 transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1">
-                    <button
-                      onClick={() => handleEditField(field, i)}
-                      className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
+                  ))}
+                </div>
+              )}
+              {field.type === "taskList" && (
+                <div
+                  style={{
+                    display: field?.id === currentField?.id ? "none" : "flex",
+                  }}
+                  className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+                >
+                  {field?.data?.list?.map((item, j) => (
+                    <div
+                      key={`shown-list-item-${j}`}
+                      className="w-full flex justify-center items-center text-sm"
+                      onDoubleClick={() => handleEditField(field, i)}
                     >
-                      <EditIcon />
-                    </button>
-                  </span>
-                )}
-                {currentField?.id === field?.id && (
-                  <AddEditField
-                    setCurrentFieldType={setCurrentFieldType}
-                    node={node}
-                    setNode={setNode}
-                    type={currentFieldType}
-                    currentField={currentField}
-                    setCurrentField={setCurrentField}
-                    currentFieldType={currentFieldType}
-                  />
-                )}
-              </div>
-            ))}
+                      <span
+                        style={{
+                          color: `${field?.config?.color}`,
+                        }}
+                        className="w-5 h-5 mr-1 block cursor-pointer group"
+                      >
+                        {item?.completed ? <CheckedIcon /> : <UncheckedIcon />}
+                      </span>
+                      <span
+                        className="w-full text-[var(--text-primary)] cursor- bg-transparent outline-none"
+                        style={{
+                          fontSize: `${field?.config?.fontSize}px`,
+                          textDecoration: `${
+                            field?.config?.strickthrough
+                              ? "line-through"
+                              : "none"
+                          }`,
+                          fontStyle: `${
+                            field?.config?.italic ? "italic" : "normal"
+                          }`,
+                          fontWeight: `${
+                            field?.config?.bold ? "bold" : "normal"
+                          }`,
+                          fontFamily: `${field?.config?.fontFamily}`,
+                          color: `${field?.config?.color}`,
+                          textAlign: `${field?.config?.align}`,
+                        }}
+                      >
+                        {item?.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {field.type === "numberList" && (
+                <div
+                  style={{
+                    display: field?.id === currentField?.id ? "none" : "flex",
+                  }}
+                  className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+                >
+                  {field?.data?.list?.map((item, j) => (
+                    <div
+                      key={`shown-list-item-${j}`}
+                      className="w-full flex justify-center items-center text-sm"
+                      onDoubleClick={() => handleEditField(field, i)}
+                    >
+                      <span
+                        style={{
+                          color: `${field?.config?.color}`,
+                        }}
+                        className="w-3 h-full mr-1  flex justify-center items-center"
+                      >
+                        {numberListStyles
+                          ?.find(
+                            (listStyle) =>
+                              listStyle.type === field?.config?.listStyle
+                          )
+                          ?.icon(j) + "."}
+                      </span>
+                      <span
+                        className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                        style={{
+                          fontSize: `${field?.config?.fontSize}px`,
+                          textDecoration: `${
+                            field?.config?.strickthrough
+                              ? "line-through"
+                              : "none"
+                          }`,
+                          fontStyle: `${
+                            field?.config?.italic ? "italic" : "normal"
+                          }`,
+                          fontWeight: `${
+                            field?.config?.bold ? "bold" : "normal"
+                          }`,
+                          fontFamily: `${field?.config?.fontFamily}`,
+                          color: `${field?.config?.color}`,
+                          textAlign: `${field?.config?.align}`,
+                        }}
+                      >
+                        {item}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {field.type === "link" && (
+                <div
+                  style={{
+                    display: field?.id === currentField?.id ? "none" : "flex",
+                  }}
+                  onDoubleClick={() => handleEditField(field, i)}
+                  className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+                >
+                  <div className="w-full flex justify-center items-center overflow-x-hidden">
+                    <span
+                      style={{
+                        color: `${field?.config?.color}`,
+                      }}
+                      className="w-3 h-5 mr-1 block"
+                    >
+                      <LinkIcon />
+                    </span>
+                    <a
+                      href={field?.data?.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none hover:underline break-all"
+                      style={{
+                        fontSize: `${field?.config?.fontSize}px`,
+                        textDecoration: `${
+                          field?.config?.strickthrough ? "line-through" : "none"
+                        }`,
+                        fontStyle: `${
+                          field?.config?.italic ? "italic" : "normal"
+                        }`,
+                        fontWeight: `${
+                          field?.config?.bold ? "bold" : "normal"
+                        }`,
+                        fontFamily: `${field?.config?.fontFamily}`,
+                        color: `${field?.config?.color}`,
+                        textAlign: `${field?.config?.align}`,
+                      }}
+                    >
+                      {field?.data?.link}
+                    </a>
+                  </div>
+                  {field?.config?.preview && (
+                    <LinkPreview link={field?.data?.link} />
+                  )}
+                </div>
+              )}
+              {!currentField?.id && (
+                <span className="group-hover:opacity-100 opacity-0 transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1">
+                  <button
+                    onClick={() => handleEditField(field, i)}
+                    className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
+                  >
+                    <EditIcon />
+                  </button>
+                </span>
+              )}
+              {currentField?.id === field?.id && (
+                <AddEditField
+                  setCurrentFieldType={setCurrentFieldType}
+                  node={node}
+                  setNode={setNode}
+                  type={currentFieldType}
+                  currentField={currentField}
+                  setCurrentField={setCurrentField}
+                  currentFieldType={currentFieldType}
+                />
+              )}
+            </div>
+          ))}
 
-            {!currentField?.id && (
-              <AddEditField
-                setCurrentFieldType={setCurrentFieldType}
-                node={node}
-                setNode={setNode}
-                type={currentFieldType}
-                currentField={currentField}
-                setCurrentField={setCurrentField}
-                currentFieldType={currentFieldType}
-              />
-            )}
-
-            <MenuButtons
+          {!currentField?.id && (
+            <AddEditField
+              setCurrentFieldType={setCurrentFieldType}
+              node={node}
+              setNode={setNode}
+              type={currentFieldType}
+              currentField={currentField}
               setCurrentField={setCurrentField}
-              setType={setCurrentFieldType}
+              currentFieldType={currentFieldType}
             />
-          </div>
+          )}
+
+          <MenuButtons
+            setCurrentField={setCurrentField}
+            setType={setCurrentFieldType}
+          />
         </div>
       </div>
     </div>
@@ -609,7 +599,7 @@ const Button = ({ children, onClick, text }) => {
 
 const ToolTip = ({ text }) => {
   return (
-    <div className="hidden group-hover:flex justify-center items-center absolute -bottom-8 text-center whitespace-nowrap w-fit h-6 bg-[var(--bg-tertiary)] rounded-md px-2">
+    <div className="z-10 hidden group-hover:flex justify-center items-center absolute -bottom-8 text-center whitespace-nowrap w-fit h-6 bg-[var(--bg-tertiary)] rounded-md px-2">
       <span className="absolute inline-block -top-1 w-3 h-3 rotate-45 bg-[var(--bg-tertiary)] -z-10"></span>
       <span className="text-xs">{text}</span>
     </div>
@@ -663,6 +653,7 @@ const AddEditField = ({
           align: "left",
           fontSize: 14,
           color: "#94edff",
+          preview: true,
         };
       default:
         break;
@@ -1180,6 +1171,15 @@ const InputTitleButtons = ({
     });
     setNumberListStyleActive(false);
   };
+  const handlePreviewLinkClick = () => {
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        preview: !currentField.config.preview,
+      },
+    });
+  };
   const handleCancel = () => {
     setCurrentFieldType(null);
     setCurrentField(null);
@@ -1325,6 +1325,22 @@ const InputTitleButtons = ({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {currentField?.type === "link" && (
+        <div className="relative group">
+          <button
+            type="button"
+            onClick={handlePreviewLinkClick}
+            title="Preview Link"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+          >
+            <PreviewIcon />
+            {!currentField?.config?.preview && (
+              <span className="absolute block w-[2px] rotate-45 rounded-full h-6 bg-[var(--logo-primary)]"></span>
+            )}
+          </button>
         </div>
       )}
 
@@ -2441,6 +2457,14 @@ const Link = ({
     }
   };
 
+  const handleFaviconSrc = (src, link) => {
+    if (src === "") return "";
+    if (src.startsWith("data:image")) return src;
+    if (src.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
+    let domain = link.split("/")[2];
+    return "https://" + domain + src;
+  };
+
   useEffect(() => {
     handlePreview();
   }, [link]);
@@ -2480,46 +2504,50 @@ const Link = ({
           Loading Preview...
         </div>
       ) : (
-        <div className="w-full h-fit flex justify-center items-center flex-col p-1">
-          {preview?.title && (
-            <h1 className="w-full text-[var(--text-primary)]  text-sm font-bold">
-              {preview.title}
-            </h1>
-          )}
-          {preview?.description && (
-            <p className="w-full text-start text-[var(--text-primary)] text-xs">
-              {preview.description}
-            </p>
-          )}
-          {preview?.previewImages?.length > 0 &&
-            preview.previewImages.map((image, i) => (
-              <div
-                key={`preview-image-${i}-`}
-                className="w-full h-fit relative flex justify-center items-center"
-              >
-                <img
-                  key={`preview-image-${i}`}
-                  src={image}
-                  alt="preview"
-                  className="mt-2 rounded-md object-contain"
-                />
-                <div className="w-fit absolute bottom-0 left-0 bg-slate-600/50 flex justify-center items-center px-1 gap-1 rounded-tr-md">
-                  {preview?.favicon && (
-                    <img
-                      src={preview.favicon}
-                      alt="favicon"
-                      className="w-5 h-5 rounded-full"
-                    />
-                  )}
-                  {preview?.siteName && (
-                    <span className="text-xs font-bold text-[var(--text-primary)]">
-                      {preview.siteName}
-                    </span>
-                  )}
-                </div>
+        currentField?.config?.preview && (
+          <div className="w-full h-fit flex justify-center items-center flex-col p-1">
+            {preview?.favicon && (
+              <div className="w-full flex justify-start items-center gap-1 ">
+                {preview?.favicon && (
+                  <img
+                    src={handleFaviconSrc(preview.favicon, link)}
+                    alt="favicon"
+                    className="w-5 h-5 rounded-full"
+                  />
+                )}
+                {preview?.siteName && (
+                  <span className="text-sm font-bold text-[var(--text-primary)]">
+                    {preview.siteName}
+                  </span>
+                )}
               </div>
-            ))}
-        </div>
+            )}
+            {preview?.title && (
+              <h1 className="w-full text-[var(--text-primary)]  text-sm font-bold">
+                {preview.title}
+              </h1>
+            )}
+            {preview?.description && (
+              <p className="w-full text-start text-[var(--text-primary)] text-xs">
+                {preview.description}
+              </p>
+            )}
+            {preview?.previewImages?.length > 0 &&
+              preview.previewImages.map((image, i) => (
+                <div
+                  key={`preview-image-${i}-`}
+                  className="w-full h-fit relative flex justify-center items-center"
+                >
+                  <img
+                    key={`preview-image-${i}`}
+                    src={image}
+                    alt="preview"
+                    className="mt-2 rounded-md object-contain"
+                  />
+                </div>
+              ))}
+          </div>
+        )
       )}
       {!isValidLink && (
         <span className="text-[var(--btn-delete)] text-xs font-bold">
@@ -2567,6 +2595,14 @@ const LinkPreview = ({ link }) => {
     }
   };
 
+  const handleFaviconSrc = (src, link) => {
+    if (src === "") return "";
+    if (src.startsWith("data:image")) return src;
+    if (src.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
+    let domain = link.split("/")[2];
+    return "https://" + domain + src;
+  };
+
   useEffect(() => {
     handlePreview();
   }, [link]);
@@ -2579,8 +2615,24 @@ const LinkPreview = ({ link }) => {
         </div>
       ) : (
         <>
+          {preview?.favicon && (
+            <div className="w-full flex justify-start items-center gap-1 ">
+              {preview?.favicon && (
+                <img
+                  src={handleFaviconSrc(preview.favicon, link)}
+                  alt="favicon"
+                  className="w-5 h-5 rounded-full"
+                />
+              )}
+              {preview?.siteName && (
+                <span className="text-sm font-bold text-[var(--text-primary)]">
+                  {preview.siteName}
+                </span>
+              )}
+            </div>
+          )}
           {preview?.title && (
-            <h1 className="w-full text-[var(--text-primary)]  text-sm font-bold">
+            <h1 className="w-full text-[var(--text-primary)]  text-sm font-medium">
               {preview.title}
             </h1>
           )}
@@ -2593,7 +2645,7 @@ const LinkPreview = ({ link }) => {
             preview.previewImages.map((image, i) => (
               <div
                 key={`preview-image-${i}-`}
-                className="w-full h-fit relative flex justify-center items-center"
+                className="w-full h-fit relative flex justify-center items-center overflow-hidden"
               >
                 <img
                   key={`preview-image-${i}`}
@@ -2601,20 +2653,6 @@ const LinkPreview = ({ link }) => {
                   alt="preview"
                   className="mt-2 rounded-md object-contain"
                 />
-                <div className="w-fit absolute bottom-0 left-0 bg-slate-600/50 flex justify-center items-center px-1 gap-1 rounded-tr-md">
-                  {preview?.favicon && (
-                    <img
-                      src={preview.favicon}
-                      alt="favicon"
-                      className="w-5 h-5 rounded-full"
-                    />
-                  )}
-                  {preview?.siteName && (
-                    <span className="text-xs font-bold text-[var(--text-primary)]">
-                      {preview.siteName}
-                    </span>
-                  )}
-                </div>
               </div>
             ))}
         </>
