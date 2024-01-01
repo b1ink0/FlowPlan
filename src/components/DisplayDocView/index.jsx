@@ -41,6 +41,7 @@ import UncheckedIcon from "../../assets/Icons/UncheckedIcon";
 import RomanLIstIcon from "../../assets/Icons/RomanLIstIcon";
 import AlphabetListIcon from "../../assets/Icons/AlphabetListIcon";
 import PreviewIcon from "../../assets/Icons/PreviewIcon";
+import DownloadIcon from "../../assets/Icons/DownloadIcon";
 
 function DisplayDocView() {
   const {
@@ -481,6 +482,36 @@ const DocRenderView = ({
           )}
         </div>
       )}
+      {field.type === "image" && (
+        <div
+          style={{
+            display: field?.id === currentField?.id ? "none" : "flex",
+          }}
+          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          onDoubleClick={() => handleEditField(field, i)}
+        >
+          <div className="w-full flex justify-center items-center overflow-x-hidden">
+            <img
+              src={field?.data?.image?.url}
+              alt={field?.data?.image?.name}
+              className="w-full h-full object-cover rounded-md"
+            />
+          </div>
+        </div>
+      )}
+      {field.type === "file" && (
+        <FileView
+          field={field}
+          i={i}
+          node={node}
+          setNode={setNode}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+          handleEditField={handleEditField}
+        />
+      )}
 
       <span
         style={{ opacity: showMenu ? 1 : 0 }}
@@ -661,6 +692,18 @@ const AddEditField = ({
           color: "#94edff",
           preview: true,
         };
+      case "image":
+        return {
+          ...defaultNodeConfig.titleConfig,
+          align: "left",
+          fontSize: 16,
+        };
+      case "file":
+        return {
+          ...defaultNodeConfig.titleConfig,
+          align: "left",
+          fontSize: 16,
+        };
       default:
         break;
     }
@@ -673,6 +716,16 @@ const AddEditField = ({
         text: "",
         list: [],
         link: "",
+        image: {
+          name: "",
+          url: "",
+          mimeType: "",
+        },
+        file: {
+          name: "",
+          url: "",
+          mimeType: "",
+        },
       },
       config: handleGetConfig(type),
     });
@@ -742,23 +795,23 @@ const AddEditField = ({
       );
     case "image":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <input
-            type="file"
-            placeholder="Image"
-            className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font-bold border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
-          />
-        </div>
+        <Image
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     case "file":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <input
-            type="file"
-            placeholder="File"
-            className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font-bold border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
-          />
-        </div>
+        <File
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     case "table":
       return (
@@ -2746,6 +2799,336 @@ const ImageWithPlaceholder = ({ src, placeholderSrc, alt }) => {
         onLoad={handleImageLoad}
       />
     </>
+  );
+};
+
+const Image = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+}) => {
+  const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
+    useStateContext();
+  const [image, setImage] = useState(currentField?.data?.image?.url ?? null);
+  const [name, setName] = useState(currentField?.data?.image?.name ?? null);
+  const [error, setError] = useState(null);
+  const handleImageChange = (e) => {
+    setError(null);
+    if (!e.target.files[0]) return;
+    const maxSizeInBytes = 1024 * 1024 * 1;
+    if (e.target.files[0].size > maxSizeInBytes) {
+      setError("Image size should be less than 1MB");
+      return;
+    }
+    setImage(e.target.files[0]);
+    setName(e.target.files[0].name);
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      var fr = new FileReader();
+      fr.onload = () => {
+        resolve(fr.result);
+      };
+      fr.readAsDataURL(file);
+    });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    if (!image) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    if (typeof image === "string") {
+      setCurrentFieldType(null);
+      setCurrentField(null);
+      return;
+    }
+    let imageB64 = await handleFileToBase64(image);
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        image: {
+          url: imageB64,
+          name: name,
+          mimiType: image.type,
+        },
+      },
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else {
+      node.data.push({ ...finalField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  return (
+    <div className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md">
+      <div className="w-full h-fit flex justify-center items-center flex-col p-1 gap-2">
+        {error && (
+          <span className="text-[var(--btn-delete)] text-xs font-bold">
+            {error}
+          </span>
+        )}
+        {image && (
+          <div className="w-full h-fit relative flex justify-center items-center overflow-hidden">
+            <img
+              src={
+                typeof image === "string" ? image : URL.createObjectURL(image)
+              }
+              alt="preview"
+              className="w-full rounded-md object-contain"
+            />
+          </div>
+        )}
+        <div className="w-full h-16 relative">
+          <input
+            className="w-full h-full opacity-0 cursor-pointer"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+          />
+          <div className="w-full h-full absolute top-0 left-0 flex justify-center items-center pointer-events-none">
+            <button className="w-full h-full flex justify-center items-center border-2 border-dashed  border-[var(--border-primary)] rounded-md text-[var(--text-primary)] text-xs font-bold">
+              <span className="w-6 h-6 mr-1 flex justify-center items-center">
+                <ImageIcon />
+              </span>
+              <span className="text-[var(--text-primary)] text-sm">
+                {image ? "Change Image" : "Select Image"}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <InputTitleButtons
+        handleSave={handleSave}
+        config={currentField?.config}
+        currentField={currentField}
+        setCurrentField={setCurrentField}
+        setCurrentFieldType={setCurrentFieldType}
+        type={currentField.type}
+        handleGetDefaultConfig={handleGetDefaultConfig}
+      />
+    </div>
+  );
+};
+
+const File = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+}) => {
+  const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
+    useStateContext();
+  const [file, setFile] = useState(currentField?.data?.file?.url ?? null);
+  const [name, setName] = useState(currentField?.data?.file?.name ?? null);
+  const [error, setError] = useState(null);
+  const handleFileChange = (e) => {
+    setError(null);
+    if (!e.target.files[0]) return;
+    const maxSizeInBytes = 1024 * 1024 * 5;
+    if (e.target.files[0].size > maxSizeInBytes) {
+      setError("File size should be less than 5MB");
+      return;
+    }
+    setFile(e.target.files[0]);
+    setName(e.target.files[0].name);
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      var fr = new FileReader();
+      fr.onload = () => {
+        resolve(fr.result);
+      };
+      fr.readAsDataURL(file);
+    });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    if (!file) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let fileB64;
+
+    if (typeof file === "string") {
+      fileB64 = file;
+    } else {
+      fileB64 = await handleFileToBase64(file);
+    }
+
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        file: {
+          url: fileB64,
+          name: name,
+          mimiType: file?.type ?? currentField?.data?.file?.mimiType ?? null,
+        },
+      },
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else {
+      node.data.push({ ...finalField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  return (
+    <div className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md">
+      <div className="w-full h-fit flex justify-center items-center flex-col p-1 gap-2">
+        <input
+          type="text"
+          placeholder="File Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full h-fit bg-[var(--bg-secondary)] p-1 text-[var(--text-primary)] text-sm outline-none transition-colors duration-300 cursor-pointer resize-none"
+          style={{
+            fontSize: `${currentField?.config?.fontSize}px`,
+            textDecoration: `${
+              currentField?.config?.strickthrough ? "line-through" : "none"
+            }`,
+            fontStyle: `${currentField?.config?.italic ? "italic" : "normal"}`,
+            fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+            fontFamily: `${currentField?.config?.fontFamily}`,
+            color: `${currentField?.config?.color}`,
+            textAlign: `${currentField?.config?.align}`,
+          }}
+        />
+        {error && (
+          <span className="text-[var(--btn-delete)] text-xs font-bold">
+            {error}
+          </span>
+        )}
+        <div className="w-full h-16 relative">
+          <input
+            className="w-full h-full opacity-0 cursor-pointer"
+            type="file"
+            accept="*"
+            onChange={handleFileChange}
+          />
+          <div className="w-full h-full absolute top-0 left-0 flex justify-center items-center pointer-events-none">
+            <button className="w-full h-full flex justify-center items-center border-2 border-dashed  border-[var(--border-primary)] rounded-md text-[var(--text-primary)] text-xs font-bold">
+              <span className="w-5 h-5 mr-2 flex justify-center items-center">
+                <FileIcon />
+              </span>
+              <span className="text-[var(--text-primary)] text-sm">
+                {file ? "Change File" : "Select File"}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <InputTitleButtons
+        handleSave={handleSave}
+        config={currentField?.config}
+        currentField={currentField}
+        setCurrentField={setCurrentField}
+        setCurrentFieldType={setCurrentFieldType}
+        type={currentField.type}
+        handleGetDefaultConfig={handleGetDefaultConfig}
+      />
+    </div>
+  );
+};
+
+const FileView = ({
+  field,
+  i,
+  node,
+  setNode,
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleEditField,
+}) => {
+  return (
+    <div
+      style={{
+        display: field?.id === currentField?.id ? "none" : "flex",
+      }}
+      className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+      onDoubleClick={() => handleEditField(field, i)}
+    >
+      <div className="w-full flex justify-center items-center overflow-x-hidden gap-1 pr-1">
+        <span
+          style={{
+            color: `${field?.config?.color}`,
+          }}
+          className="w-4 h-4 ml-1 mr-1 block"
+        >
+          <FileIcon />
+        </span>
+        <span
+          href={field?.data?.file?.url}
+          target="_blank"
+          rel="noreferrer"
+          className="w-full text-[var(--text-primary)] bg-transparent outline-none hover:underline break-all"
+          style={{
+            fontSize: `${field?.config?.fontSize}px`,
+            textDecoration: `${
+              field?.config?.strickthrough ? "line-through" : "none"
+            }`,
+            fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+            fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+            fontFamily: `${field?.config?.fontFamily}`,
+            color: `${field?.config?.color}`,
+            textAlign: `${field?.config?.align}`,
+          }}
+        >
+          {field?.data?.file?.name}
+        </span>
+        <span
+          className="w-6 h-6 p-1 mr-8 flex justify-center items-center bg-[var(--bg-secondary)] border-2 border-[var(--border-primary)] rounded-sm hover:bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+        >
+          <DownloadIcon />
+        </span>
+      </div>
+    </div>
   );
 };
 
