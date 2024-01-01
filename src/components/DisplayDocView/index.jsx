@@ -42,6 +42,7 @@ import RomanLIstIcon from "../../assets/Icons/RomanLIstIcon";
 import AlphabetListIcon from "../../assets/Icons/AlphabetListIcon";
 import PreviewIcon from "../../assets/Icons/PreviewIcon";
 import DownloadIcon from "../../assets/Icons/DownloadIcon";
+import AddIcon from "../../assets/Icons/AddIcon";
 
 function DisplayDocView() {
   const {
@@ -512,6 +513,19 @@ const DocRenderView = ({
           handleEditField={handleEditField}
         />
       )}
+      {field.type === "table" && (
+        <TableView
+          field={field}
+          i={i}
+          node={node}
+          setNode={setNode}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+          handleEditField={handleEditField}
+        />
+      )}
 
       <span
         style={{ opacity: showMenu ? 1 : 0 }}
@@ -704,6 +718,15 @@ const AddEditField = ({
           align: "left",
           fontSize: 16,
         };
+      case "table":
+        return {
+          ...defaultNodeConfig.titleConfig,
+          align : "left",
+          fontSize: 14,
+          borderColor: "var(--border-primary)",
+          borderStyle: "solid",
+          borderWidth: 2,
+        };
       default:
         break;
     }
@@ -726,6 +749,30 @@ const AddEditField = ({
           url: "",
           mimeType: "",
         },
+        table: [
+          {
+            type: "head",
+            data: [
+              {
+                text: "Heading 1",
+              },
+              {
+                text: "Heading 2",
+              },
+            ],
+          },
+          {
+            type: "body",
+            data: [
+              {
+                text: "",
+              },
+              {
+                text: "",
+              },
+            ],
+          },
+        ],
       },
       config: handleGetConfig(type),
     });
@@ -805,7 +852,7 @@ const AddEditField = ({
       );
     case "file":
       return (
-        <File
+        <FileSelector
           handleGetDefaultConfig={handleGetConfig}
           currentField={currentField}
           setCurrentField={setCurrentField}
@@ -815,13 +862,13 @@ const AddEditField = ({
       );
     case "table":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <input
-            type="text"
-            placeholder="Table"
-            className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font-bold border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
-          />
-        </div>
+        <Table
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     case "separator":
       return (
@@ -1601,7 +1648,7 @@ const InputTitleButtons = ({
         )}
       </div>
       {(currentField.type === "heading" ||
-        currentField.type === "paragraph") && (
+        currentField.type === "paragraph" || currentField.type === "table")  && (
         <div className="relative">
           <button
             type="button"
@@ -2934,7 +2981,7 @@ const Image = ({
   );
 };
 
-const File = ({
+const FileSelector = ({
   currentField,
   setCurrentField,
   currentFieldType,
@@ -3086,6 +3133,38 @@ const FileView = ({
   setCurrentFieldType,
   handleEditField,
 }) => {
+  const handleDownload = () => {
+    const base64Data = field?.data?.file?.url;
+    const [, mimeType, base64String] = base64Data.match(
+      /^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/
+    );
+
+    // Convert the base64 string to a Uint8Array
+    const binaryData = atob(base64String);
+    const uint8Array = new Uint8Array(binaryData.length);
+    for (let i = 0; i < binaryData.length; i++) {
+      uint8Array[i] = binaryData.charCodeAt(i);
+    }
+
+    // Create a Blob from the Uint8Array
+    const blob = new Blob([uint8Array], { type: mimeType });
+
+    // Create a File from the Blob
+    const file = new File(
+      [blob],
+      field?.data?.file?.name + "." + mimeType.split("/")[1],
+      { type: mimeType }
+    );
+
+    // You can now use the 'file' variable as a File object
+    const link = document.createElement("a");
+    link.href = window.URL.createObjectURL(file);
+    link.download = field?.data?.file?.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div
       style={{
@@ -3124,6 +3203,7 @@ const FileView = ({
         </span>
         <span
           className="w-6 h-6 p-1 mr-8 flex justify-center items-center bg-[var(--bg-secondary)] border-2 border-[var(--border-primary)] rounded-sm hover:bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={handleDownload}
         >
           <DownloadIcon />
         </span>
@@ -3131,5 +3211,358 @@ const FileView = ({
     </div>
   );
 };
+
+const Table = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+}) => {
+  const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
+    useStateContext();
+
+  const handleChange = (e, i, j) => {
+    let table = [...currentField.data.table];
+    table[i].data[j].text = e.target.value;
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        table: table,
+      },
+    });
+  };
+
+  const handleAddRow = () => {
+    let table = [...currentField.data.table];
+    let row = [];
+    for (let i = 0; i < table[0].data.length; i++) {
+      row.push({ text: "" });
+    }
+    table.push({ data: row });
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        table: table,
+      },
+    });
+  };
+
+  const handleAddColumn = () => {
+    let table = [...currentField.data.table];
+    table.forEach((row) => {
+      row.data.push({ text: "" });
+    });
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        table: table,
+      },
+    });
+  };
+
+  const handleDeleteRow = (i) => {
+    let table = [...currentField.data.table];
+    table.splice(i, 1);
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        table: table,
+      },
+    });
+  };
+
+  const handleDeleteColumn = (i) => {
+    let table = [...currentField.data.table];
+    table.forEach((row) => {
+      row.data.splice(i, 1);
+    });
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        table: table,
+      },
+    });
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let finalField = {
+      ...currentField,
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else {
+      node.data.push({ ...finalField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  return (
+    <div className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md">
+      <div className="w-full h-fit flex justify-center items-center flex-col p-1 gap-2">
+        <table className="w-full h-fit">
+          {currentField.data?.table?.map((row, i) => (
+            <tr key={`table-row-${i}`}>
+              {row?.data?.map((cell, j) => (
+                <td
+                  key={`table-cell-${i}-${j}`}
+                  className="p-1"
+                  style={{
+                    borderWidth: `${currentField?.config?.borderWidth}px`,
+                    borderColor: `${currentField?.config?.borderColor}`,
+                    borderStyle: `${currentField?.config?.borderStyle}`,
+                  }}
+                >
+                  <input
+                    className="w-full h-full bg-transparent outline-none"
+                    style={{
+                      fontSize: `${currentField?.config?.fontSize}px`,
+                      textDecoration: `${
+                        currentField?.config?.strickthrough
+                          ? "line-through"
+                          : "none"
+                      }`,
+                      fontStyle: `${
+                        currentField?.config?.italic ? "italic" : "normal"
+                      }`,
+                      fontWeight: `${
+                        currentField?.config?.bold ? "bold" : "normal"
+                      }`,
+                      fontFamily: `${currentField?.config?.fontFamily}`,
+                      color: `${currentField?.config?.color}`,
+                      textAlign: `${currentField?.config?.align}`,
+                    }}
+                    value={cell?.text}
+                    onChange={(e) => handleChange(e, i, j)}
+                    placeholder="Enter Text..."
+                  />
+                </td>
+              ))}
+              <td
+                style={{
+                  borderWidth: `${currentField?.config?.borderWidth}px`,
+                  borderColor: `${currentField?.config?.borderColor}`,
+                  borderStyle: `${currentField?.config?.borderStyle}`,
+                }}
+              >
+                <button
+                  onClick={() => handleDeleteRow(i)}
+                  className="w-full h-full flex justify-center items-center hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
+                >
+                  <span
+                    style={{
+                      color: `${currentField?.config?.color}`,
+                    }}
+                    className="w-4 h-4 flex justify-center items-center"
+                  >
+                    <DeleteIcon />
+                  </span>
+                </button>
+              </td>
+            </tr>
+          ))}
+          <tr className="w-full h-7">
+            {currentField.data?.table[0]?.data?.map((cell, i) => (
+              <td
+                key={`table-cell-${i}`}
+                className="h-full"
+                style={{
+                  borderWidth: `${currentField?.config?.borderWidth}px`,
+                  borderColor: `${currentField?.config?.borderColor}`,
+                  borderStyle: `${currentField?.config?.borderStyle}`,
+                }}
+              >
+                <button
+                  onClick={() => handleDeleteColumn(i)}
+                  className="w-full h-full flex justify-center items-center hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
+                >
+                  <span
+                    style={{
+                      color: `${currentField?.config?.color}`,
+                    }}
+                    className="w-4 h-4 mr-1  flex justify-center items-center"
+                  >
+                    <DeleteIcon />
+                  </span>
+                </button>
+              </td>
+            ))}
+          </tr>
+        </table>
+        <div className="w-full h-7 flex justify-center items-center gap-2 bg-[var(--bg-secondary)] p-1 rounded-md">
+          <div className="relative">
+            <select
+              title="Border Style"
+              className="w-20 group h-7 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+              value={currentField?.config?.borderStyle}
+              onChange={(e) => {
+                setCurrentField({
+                  ...currentField,
+                  config: {
+                    ...currentField.config,
+                    borderStyle: e.target.value,
+                  },
+                });
+              }}
+            >
+              <option value="solid">Solid</option>
+              <option value="dashed">Dashed</option>
+              <option value="dotted">Dotted</option>
+            </select>
+          </div>
+
+          <input
+            title="Border Width"
+            className="w-7 h-7 bg-[var(--btn-secondary)] text-center text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+            type="number"
+            min="0"
+            max="10"
+            value={currentField?.config?.borderWidth}
+            onChange={(e) => {
+              setCurrentField({
+                ...currentField,
+                config: {
+                  ...currentField.config,
+                  borderWidth: e.target.value,
+                },
+              });
+            }}
+          />
+          <div className="w-7 h-7 bg-[var(--btn-secondary)] text-center text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center outline-none relative">
+            <input
+              className="w-full h-full opacity-0 bg-transparent outline-none cursor-pointer"
+              type="color"
+              title="Border Color"
+              value={currentField?.config?.borderColor}
+              onChange={(e) => {
+                setCurrentField({
+                  ...currentField,
+                  config: {
+                    ...currentField.config,
+                    borderColor: e.target.value,
+                  },
+                });
+              }}
+            />
+            <span className="pointer-events-none absolute  top-0 left-0 w-full h-full p-[6px]">
+              <ColorIcon />
+            </span>
+            <span
+              style={{
+                backgroundColor: `${currentField?.config?.borderColor}`,
+              }}
+              className="-top-1 -right-1 absolute w-3 h-3 rounded-full"
+            ></span>
+          </div>
+          <button
+            className="w-fit h-7 px-2 rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+            onClick={handleAddRow}
+          >
+            <span
+              style={{
+                color: `${currentField?.config?.color}`,
+              }}
+              className="w-3 h-3 mr-1  flex justify-center items-center"
+            >
+              <AddIcon />
+            </span>
+            <span className="text-[var(--text-primary)] text-xs font-bold">
+              Row
+            </span>
+          </button>
+          <button
+            className="w-fit h-7 px-2 rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+            onClick={handleAddColumn}
+          >
+            <span
+              style={{
+                color: `${currentField?.config?.color}`,
+              }}
+              className="w-3 h-3 mr-1  flex justify-center items-center"
+            >
+              <AddIcon />
+            </span>
+            <span className="text-[var(--text-primary)] text-xs font-bold">
+              Column
+            </span>
+          </button>
+        </div>
+      </div>
+      <InputTitleButtons
+        handleSave={handleSave}
+        config={currentField?.config}
+        currentField={currentField}
+        setCurrentField={setCurrentField}
+        setCurrentFieldType={setCurrentFieldType}
+        type={currentField.type}
+        handleGetDefaultConfig={handleGetDefaultConfig}
+      />
+    </div>
+  );
+};
+
+const TableView = ({ field, i, currentField, handleEditField }) => {
+  return (
+    <div
+      style={{
+        display: field?.id === currentField?.id ? "none" : "flex",
+      }}
+      className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+      onDoubleClick={() => handleEditField(field, i)}
+    >
+      <table className="w-full h-fit">
+        {field.data?.table?.map((row, i) => (
+          <tr key={`table-row-${i}`}>
+            {row?.data?.map((cell, j) => (
+              <td
+                key={`table-cell-${i}-${j}`}
+                className="p-1"
+                style={{
+                  borderWidth: `${field?.config?.borderWidth}px`,
+                  borderColor: `${field?.config?.borderColor}`,
+                  borderStyle: `${field?.config?.borderStyle}`,
+                }}
+              >
+                <span
+                  style={{
+                    color: `${field?.config?.color}`,
+                  }}
+                  className="w-full h-full block"
+                >
+                  {cell?.text}
+                </span>
+              </td>
+            ))}
+          </tr>
+        ))}
+      </table>
+    </div>
+  );
+}
 
 export default DisplayDocView;
