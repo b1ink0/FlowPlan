@@ -473,21 +473,26 @@ const DocRenderView = ({
               {field?.data?.link}
             </a>
           </div>
-          {field?.config?.preview && <LinkPreview link={field?.data?.link} />}
+          {field?.config?.preview && (
+            <LinkPreview
+              previewLink={field?.data?.previewLink}
+              link={field?.data?.link}
+            />
+          )}
         </div>
       )}
-      
-        <span
-          style={{opacity: showMenu ? 1 : 0}}
-          className="transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1"
+
+      <span
+        style={{ opacity: showMenu ? 1 : 0 }}
+        className="transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1"
+      >
+        <button
+          onClick={() => handleEditField(field, i)}
+          className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
         >
-          <button
-            onClick={() => handleEditField(field, i)}
-            className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
-          >
-            <EditIcon />
-          </button>
-        </span>
+          <EditIcon />
+        </button>
+      </span>
       {currentField?.id === field?.id && (
         <AddEditField
           setCurrentFieldType={setCurrentFieldType}
@@ -2412,11 +2417,20 @@ const Link = ({
     currentFlowPlanNode.forEach((i) => {
       node = node.children[i];
     });
+
+    console.log(finalImages);
     let finalField = {
       ...currentField,
       data: {
         ...currentField.data,
         link: link,
+        previewLink: {
+          title: preview?.title,
+          description: preview?.description,
+          previewImages: preview?.previewImages,
+          favicon: preview?.favicon,
+          siteName: preview?.siteName,
+        },
       },
     };
 
@@ -2451,6 +2465,13 @@ const Link = ({
       }
       console.log(res);
       setPreview(res.data);
+      setCurrentField({
+        ...currentField,
+        config: {
+          ...currentField.config,
+          preview: true,
+        },
+      });
       setLoading(false);
     } catch (e) {
       console.log(e);
@@ -2569,7 +2590,7 @@ const Link = ({
   );
 };
 
-const LinkPreview = ({ link }) => {
+const LinkPreview = ({ link, previewLink }) => {
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -2612,9 +2633,47 @@ const LinkPreview = ({ link }) => {
   return (
     <div className="w-full h-fit flex justify-center items-center flex-col p-1">
       {loading ? (
-        <div className="w-full h-full flex justify-center items-center animate-pulse">
-          Loading...
-        </div>
+        <>
+          {previewLink?.favicon && (
+            <div className="w-full flex justify-start items-center gap-1 ">
+              {previewLink?.favicon && (
+                <img
+                  src={handleFaviconSrc(previewLink.favicon, link)}
+                  alt="favicon"
+                  className="w-5 h-5 rounded-full"
+                />
+              )}
+              {previewLink?.siteName && (
+                <span className="text-sm font-bold text-[var(--text-primary)]">
+                  {previewLink.siteName}
+                </span>
+              )}
+            </div>
+          )}
+          {previewLink?.title && (
+            <h1 className="w-full text-[var(--text-primary)]  text-sm font-medium">
+              {previewLink.title}
+            </h1>
+          )}
+          {previewLink?.description && (
+            <p className="w-full text-[var(--text-primary)] text-xs text-start">
+              {previewLink.description}
+            </p>
+          )}
+          {previewLink?.previewImages?.length > 0 &&
+            previewLink.previewImages.map((image, i) => (
+              <div
+                key={`preview-image-${i}-`}
+                className="w-full h-fit relative flex justify-center items-center overflow-hidden"
+              >
+                <img
+                  src={image}
+                  alt="preview"
+                  className="mt-2 rounded-md object-contain"
+                />
+              </div>
+            ))}
+        </>
       ) : (
         <>
           {preview?.favicon && (
@@ -2649,17 +2708,44 @@ const LinkPreview = ({ link }) => {
                 key={`preview-image-${i}-`}
                 className="w-full h-fit relative flex justify-center items-center overflow-hidden"
               >
-                <img
+                <ImageWithPlaceholder
                   key={`preview-image-${i}`}
                   src={image}
+                  placeholderSrc={preview?.favicon}
                   alt="preview"
-                  className="mt-2 rounded-md object-contain"
                 />
               </div>
             ))}
         </>
       )}
     </div>
+  );
+};
+
+const ImageWithPlaceholder = ({ src, placeholderSrc, alt }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  return (
+    <>
+      {!imageLoaded && (
+        <img
+          src={placeholderSrc}
+          alt="Placeholder"
+          className="mt-2 rounded-md object-contain"
+        />
+      )}
+
+      <img
+        src={src}
+        alt={alt}
+        className="mt-2 rounded-md object-contain"
+        onLoad={handleImageLoad}
+      />
+    </>
   );
 };
 
