@@ -1,6 +1,11 @@
 // @ts-check
 import React, { useEffect, useRef, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
+import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import * as Themes from "react-syntax-highlighter/dist/esm/styles/prism";
+import * as Languages from "react-syntax-highlighter/dist/esm/languages/prism";
+import LinewrapIcon from "../../assets/Icons/LinewrapIcon";
+import CopyIcon from "../../assets/Icons/CopyIcon";
 import CloseBtnIcon from "../../assets/Icons/CloseBtnIcon";
 import TextIcon from "../../assets/Icons/TextIcon";
 import ParagraphIcon from "../../assets/Icons/ParagraphIcon";
@@ -526,7 +531,89 @@ const DocRenderView = ({
           handleEditField={handleEditField}
         />
       )}
-
+      {field.type === "separator" && (
+        <div
+          style={{
+            display: field?.id === currentField?.id ? "none" : "flex",
+          }}
+          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          onDoubleClick={() => handleEditField(field, i)}
+        >
+          <span
+            className="w-full h-0 rounded-full"
+            style={{
+              borderWidth: `${field?.config?.borderWidth}px`,
+              borderColor: `${field?.config?.borderColor}`,
+              borderStyle: `${field?.config?.borderStyle}`,
+            }}
+          ></span>
+        </div>
+      )}
+      {field.type === "timestamp" && (
+        <div
+          style={{
+            display: field?.id === currentField?.id ? "none" : "flex",
+          }}
+          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          onDoubleClick={() => handleEditField(field, i)}
+        >
+          <span
+            className="w-full text-[var(--text-primary)] bg-transparent outline-none hover:underline break-all"
+            style={{
+              fontSize: `${field?.config?.fontSize}px`,
+              textDecoration: `${
+                field?.config?.strickthrough ? "line-through" : "none"
+              }`,
+              fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+              fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+              fontFamily: `${field?.config?.fontFamily}`,
+              color: `${field?.config?.color}`,
+              textAlign: `${field?.config?.align}`,
+            }}
+          >
+            {field?.data?.timestamp?.string}
+          </span>
+        </div>
+      )}
+      {field.type === "codeBlock" && (
+        <div
+          style={{
+            display: field?.id === currentField?.id ? "none" : "flex",
+          }}
+          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col"
+          onDoubleClick={() => handleEditField(field, i)}
+        >
+          <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
+            <span>{field?.data?.code?.language}</span>
+            <button
+              onClick={() => copyToClipboard(currentField?.data?.code?.string)}
+              className="w-6 h-6 p-1 flex justify-center items-center hover:bg-[var(--bg-secondary)] rounded-md bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+              title="Copy Code"
+            >
+              <span className="w-full h-full flex justify-center items-center">
+                <CopyIcon />
+              </span>
+            </button>
+          </div>
+          <SyntaxHighlighter
+            customStyle={{
+              width: "100%",
+              margin: "0px",
+              padding: "3px",
+              borderRadius: "0px 0px 5px 5px",
+            }}
+            className="small-scroll-bar"
+            showLineNumbers={field?.data?.code?.lineNumbers ?? false}
+            showInlineLineNumbers={true}
+            wrapLines={true}
+            wrapLongLines={true}
+            language={field?.data?.code?.language}
+            style={Themes[field?.data?.code?.theme] ?? Themes["dracula"]}
+          >
+            {field?.data?.code?.string}
+          </SyntaxHighlighter>
+        </div>
+      )}
       <span
         style={{ opacity: showMenu ? 1 : 0 }}
         className="transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1"
@@ -721,12 +808,32 @@ const AddEditField = ({
       case "table":
         return {
           ...defaultNodeConfig.titleConfig,
-          align : "left",
+          align: "left",
           fontSize: 14,
           borderColor: "var(--border-primary)",
           borderStyle: "solid",
           borderWidth: 2,
         };
+      case "separator":
+        return {
+          ...defaultNodeConfig.titleConfig,
+          align: "left",
+          fontSize: 16,
+          borderWidth: 2,
+          borderStyle: "solid",
+          borderColor: "var(--text-primary)",
+        };
+      case "timestamp":
+        return {
+          ...defaultNodeConfig.titleConfig,
+          align: "center",
+          fontSize: 16,
+        };
+      case "codeBlock":
+        return {
+          fontSize: 14,
+        };
+
       default:
         break;
     }
@@ -773,6 +880,21 @@ const AddEditField = ({
             ],
           },
         ],
+        timestamp: {
+          string: "",
+          iso: new Date().toISOString(),
+          format: {
+            type: "Date Only",
+            input: { day: "2-digit", month: "2-digit", year: "numeric" },
+          },
+        },
+        code: {
+          language: "javascript",
+          theme: "dracula",
+          lineNumbers: true,
+          wrapLines: true,
+          string: "",
+        },
       },
       config: handleGetConfig(type),
     });
@@ -872,29 +994,33 @@ const AddEditField = ({
       );
     case "separator":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <hr className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font-bold border-b border-[var(--border-primary)] transition-colors duration-300 cursor-pointer" />
-        </div>
+        <Separator
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     case "timestamp":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <input
-            type="datetime-local"
-            placeholder="Timestamp"
-            className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font-bold border-b border-[var(--border-primary)] transition-colors duration-300 cursor-pointer"
-          />
-        </div>
+        <TimeStamp
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     case "codeBlock":
       return (
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1">
-          <textarea
-            type="text"
-            placeholder="Code Block"
-            className="w-full h-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-center text-2xl font-bold border-[var(--border-primary)] transition-colors duration-300 cursor-pointer"
-          />
-        </div>
+        <CodeBlock
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+        />
       );
     default:
       break;
@@ -939,6 +1065,7 @@ const InputTitle = ({
 
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
+    if (currentField.data.text === "") return;
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
@@ -1648,7 +1775,8 @@ const InputTitleButtons = ({
         )}
       </div>
       {(currentField.type === "heading" ||
-        currentField.type === "paragraph" || currentField.type === "table")  && (
+        currentField.type === "paragraph" ||
+        currentField.type === "table") && (
         <div className="relative">
           <button
             type="button"
@@ -1774,6 +1902,7 @@ const Paragraph = ({
 
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
+    if (currentField?.data?.text === "") return;
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
@@ -3326,93 +3455,95 @@ const Table = ({
     <div className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md">
       <div className="w-full h-fit flex justify-center items-center flex-col p-1 gap-2">
         <table className="w-full h-fit">
-          {currentField.data?.table?.map((row, i) => (
-            <tr key={`table-row-${i}`}>
-              {row?.data?.map((cell, j) => (
+          <tbody>
+            {currentField.data?.table?.map((row, i) => (
+              <tr key={`table-row-${i}`}>
+                {row?.data?.map((cell, j) => (
+                  <td
+                    key={`table-cell-${i}-${j}`}
+                    className="p-1"
+                    style={{
+                      borderWidth: `${currentField?.config?.borderWidth}px`,
+                      borderColor: `${currentField?.config?.borderColor}`,
+                      borderStyle: `${currentField?.config?.borderStyle}`,
+                    }}
+                  >
+                    <input
+                      className="w-full h-full bg-transparent outline-none"
+                      style={{
+                        fontSize: `${currentField?.config?.fontSize}px`,
+                        textDecoration: `${
+                          currentField?.config?.strickthrough
+                            ? "line-through"
+                            : "none"
+                        }`,
+                        fontStyle: `${
+                          currentField?.config?.italic ? "italic" : "normal"
+                        }`,
+                        fontWeight: `${
+                          currentField?.config?.bold ? "bold" : "normal"
+                        }`,
+                        fontFamily: `${currentField?.config?.fontFamily}`,
+                        color: `${currentField?.config?.color}`,
+                        textAlign: `${currentField?.config?.align}`,
+                      }}
+                      value={cell?.text}
+                      onChange={(e) => handleChange(e, i, j)}
+                      placeholder="Enter Text..."
+                    />
+                  </td>
+                ))}
                 <td
-                  key={`table-cell-${i}-${j}`}
-                  className="p-1"
                   style={{
                     borderWidth: `${currentField?.config?.borderWidth}px`,
                     borderColor: `${currentField?.config?.borderColor}`,
                     borderStyle: `${currentField?.config?.borderStyle}`,
                   }}
                 >
-                  <input
-                    className="w-full h-full bg-transparent outline-none"
-                    style={{
-                      fontSize: `${currentField?.config?.fontSize}px`,
-                      textDecoration: `${
-                        currentField?.config?.strickthrough
-                          ? "line-through"
-                          : "none"
-                      }`,
-                      fontStyle: `${
-                        currentField?.config?.italic ? "italic" : "normal"
-                      }`,
-                      fontWeight: `${
-                        currentField?.config?.bold ? "bold" : "normal"
-                      }`,
-                      fontFamily: `${currentField?.config?.fontFamily}`,
-                      color: `${currentField?.config?.color}`,
-                      textAlign: `${currentField?.config?.align}`,
-                    }}
-                    value={cell?.text}
-                    onChange={(e) => handleChange(e, i, j)}
-                    placeholder="Enter Text..."
-                  />
+                  <button
+                    onClick={() => handleDeleteRow(i)}
+                    className="w-full h-full flex justify-center items-center hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
+                  >
+                    <span
+                      style={{
+                        color: `${currentField?.config?.color}`,
+                      }}
+                      className="w-4 h-4 flex justify-center items-center"
+                    >
+                      <DeleteIcon />
+                    </span>
+                  </button>
+                </td>
+              </tr>
+            ))}
+            <tr className="w-full h-7">
+              {currentField.data?.table[0]?.data?.map((cell, i) => (
+                <td
+                  key={`table-cell-${i}`}
+                  className="h-full"
+                  style={{
+                    borderWidth: `${currentField?.config?.borderWidth}px`,
+                    borderColor: `${currentField?.config?.borderColor}`,
+                    borderStyle: `${currentField?.config?.borderStyle}`,
+                  }}
+                >
+                  <button
+                    onClick={() => handleDeleteColumn(i)}
+                    className="w-full h-full flex justify-center items-center hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
+                  >
+                    <span
+                      style={{
+                        color: `${currentField?.config?.color}`,
+                      }}
+                      className="w-4 h-4 mr-1  flex justify-center items-center"
+                    >
+                      <DeleteIcon />
+                    </span>
+                  </button>
                 </td>
               ))}
-              <td
-                style={{
-                  borderWidth: `${currentField?.config?.borderWidth}px`,
-                  borderColor: `${currentField?.config?.borderColor}`,
-                  borderStyle: `${currentField?.config?.borderStyle}`,
-                }}
-              >
-                <button
-                  onClick={() => handleDeleteRow(i)}
-                  className="w-full h-full flex justify-center items-center hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
-                >
-                  <span
-                    style={{
-                      color: `${currentField?.config?.color}`,
-                    }}
-                    className="w-4 h-4 flex justify-center items-center"
-                  >
-                    <DeleteIcon />
-                  </span>
-                </button>
-              </td>
             </tr>
-          ))}
-          <tr className="w-full h-7">
-            {currentField.data?.table[0]?.data?.map((cell, i) => (
-              <td
-                key={`table-cell-${i}`}
-                className="h-full"
-                style={{
-                  borderWidth: `${currentField?.config?.borderWidth}px`,
-                  borderColor: `${currentField?.config?.borderColor}`,
-                  borderStyle: `${currentField?.config?.borderStyle}`,
-                }}
-              >
-                <button
-                  onClick={() => handleDeleteColumn(i)}
-                  className="w-full h-full flex justify-center items-center hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
-                >
-                  <span
-                    style={{
-                      color: `${currentField?.config?.color}`,
-                    }}
-                    className="w-4 h-4 mr-1  flex justify-center items-center"
-                  >
-                    <DeleteIcon />
-                  </span>
-                </button>
-              </td>
-            ))}
-          </tr>
+          </tbody>
         </table>
         <div className="w-full h-7 flex justify-center items-center gap-2 bg-[var(--bg-secondary)] p-1 rounded-md">
           <div className="relative">
@@ -3536,33 +3667,707 @@ const TableView = ({ field, i, currentField, handleEditField }) => {
       onDoubleClick={() => handleEditField(field, i)}
     >
       <table className="w-full h-fit">
-        {field.data?.table?.map((row, i) => (
-          <tr key={`table-row-${i}`}>
-            {row?.data?.map((cell, j) => (
-              <td
-                key={`table-cell-${i}-${j}`}
-                className="p-1"
-                style={{
-                  borderWidth: `${field?.config?.borderWidth}px`,
-                  borderColor: `${field?.config?.borderColor}`,
-                  borderStyle: `${field?.config?.borderStyle}`,
-                }}
-              >
-                <span
+        <tbody>
+          {field.data?.table?.map((row, i) => (
+            <tr key={`table-row-${i}`}>
+              {row?.data?.map((cell, j) => (
+                <td
+                  key={`table-cell-${i}-${j}`}
+                  className="p-1"
                   style={{
-                    color: `${field?.config?.color}`,
+                    borderWidth: `${field?.config?.borderWidth}px`,
+                    borderColor: `${field?.config?.borderColor}`,
+                    borderStyle: `${field?.config?.borderStyle}`,
                   }}
-                  className="w-full h-full block"
                 >
-                  {cell?.text}
-                </span>
-              </td>
-            ))}
-          </tr>
-        ))}
+                  <span
+                    style={{
+                      color: `${field?.config?.color}`,
+                    }}
+                    className="w-full h-full block"
+                  >
+                    {cell?.text}
+                  </span>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
       </table>
     </div>
   );
-}
+};
+
+const Separator = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+}) => {
+  const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
+    useStateContext();
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+      },
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else {
+      node.data.push({ ...finalField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  const handleDelete = async (index) => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data.splice(index, 1);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  return (
+    <div className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md py-2 px-1">
+      <span
+        className="w-full h-0 rounded-full block"
+        style={{
+          borderWidth: `${currentField?.config?.borderWidth}px`,
+          borderColor: `${currentField?.config?.borderColor}`,
+          borderStyle: `${currentField?.config?.borderStyle}`,
+        }}
+      ></span>
+      <div className="w-full h-7 flex justify-center items-center gap-2 flex-wrap mt-2">
+        <button
+          className="w-14 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => {
+            setCurrentFieldType(null);
+            setCurrentField(null);
+          }}
+        >
+          Cancel
+        </button>
+        <select
+          title="Border Style"
+          className="w-20 group h-7 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+          value={currentField?.config?.borderStyle}
+          onChange={(e) => {
+            setCurrentField({
+              ...currentField,
+              config: {
+                ...currentField.config,
+                borderStyle: e.target.value,
+              },
+            });
+          }}
+        >
+          <option value="solid">Solid</option>
+          <option value="dashed">Dashed</option>
+          <option value="dotted">Dotted</option>
+        </select>
+        <input
+          title="Border Width"
+          className="w-7 h-7 bg-[var(--btn-secondary)] text-center text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+          type="number"
+          min="0"
+          max="10"
+          value={currentField?.config?.borderWidth}
+          onChange={(e) => {
+            setCurrentField({
+              ...currentField,
+              config: {
+                ...currentField.config,
+                borderWidth: e.target.value,
+              },
+            });
+          }}
+        />
+        <div className="w-7 h-7 bg-[var(--btn-secondary)] text-center text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center outline-none relative">
+          <input
+            className="w-full h-full opacity-0 bg-transparent outline-none cursor-pointer"
+            type="color"
+            title="Border Color"
+            value={currentField?.config?.borderColor}
+            onChange={(e) => {
+              setCurrentField({
+                ...currentField,
+                config: {
+                  ...currentField.config,
+                  borderColor: e.target.value,
+                },
+              });
+            }}
+          />
+          <span className="pointer-events-none absolute  top-0 left-0 w-full h-full p-[6px]">
+            <ColorIcon />
+          </span>
+          <span
+            style={{
+              backgroundColor: `${currentField?.config?.borderColor}`,
+            }}
+            className="-top-1 -right-1 absolute w-3 h-3 rounded-full"
+          ></span>
+        </div>
+        {currentField?.id && (
+          <button
+            className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+            onClick={() => handleDelete(currentField?.index)}
+          >
+            <span className="">
+              <DeleteIcon />
+            </span>
+          </button>
+        )}
+        <button
+          className="w-14 h-8 px-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={(e) => handleSave(e, currentField?.index)}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const TimeStamp = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+}) => {
+  const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
+    useStateContext();
+  const formats = [
+    {
+      type: "Date Only",
+      input: { day: "2-digit", month: "2-digit", year: "numeric" },
+    },
+    {
+      type: "Time Only (12-Hour)",
+      input: { hour: "2-digit", minute: "2-digit", hour12: true },
+    },
+    {
+      type: "Time Only (24-Hour)",
+      input: { hour: "2-digit", minute: "2-digit", hour12: false },
+    },
+
+    {
+      type: "Date and Time (12-Hour)",
+      input: {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      },
+    },
+    {
+      type: "Date and Time (24-Hour)",
+      input: {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+    },
+    {
+      type: "Weekday and Time (12-Hour)",
+      input: {
+        weekday: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      },
+    },
+    {
+      type: "Weekday and Time (24-Hour)",
+      input: {
+        weekday: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+    },
+    {
+      type: "Month and Year",
+      input: { year: "numeric", month: "long" },
+    },
+    {
+      type: "Day of the Week, Month, Day, and Year",
+      input: {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      },
+    },
+    {
+      type: "Day of the Week, Date, and Time (12-Hour)",
+      input: {
+        weekday: "long",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      },
+    },
+    {
+      type: "Day of the Week, Date, and Time (24-Hour)",
+      input: {
+        weekday: "long",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+    },
+  ];
+
+  const handleGetFormatedDateTime = () => {
+    let date = new Date(currentField?.data?.timestamp?.iso);
+    if (!currentField?.data?.timestamp?.format?.input)
+      return date.toLocaleString();
+    const string = new Intl.DateTimeFormat(
+      "en-IN",
+      currentField?.data?.timestamp?.format?.input
+    ).format(date);
+    return string;
+  };
+
+  const handleGetDateTime = () => {
+    let iso = currentField?.data?.timestamp?.iso;
+    if (!iso) return "";
+    let utcDate = new Date(iso);
+    let finalIso = `${utcDate.getFullYear()}-${(utcDate.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${utcDate
+      .getDate()
+      .toString()
+      .padStart(2, "0")}T${utcDate
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${utcDate.getMinutes().toString().padStart(2, "0")}`;
+    return finalIso;
+  };
+
+  const handleSetDateTime = (e) => {
+    let time = e.target.value;
+    let newDate = new Date(time);
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        timestamp: {
+          ...currentField.data.timestamp,
+          iso: newDate.toISOString(),
+        },
+      },
+    });
+  };
+
+  const handleSelectChange = (e) => {
+    let type = e.target.value;
+    let format = formats.find((format) => format.type === type);
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        timestamp: {
+          ...currentField.data.timestamp,
+          format: format,
+        },
+      },
+    });
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        timestamp: {
+          ...currentField.data.timestamp,
+          string: handleGetFormatedDateTime(),
+        },
+      },
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else {
+      node.data.push({ ...finalField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  return (
+    <div className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md">
+      <div className="w-full h-fit flex justify-center items-center flex-col p-1 gap-2">
+        <div className="w-full h-7 flex justify-center items-center gap-2 flex-wrap">
+          <span
+            className="w-full"
+            style={{
+              fontSize: `${currentField?.config?.fontSize}px`,
+              textDecoration: `${
+                currentField?.config?.strickthrough ? "line-through" : "none"
+              }`,
+              fontStyle: `${
+                currentField?.config?.italic ? "italic" : "normal"
+              }`,
+              fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
+              fontFamily: `${currentField?.config?.fontFamily}`,
+              color: `${currentField?.config?.color}`,
+              textAlign: `${currentField?.config?.align}`,
+            }}
+          >
+            {handleGetFormatedDateTime()}
+          </span>
+        </div>
+        <div className="w-full h-fit flex justify-center items-center gap-2 flex-wrap">
+          <div className="w-fit h-fit relative">
+            <input
+              type="datetime-local"
+              className="w-[170px] h-8 cursor-pointer text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+              value={handleGetDateTime()}
+              onChange={handleSetDateTime}
+            />
+          </div>
+          <select
+            title="Date Format"
+            className="w-40 group h-8 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+            value={currentField?.data?.timestamp?.format?.type}
+            onChange={handleSelectChange}
+          >
+            {formats.map((format) => (
+              <option key={format.type} value={format.type}>
+                {format.type}
+              </option>
+            ))}
+          </select>
+        </div>
+        <InputTitleButtons
+          handleSave={handleSave}
+          config={currentField?.config}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          setCurrentFieldType={setCurrentFieldType}
+          type={currentField.type}
+          handleGetDefaultConfig={handleGetDefaultConfig}
+        />
+      </div>
+    </div>
+  );
+};
+
+const CodeBlock = ({
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+}) => {
+  const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
+    useStateContext();
+  const { copyToClipboard } = useFunctions();
+  const allThemes = Object.keys(Themes);
+  const allLanguages = Object.keys(Languages);
+  const [theme, setTheme] = useState(
+    currentField?.data?.code?.theme ?? "dracula"
+  );
+  const [language, setLanguage] = useState(
+    currentField?.data?.code?.language ?? "javascript"
+  );
+  const textareaRef = useRef(null);
+  const handleParaChange = (e) => {
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        code: {
+          ...currentField.data.code,
+          string: e.target.value,
+        },
+      },
+    });
+  };
+
+  const handleTextareaChange = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto"; // Reset the height to auto
+      textarea.style.height = `${textarea.scrollHeight}px`; // Set the new height
+    }
+  };
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleChangeLanguageSelect = (e) => {
+    let language = e.target.value;
+    setLanguage(language);
+  };
+
+  const handleChangeThemeSelect = (e) => {
+    let theme = e.target.value;
+    setTheme(theme);
+  };
+
+  const handleLineNumbers = () => {
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        code: {
+          ...currentField.data.code,
+          lineNumbers: !currentField?.data?.code?.lineNumbers,
+        },
+      },
+    });
+  };
+
+  const handleWrapLines = () => {
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        code: {
+          ...currentField.data.code,
+          wrapLines: !currentField?.data?.code?.wrapLines,
+        },
+      },
+    });
+  };
+
+  const handleDelete = async (index) => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data.splice(index, 1);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    if (currentField?.data?.code?.string === "") return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        code: {
+          ...currentField.data.code,
+          language: language,
+          theme: theme,
+        },
+      },
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else {
+      node.data.push({ ...finalField, id: v4() });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  useEffect(() => {
+    handleTextareaChange();
+  }, [currentField?.data?.code?.string]);
+
+  return (
+    <div className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md p-1">
+      <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
+        <span>{language ?? "javascript"}</span>
+        <button
+          onClick={() => copyToClipboard(currentField?.data?.code?.string)}
+          className="w-6 h-6 p-1 flex justify-center items-center hover:bg-[var(--bg-secondary)] rounded-md bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          title="Copy Code"
+        >
+          <span className="w-full h-full flex justify-center items-center">
+            <CopyIcon />
+          </span>
+        </button>
+      </div>
+      <SyntaxHighlighter
+        customStyle={{
+          width: "100%",
+          margin: "0px",
+          padding: "3px",
+          borderRadius: "0px 0px 5px 5px",
+        }}
+        className="small-scroll-bar"
+        showLineNumbers={currentField?.data?.code?.lineNumbers ?? false}
+        showInlineLineNumbers={currentField?.data?.code?.lineNumbers ?? false}
+        wrapLines={true}
+        wrapLongLines={true}
+        language={language}
+        style={Themes[theme] ?? Themes["dracula"]}
+      >
+        {currentField?.data?.code?.string !== ""
+          ? currentField?.data?.code?.string
+          : "// Example\nconsole.log('Hello World')"}
+      </SyntaxHighlighter>
+      <textarea
+        type="text"
+        autoFocus={true}
+        placeholder="Enter Code..."
+        value={currentField?.data?.code?.string ?? ""}
+        onChange={handleParaChange}
+        required
+        className="mt-2 w-full h-fit bg-[var(--bg-secondary)] p-1 text-[var(--text-primary)] text-sm outline-none transition-colors duration-300 cursor-pointer resize-none border-2 border-[var(--border-primary)] rounded-md small-scroll-bar whitespace-nowrap"
+        ref={textareaRef}
+      />
+      <div className="w-full h-7 flex justify-center items-center gap-2 flex-wrap my-2">
+        <button
+          className="w-14 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => {
+            setCurrentFieldType(null);
+            setCurrentField(null);
+          }}
+        >
+          Cancel
+        </button>
+        <select
+          title="Code Block Languages"
+          className="w-20 group h-7 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+          value={language}
+          onChange={handleChangeLanguageSelect}
+        >
+          {allLanguages?.map((language) => (
+            <option key={`code-language-${language}`} value={language}>
+              {language}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={handleWrapLines}
+          className="relative w-8 h-8 px-[4px] text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          title="Wrap Lines"
+        >
+          <span className="">
+            <LinewrapIcon />
+          </span>
+          {!currentField?.data?.code?.wrapLines && (
+            <span className="absolute w-8 h-[2px] rounded-full bg-[var(--logo-primary)] -rotate-45"></span>
+          )}
+        </button>
+        <select
+          title="Code Block Themes"
+          className="w-20 group h-7 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+          value={theme}
+          onChange={handleChangeThemeSelect}
+        >
+          {allThemes?.map((theme) => (
+            <option key={`code-theme-${theme}`} value={theme}>
+              {theme}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={handleLineNumbers}
+          title="Line Numbers"
+          className="relative w-8 h-8 px-[6px] text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+        >
+          <span className="">
+            <NumberListIcon />
+          </span>
+          {!currentField?.data?.code?.lineNumbers && (
+            <span className="absolute w-8 h-[2px] rounded-full bg-[var(--logo-primary)] -rotate-45"></span>
+          )}
+        </button>
+        {currentField?.id && (
+          <button
+            className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+            onClick={() => handleDelete(currentField?.index)}
+          >
+            <span className="">
+              <DeleteIcon />
+            </span>
+          </button>
+        )}
+        <button
+          className="w-14 h-8 px-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={(e) => handleSave(e, currentField?.index)}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default DisplayDocView;
