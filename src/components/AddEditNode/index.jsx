@@ -197,10 +197,16 @@ const Form = ({
   node,
   currentNodeConfig,
 }) => {
+  const {setCurrentFlowPlanNode, setAddEditNode} = useStateContext();
   const [config, setConfig] = useState(null);
   useEffect(() => {
     setConfig(node.config);
   }, [node.config]);
+
+  const handleOpenDocView = () => {
+    setCurrentFlowPlanNode(addEditNode.location)
+    setAddEditNode((prev) => ({ ...prev, show: false }));
+  }
 
   return (
     <form
@@ -225,6 +231,7 @@ const Form = ({
         <button
           className="cursor-pointer w-full flex-grow rounded-md border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
           type="button"
+          onClick={handleOpenDocView}
         >
           Click To Add More Fields!
         </button>
