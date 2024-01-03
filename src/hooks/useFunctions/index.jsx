@@ -456,6 +456,7 @@ export const useFunctions = () => {
     handleExpanded,
     handleGetValueFromProperty,
     handleGetRandomColor,
-    searchDeepObject,
+    copyToClipboard,
+    searchDeepObject
   };
 };

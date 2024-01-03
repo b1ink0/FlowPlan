@@ -128,7 +128,6 @@ const AddEditNode = () => {
         config: defaultNodeConfig,
       });
     }
-    console.log("run");
     // focus on input element after 200ms
     setTimeout(() => {
       inputRef?.current?.focus();
@@ -198,11 +197,16 @@ const Form = ({
   node,
   currentNodeConfig,
 }) => {
+  const {setCurrentFlowPlanNode, setAddEditNode} = useStateContext();
   const [config, setConfig] = useState(null);
   useEffect(() => {
-    console.log("S", node.config);
     setConfig(node.config);
   }, [node.config]);
+
+  const handleOpenDocView = () => {
+    setCurrentFlowPlanNode(addEditNode.location)
+    setAddEditNode((prev) => ({ ...prev, show: false }));
+  }
 
   return (
     <form
@@ -227,6 +231,7 @@ const Form = ({
         <button
           className="cursor-pointer w-full flex-grow rounded-md border-2 border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
           type="button"
+          onClick={handleOpenDocView}
         >
           Click To Add More Fields!
         </button>
@@ -588,6 +593,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
               <input
                 className="w-full h-full absolute opacity-0 cursor-pointer"
                 type="color"
+                value={config?.titleConfig?.color}
                 onChange={handleActiveColorChange}
               />
             </label>
