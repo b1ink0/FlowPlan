@@ -436,5 +436,6 @@ export const useFunctions = () => {
     handleExpanded,
     handleGetValueFromProperty,
     handleGetRandomColor,
+    copyToClipboard
   };
 };
