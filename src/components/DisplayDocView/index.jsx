@@ -48,6 +48,9 @@ import AlphabetListIcon from "../../assets/Icons/AlphabetListIcon";
 import PreviewIcon from "../../assets/Icons/PreviewIcon";
 import DownloadIcon from "../../assets/Icons/DownloadIcon";
 import AddIcon from "../../assets/Icons/AddIcon";
+import FullScreenIcon from "../../assets/Icons/FullScreenIcon";
+import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
+import MoveIcon from "../../assets/Icons/MoveIcon";
 
 function DisplayDocView() {
   const {
@@ -58,6 +61,11 @@ function DisplayDocView() {
   } = useStateContext();
   const [currentFieldType, setCurrentFieldType] = useState(null);
   const [currentField, setCurrentField] = useState(null);
+  const [fullScreen, setFullScreen] = useState(false);
+  const [showAdd, setShowAdd] = useState({
+    show: false,
+    index: null,
+  });
   const [node, setNode] = useState(null);
 
   const handleEditField = (field, i) => {
@@ -73,6 +81,17 @@ function DisplayDocView() {
     setNode(null);
   };
 
+  const handleFullScreen = () => {
+    setFullScreen((prev) => !prev);
+  };
+
+  const handleResetShowAdd = () => {
+    setShowAdd({
+      show: false,
+      index: null,
+    });
+  };
+
   useEffect(() => {
     if (!currentFlowPlanNode) return;
     let root = currentFlowPlan.root;
@@ -85,18 +104,27 @@ function DisplayDocView() {
   }, [currentFlowPlanNode]);
   return (
     <div
+      style={{
+        width: `${fullScreen ? "100vw" : "50vw"}`,
+      }}
       className={`${
         // if addEditNode.show is true then show component else hide component
         !node ? "translate-x-full" : ""
       } z-10 transition-all duration-200 w-1/2 grow-0 h-full absolute right-0 top-0 bg-[var(--bg-primary-translucent)] text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
       <button
-        className="absolute top-0 right-0 w-8 h-8 rounded-full"
+        className="absolute top-0 left-0 w-8 h-8 rounded-full"
         onClick={handleCloseDocView}
       >
         <CloseBtnIcon />
       </button>
-      <div className="w-full h-full flex flex-col justify-start items-center gap-1">
+      <button
+        onClick={handleFullScreen}
+        className="absolute top-2 right-2 w-5 h-5 rounded-full"
+      >
+        <FullScreenIcon />
+      </button>
+      <div className="w-full max-w-[750px] h-full flex flex-col justify-start items-center gap-1">
         <h3
           style={{
             fontSize: `${node?.config?.titleConfig?.fontSize}px`,
@@ -134,15 +162,18 @@ function DisplayDocView() {
               i={i}
               node={node}
               setNode={setNode}
+              showAdd={showAdd}
+              setShowAdd={setShowAdd}
               currentField={currentField}
               setCurrentField={setCurrentField}
               currentFieldType={currentFieldType}
               setCurrentFieldType={setCurrentFieldType}
               handleEditField={handleEditField}
+              handleResetShowAdd={handleResetShowAdd}
             />
           ))}
 
-          {!currentField?.id && (
+          {!currentField?.id && !showAdd.show && (
             <AddEditField
               setCurrentFieldType={setCurrentFieldType}
               node={node}
@@ -151,12 +182,16 @@ function DisplayDocView() {
               currentField={currentField}
               setCurrentField={setCurrentField}
               currentFieldType={currentFieldType}
+              dataIndex={null}
+              handleResetShowAdd={handleResetShowAdd}
             />
           )}
 
           <MenuButtons
             setCurrentField={setCurrentField}
             setType={setCurrentFieldType}
+            showAdd={showAdd}
+            setShowAdd={setShowAdd}
           />
         </div>
       </div>
@@ -169,13 +204,17 @@ const DocRenderView = ({
   i,
   node,
   setNode,
+  showAdd,
+  setShowAdd,
   currentField,
   setCurrentField,
   currentFieldType,
   setCurrentFieldType,
   handleEditField,
+  handleResetShowAdd,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+
   const listStyles = [
     {
       type: "filledCircle",
@@ -260,15 +299,27 @@ const DocRenderView = ({
     }
     return result;
   };
-
+  useEffect(() => {
+    console.log(
+      "useEffect",
+      field.id,
+      currentField.id,
+      field?.id === currentField?.id
+    );
+  }, []);
   return (
     <div
       onMouseEnter={() => setShowMenu(true)}
       onMouseLeave={() => setShowMenu(false)}
-      className="group w-full relative"
+      className="group w-full relative flex justify-center items-center flex-col gap-1"
     >
       {field.type === "heading" && (
-        <div className="w-full">
+        <div
+          style={{
+            display: field?.id === currentField?.id ? "none" : "block",
+          }}
+          className="w-full"
+        >
           <h3
             style={{
               fontSize: `${field?.config?.fontSize}px`,
@@ -281,7 +332,6 @@ const DocRenderView = ({
               fontFamily: `${field?.config?.fontFamily}`,
               borderColor: `${field?.config?.nodeConfig?.borderColor}`,
               textAlign: `${field?.config?.align}`,
-              display: field?.id === currentField?.id ? "none" : "block",
             }}
             className="relative p-1 bg-[var(--bg-secondary)] rounded-md group text-[var(--text-primary)] w-full h-fit text-center text-2xl transition-colors duration-300 cursor-pointer"
             onDoubleClick={() => handleEditField(field, i)}
@@ -317,7 +367,7 @@ const DocRenderView = ({
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
           }}
-          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
           {field?.data?.list?.map((item, j) => (
             <div
@@ -362,7 +412,7 @@ const DocRenderView = ({
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
           }}
-          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
           {field?.data?.list?.map((item, j) => (
             <div
@@ -403,7 +453,7 @@ const DocRenderView = ({
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
           }}
-          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
           {field?.data?.list?.map((item, j) => (
             <div
@@ -449,7 +499,7 @@ const DocRenderView = ({
             display: field?.id === currentField?.id ? "none" : "flex",
           }}
           onDoubleClick={() => handleEditField(field, i)}
-          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
           <div className="w-full flex justify-center items-center overflow-x-hidden">
             <span
@@ -493,7 +543,7 @@ const DocRenderView = ({
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
           }}
-          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
           onDoubleClick={() => handleEditField(field, i)}
         >
           <div className="w-full flex justify-center items-center overflow-x-hidden">
@@ -536,7 +586,7 @@ const DocRenderView = ({
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
           }}
-          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
           onDoubleClick={() => handleEditField(field, i)}
         >
           <span
@@ -554,7 +604,7 @@ const DocRenderView = ({
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
           }}
-          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
           onDoubleClick={() => handleEditField(field, i)}
         >
           <span
@@ -580,7 +630,7 @@ const DocRenderView = ({
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
           }}
-          className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col"
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col"
           onDoubleClick={() => handleEditField(field, i)}
         >
           <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
@@ -614,17 +664,58 @@ const DocRenderView = ({
           </SyntaxHighlighter>
         </div>
       )}
-      <span
-        style={{ opacity: showMenu ? 1 : 0 }}
-        className="transition-opacity absolute flex justify-center items-center w-8 h-5 right-1 top-1"
-      >
-        <button
-          onClick={() => handleEditField(field, i)}
-          className="w-full h-full bg-[var(--bg-tertiary)] px-1 rounded-md"
+      {currentField?.id !== field?.id && showAdd.index !== i && (
+        <span
+          style={{
+            opacity: showMenu ? 1 : 0,
+            pointerEvents: showMenu ? "all" : "none",
+          }}
+          className="transition-opacity absolute flex justify-center items-center gap-1 w-fit h-8 -bottom-4 z-10"
         >
-          <EditIcon />
-        </button>
-      </span>
+          <button
+            onClick={() => handleEditField(field, i)}
+            className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
+          >
+            <EditBtnIcon />
+          </button>
+          <button
+            onClick={() =>
+              setShowAdd((prev) => ({ show: !prev.show, index: i }))
+            }
+            className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
+          >
+            <AddIcon />
+          </button>
+          <button
+            onClick={() => handleEditField(field, i)}
+            className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
+          >
+            <MoveIcon />
+          </button>
+        </span>
+      )}
+      {showAdd.show && showAdd.index === i && (
+        <AddEditField
+          setCurrentFieldType={setCurrentFieldType}
+          node={node}
+          setNode={setNode}
+          type={currentFieldType}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          dataIndex={i}
+          handleResetShowAdd={handleResetShowAdd}
+        />
+      )}
+      {showAdd.show && showAdd.index === i && (
+        <MenuButtons
+          setCurrentField={setCurrentField}
+          setType={setCurrentFieldType}
+          setShowAdd={setShowAdd}
+          showAdd={showAdd}
+          hide={true}
+        />
+      )}
       {currentField?.id === field?.id && (
         <AddEditField
           setCurrentFieldType={setCurrentFieldType}
@@ -640,7 +731,17 @@ const DocRenderView = ({
   );
 };
 
-const MenuButtons = ({ setType, setCurrentField }) => {
+const MenuButtons = ({
+  setType,
+  setCurrentField,
+  showAdd,
+  setShowAdd,
+  hide = false,
+}) => {
+  const [showToolTip, setShowToolTip] = useState({
+    show: false,
+    index: null,
+  });
   const buttons = [
     {
       type: "heading",
@@ -705,6 +806,9 @@ const MenuButtons = ({ setType, setCurrentField }) => {
   ];
 
   const handleButtonClick = (type) => {
+    if (!hide) {
+      setShowAdd({ show: false, index: null });
+    }
     setCurrentField(null);
     setType((prev) => (prev === null ? type : null));
   };
@@ -713,9 +817,12 @@ const MenuButtons = ({ setType, setCurrentField }) => {
     <div className="w-fit rounded-md h-fit flex justify-center items-center flex-wrap gap-2 p-1 bg-[var(--bg-secondary)] mt-2">
       {buttons.map((button, i) => (
         <Button
-          key={i}
+          i={i}
+          key={"option-button-id-" + i}
           onClick={() => handleButtonClick(button.type)}
           text={button.text}
+          showToolTip={showToolTip}
+          setShowToolTip={setShowToolTip}
         >
           {button.icon}
         </Button>
@@ -723,21 +830,30 @@ const MenuButtons = ({ setType, setCurrentField }) => {
     </div>
   );
 };
-const Button = ({ children, onClick, text }) => {
+const Button = ({
+  i,
+  children,
+  onClick,
+  text,
+  showToolTip,
+  setShowToolTip,
+}) => {
   return (
     <button
       onClick={onClick}
       className="shrink-0 group relative w-8 h-8 rounded-md bg-[var(--bg-tertiary)] p-[6px] flex justify-center "
+      onMouseEnter={() => setShowToolTip({ show: true, index: i })}
+      onMouseLeave={() => setShowToolTip({ show: false, index: null })}
     >
       {children}
-      <ToolTip text={text} />
+      {showToolTip.show && showToolTip.index === i && <ToolTip text={text} />}
     </button>
   );
 };
 
 const ToolTip = ({ text }) => {
   return (
-    <div className="z-10 hidden group-hover:flex justify-center items-center absolute -bottom-8 text-center whitespace-nowrap w-fit h-6 bg-[var(--bg-tertiary)] rounded-md px-2">
+    <div className="z-10 flex justify-center items-center absolute -bottom-8 text-center whitespace-nowrap w-fit h-6 bg-[var(--bg-tertiary)] rounded-md px-2">
       <span className="absolute inline-block -top-1 w-3 h-3 rotate-45 bg-[var(--bg-tertiary)] -z-10"></span>
       <span className="text-xs">{text}</span>
     </div>
@@ -745,6 +861,7 @@ const ToolTip = ({ text }) => {
 };
 
 const AddEditField = ({
+  dataIndex,
   setCurrentFieldType,
   currentFieldType,
   type,
@@ -752,6 +869,7 @@ const AddEditField = ({
   setNode,
   currentField,
   setCurrentField,
+  handleResetShowAdd,
 }) => {
   const { currentFlowPlan, setCurrentFlowPlan, defaultNodeConfig } =
     useStateContext();
@@ -910,6 +1028,8 @@ const AddEditField = ({
           setNode={setNode}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "paragraph":
@@ -920,6 +1040,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "unorderedList":
@@ -930,6 +1052,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "taskList":
@@ -940,6 +1064,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "numberList":
@@ -950,6 +1076,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "link":
@@ -960,6 +1088,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "image":
@@ -970,6 +1100,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "file":
@@ -980,6 +1112,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "table":
@@ -990,6 +1124,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "separator":
@@ -1000,6 +1136,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "timestamp":
@@ -1010,6 +1148,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     case "codeBlock":
@@ -1020,6 +1160,8 @@ const AddEditField = ({
           setCurrentField={setCurrentField}
           currentFieldType={currentFieldType}
           setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
         />
       );
     default:
@@ -1027,12 +1169,14 @@ const AddEditField = ({
   }
 };
 const InputTitle = ({
+  dataIndex,
   setCurrentFieldType,
   node,
   setNode,
   currentField,
   setCurrentField,
   handleGetDefaultConfig,
+  handleResetShowAdd,
 }) => {
   const {
     db,
@@ -1073,6 +1217,12 @@ const InputTitle = ({
     });
     if (index !== null) {
       node.data[index] = currentField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...currentField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...currentField, id: v4() });
     }
@@ -1861,6 +2011,8 @@ const Paragraph = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  handleResetShowAdd,
+  dataIndex,
 }) => {
   const textareaRef = useRef(null);
   const {
@@ -1910,6 +2062,12 @@ const Paragraph = ({
     });
     if (index !== null) {
       node.data[index] = currentField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...currentField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...currentField, id: v4() });
     }
@@ -1968,6 +2126,8 @@ const UnorderedList = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  dataIndex,
+  handleResetShowAdd,
 }) => {
   const {
     db,
@@ -2054,6 +2214,12 @@ const UnorderedList = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: v4() });
     }
@@ -2175,6 +2341,8 @@ const TaskList = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  dataIndex,
+  handleResetShowAdd,
 }) => {
   const {
     db,
@@ -2246,6 +2414,12 @@ const TaskList = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: v4() });
     }
@@ -2374,6 +2548,8 @@ const NumberList = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  dataIndex,
+  handleResetShowAdd,
 }) => {
   const {
     db,
@@ -2490,6 +2666,12 @@ const NumberList = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: v4() });
     }
@@ -2609,6 +2791,8 @@ const Link = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  dataIndex,
+  handleResetShowAdd,
 }) => {
   const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
     useStateContext();
@@ -2647,7 +2831,6 @@ const Link = ({
       node = node.children[i];
     });
 
-    console.log(finalImages);
     let finalField = {
       ...currentField,
       data: {
@@ -2665,6 +2848,12 @@ const Link = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: v4() });
     }
@@ -2984,6 +3173,8 @@ const Image = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  dataIndex,
+  handleResetShowAdd,
 }) => {
   const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
     useStateContext();
@@ -3050,6 +3241,12 @@ const Image = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: v4() });
     }
@@ -3116,6 +3313,8 @@ const FileSelector = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  dataIndex,
+  handleResetShowAdd,
 }) => {
   const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
     useStateContext();
@@ -3184,6 +3383,12 @@ const FileSelector = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: v4() });
     }
@@ -3299,7 +3504,7 @@ const FileView = ({
       style={{
         display: field?.id === currentField?.id ? "none" : "flex",
       }}
-      className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+      className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
       onDoubleClick={() => handleEditField(field, i)}
     >
       <div className="w-full flex justify-center items-center overflow-x-hidden gap-1 pr-1">
@@ -3331,7 +3536,7 @@ const FileView = ({
           {field?.data?.file?.name}
         </span>
         <span
-          className="w-6 h-6 p-1 mr-8 flex justify-center items-center bg-[var(--bg-secondary)] border-2 border-[var(--border-primary)] rounded-sm hover:bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          className="w-6 h-6 p-1 flex justify-center items-center bg-[var(--bg-secondary)] rounded-sm hover:bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
           onClick={handleDownload}
         >
           <DownloadIcon />
@@ -3347,6 +3552,8 @@ const Table = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  dataIndex,
+  handleResetShowAdd,
 }) => {
   const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
     useStateContext();
@@ -3442,6 +3649,12 @@ const Table = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: v4() });
     }
@@ -3663,7 +3876,7 @@ const TableView = ({ field, i, currentField, handleEditField }) => {
       style={{
         display: field?.id === currentField?.id ? "none" : "flex",
       }}
-      className="bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+      className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
       onDoubleClick={() => handleEditField(field, i)}
     >
       <table className="w-full h-fit">
@@ -3704,6 +3917,8 @@ const Separator = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  dataIndex,
+  handleResetShowAdd,
 }) => {
   const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
     useStateContext();
@@ -3734,6 +3949,12 @@ const Separator = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: v4() });
     }
@@ -3864,6 +4085,8 @@ const TimeStamp = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  dataIndex,
+  handleResetShowAdd,
 }) => {
   const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
     useStateContext();
@@ -4047,6 +4270,12 @@ const TimeStamp = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: v4() });
     }
@@ -4121,6 +4350,8 @@ const CodeBlock = ({
   currentFieldType,
   setCurrentFieldType,
   handleGetDefaultConfig,
+  dataIndex,
+  handleResetShowAdd,
 }) => {
   const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
     useStateContext();
@@ -4235,6 +4466,12 @@ const CodeBlock = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: v4(),
+      });
+      handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: v4() });
     }
