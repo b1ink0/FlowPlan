@@ -5,6 +5,7 @@ import AddEditNode from "../AddEditNode";
 import { useStateContext } from "../../context/StateContext";
 import { useFunctions } from "../../hooks/useFunctions";
 import Navbar from "../Navbar";
+import DisplayDocView from "../DisplayDocView";
 import BottomPanel from "../BottomPanel";
 
 function Home() {
@@ -28,6 +29,7 @@ function Home() {
           ＞﹏＜
         </div>
       )}
+      <DisplayDocView />
       {/* AddEditNode component for adding and editing a node */}
       <AddEditNode />
     </div>
