@@ -51,6 +51,7 @@ import AddIcon from "../../assets/Icons/AddIcon";
 import FullScreenIcon from "../../assets/Icons/FullScreenIcon";
 import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 import MoveIcon from "../../assets/Icons/MoveIcon";
+import BackIcon from "../../assets/Icons/BackIcon";
 
 function DisplayDocView() {
   const {
@@ -62,6 +63,10 @@ function DisplayDocView() {
   const [currentFieldType, setCurrentFieldType] = useState(null);
   const [currentField, setCurrentField] = useState(null);
   const [fullScreen, setFullScreen] = useState(false);
+  const [move, setMove] = useState({
+    move: false,
+    id: null,
+  });
   const [showAdd, setShowAdd] = useState({
     show: false,
     index: null,
@@ -160,7 +165,10 @@ function DisplayDocView() {
               key={"field-id-" + field.type + "-" + i}
               field={field}
               i={i}
+              length={node.data.length}
               node={node}
+              move={move}
+              setMove={setMove}
               setNode={setNode}
               showAdd={showAdd}
               setShowAdd={setShowAdd}
@@ -202,7 +210,10 @@ function DisplayDocView() {
 const DocRenderView = ({
   field,
   i,
+  length,
   node,
+  move,
+  setMove,
   setNode,
   showAdd,
   setShowAdd,
@@ -213,8 +224,16 @@ const DocRenderView = ({
   handleEditField,
   handleResetShowAdd,
 }) => {
+  const {
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    defaultNodeConfig,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
+  const { copyToClipboard } = useFunctions();
   const [showMenu, setShowMenu] = useState(false);
-
   const listStyles = [
     {
       type: "filledCircle",
@@ -299,14 +318,59 @@ const DocRenderView = ({
     }
     return result;
   };
-  useEffect(() => {
-    console.log(
-      "useEffect",
-      field.id,
-      currentField.id,
-      field?.id === currentField?.id
-    );
-  }, []);
+
+  const handleSetAdd = () => {
+    setShowAdd((prev) => {
+      console.log(prev, i);
+      return { show: true, index: i };
+    });
+  };
+
+  const handleSetMove = () => {
+    setMove((prev) => ({
+      move: !prev.move,
+      id: field.id,
+    }));
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleMoveUp = async () => {
+    if (i === 0) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let temp = node.data[i];
+    node.data[i] = node.data[i - 1];
+    node.data[i - 1] = temp;
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
+  const handleMoveDown = async () => {
+    if (i === length - 1) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let temp = node.data[i];
+    node.data[i] = node.data[i + 1];
+    node.data[i + 1] = temp;
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
   return (
     <div
       onMouseEnter={() => setShowMenu(true)}
@@ -664,7 +728,7 @@ const DocRenderView = ({
           </SyntaxHighlighter>
         </div>
       )}
-      {currentField?.id !== field?.id && showAdd.index !== i && (
+      {currentField?.id !== field?.id && showAdd.index !== i && !move.move && (
         <span
           style={{
             opacity: showMenu ? 1 : 0,
@@ -679,20 +743,45 @@ const DocRenderView = ({
             <EditBtnIcon />
           </button>
           <button
-            onClick={() =>
-              setShowAdd((prev) => ({ show: !prev.show, index: i }))
-            }
+            onClick={handleSetAdd}
             className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
           >
             <AddIcon />
           </button>
           <button
-            onClick={() => handleEditField(field, i)}
+            onClick={handleSetMove}
             className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
           >
             <MoveIcon />
           </button>
         </span>
+      )}
+      {move.move && move.id === field.id && (
+        <div className="absolute bottom-0 w-fit h-fit rounded-md flex justify-center items-center gap-2">
+          <button
+            onClick={handleMoveUp}
+            className="w-8 h-8 bg-[var(--bg-tertiary)] p-2 rounded-md -rotate-90"
+            title="Move Up"
+          >
+            <BackIcon />
+          </button>
+          <button
+            onClick={() => setMove((prev) => !prev)}
+            className="w-8 h-8 bg-[var(--bg-tertiary)] p-1 rounded-md "
+            title="Close Move Menu"
+          >
+            <span className="w-full h-full flex justify-center items-center">
+              <CloseBtnIcon />
+            </span>
+          </button>
+          <button
+            onClick={handleMoveDown}
+            className="w-8 h-8 bg-[var(--bg-tertiary)] p-2 rounded-md rotate-90"
+            title="Move Down"
+          >
+            <BackIcon />
+          </button>
+        </div>
       )}
       {showAdd.show && showAdd.index === i && (
         <AddEditField
@@ -708,13 +797,23 @@ const DocRenderView = ({
         />
       )}
       {showAdd.show && showAdd.index === i && (
-        <MenuButtons
-          setCurrentField={setCurrentField}
-          setType={setCurrentFieldType}
-          setShowAdd={setShowAdd}
-          showAdd={showAdd}
-          hide={true}
-        />
+        <div
+          className="flex justify-center items-center"
+        >
+          <MenuButtons
+            setCurrentField={setCurrentField}
+            setType={setCurrentFieldType}
+            setShowAdd={setShowAdd}
+            showAdd={showAdd}
+            hide={true}
+          />
+          <button
+            onClick={handleResetShowAdd}
+            className="w-9 h-9 rounded-full bg-[var(--bg-tertiary)] p-1 ml-2 mt-2"
+          >
+            <CloseBtnIcon />
+          </button>
+        </div>
       )}
       {currentField?.id === field?.id && (
         <AddEditField
@@ -810,7 +909,11 @@ const MenuButtons = ({
       setShowAdd({ show: false, index: null });
     }
     setCurrentField(null);
-    setType((prev) => (prev === null ? type : null));
+    setType((prev) => {
+      if (prev === type) return null;
+      if (prev !== type) return type;
+      if (prev === null) return type;
+    });
   };
 
   return (
