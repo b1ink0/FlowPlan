@@ -15,7 +15,7 @@ function Home() {
   return (
     <div
       id="top_container"
-      className="w-screen h-screen flex justify-center items-center relative overflow-hidden"
+      className="w-dvw h-dvh flex justify-center items-center relative overflow-hidden"
     >
       <Navbar />
       <SideNavbar />

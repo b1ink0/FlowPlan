@@ -1,0 +1,60 @@
+{
+    "name": "FlowPlan",
+    "short_name": "FlowPlan",
+    "description": "FlowPlan is a hirachical planning, documentation tool for your projects, tasks, and ideas.",
+    "icons": [
+        {
+            "src": "/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "/maskable_icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/maskable_icon_x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/maskable_icon_x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "theme_color": "#111827",
+    "background_color": "#111827",
+    "display": "standalone",
+    "scope": ".",
+    "start_url": ".",
+    "orientation": "portrait",
+    "screenshots": [
+        {
+            "src": "/screenshot_treeview.png",
+            "sizes": "1915x891",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Desktop"
+        },
+        {
+            "src": "/screenshot_mobile.jpg",
+            "sizes": "808x1599",
+            "type": "image/jpg",
+            "label": "Mobile"
+        }
+    ],
+    "categories": [
+        "productivity",
+        "tools"
+    ]
+}

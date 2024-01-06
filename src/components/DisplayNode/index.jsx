@@ -147,6 +147,7 @@ function Node({
 
       case "displayDocView":
         setCurrentFlowPlanNode(location);
+        data.stopPropagation();
         break;
       // if type is delete then delete node without its children its children become children of the node's parent
       case "delete":
@@ -289,7 +290,7 @@ function Node({
                 borderColor: `${node?.config?.nodeConfig?.borderColor}`,
               }}
               className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300 cursor-pointer"
-              onClick={() => handleNode("displayDocView")}
+              onDoubleClick={(e) => handleNode("displayDocView", e)}
             >
               {node?.title}
             </h3>

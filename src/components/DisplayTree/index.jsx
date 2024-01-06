@@ -1,5 +1,5 @@
 // @ts-check
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useStateContext } from "../../context/StateContext";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import ResetIcon from "../../assets/Icons/ResetIcon";
@@ -8,20 +8,44 @@ import Background from "../Background";
 
 const DisplayTree = ({ node }) => {
   // destructure state from context
-  const { settings, setSettings, currentFlowPlan, move, update, animation } =
-    useStateContext();
-  // local state
+  const {
+    settings,
+    setSettings,
+    currentFlowPlan,
+    move,
+    update,
+    animation,
+    currentTransformState,
+  } = useStateContext();
   const { treeConfig } = settings;
+  // local state
+  const transformState =
+    treeConfig.useSavedTransformState === "true"
+      ? JSON.parse(localStorage.getItem("currentTransformState"))
+      : treeConfig.renderType === "verticalTree"
+      ? {
+          positionX: 0,
+          positionY: 200,
+          scale: 1,
+        }
+      : {
+          positionX: 300,
+          positionY: 0,
+          scale: 1,
+        };
 
   return (
     <div className="hide-scroll-bar relative h-full grow  flex justify-center items-center overflow-hidden cursor-grab">
       <Background />
       {/* Transform component for zoom and drag */}
       <TransformWrapper
+        doubleClick={{ disabled: true }}
         minScale={0.1}
         limitToBounds={false}
         wheel={{ step: treeConfig.scaleMultiplier }}
-        initialPositionX={treeConfig.renderType === "verticalTree" ? 0 : 300}
+        initialPositionX={transformState?.positionX}
+        initialPositionY={transformState?.positionY}
+        initialScale={transformState?.scale ?? 1}
       >
         {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
           <>
@@ -53,6 +77,7 @@ const DisplayTree = ({ node }) => {
             </TransformComponent>
             {/* Zoom helper for zoom in, zoom out and reset transform */}
             <ZoomHelper
+              rest={rest}
               settings={settings}
               setSettings={setSettings}
               zoomIn={zoomIn}
@@ -68,6 +93,7 @@ const DisplayTree = ({ node }) => {
 
 // Zoom helper for zoom in, zoom out and reset transform
 const ZoomHelper = ({
+  rest,
   settings,
   setSettings,
   zoomIn,
@@ -76,6 +102,27 @@ const ZoomHelper = ({
 }) => {
   // destructure tree configuration from settings
   const { treeConfig } = settings;
+  const { setCurrentTransformState } = useStateContext();
+
+  const handleResetTransform = () => {
+    const x = treeConfig.renderType === "verticalTree" ? 0 : 300;
+    const y = treeConfig.renderType === "verticalTree" ? 200 : 0;
+    rest?.setTransform(x, y, 1);
+  };
+
+  useEffect(() => {
+    if (treeConfig.useSavedTransformState === "false") return;
+    let interval = setInterval(() => {
+      setCurrentTransformState(() => {
+        localStorage.setItem(
+          "currentTransformState",
+          JSON.stringify(rest?.instance?.transformState)
+        );
+        return rest?.instance?.transformState;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [treeConfig.useSavedTransformState]);
   return (
     <div className="absolute bottom-2 right-2 flex flex-col justify-center items-end gap-2">
       {/* Input for scaleMultiplier */}
@@ -107,7 +154,7 @@ const ZoomHelper = ({
       </button>
       {/* Buttons for reset transform */}
       <button
-        onClick={() => resetTransform()}
+        onClick={handleResetTransform}
         className="w-9 h-9 flex justify-center items-center bottom-2 right-2 z-10 p-1 bg-[var(--btn-secondary)] rounded-lg text-gray-100 cursor-progress"
       >
         <ResetIcon />

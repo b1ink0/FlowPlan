@@ -25,6 +25,7 @@ export function StateProvider({ children }) {
     treeConfig: {
       scaleMultiplier: 0.1,
       renderType: localStorage.getItem("renderType") || "verticalTree",
+      useSavedTransformState: localStorage.getItem("useSavedTransformState") ?? "false",
     },
   });
 
@@ -118,6 +119,21 @@ export function StateProvider({ children }) {
       };
     }
   });
+
+  const [currentTransformState, setCurrentTransformState] = useState(() => {
+    const currentTransformState = localStorage.getItem("currentTransformState");
+    if (currentTransformState) {
+      return JSON.parse(currentTransformState);
+    } else {
+      return {
+        previousScale: 1,
+        scale: 1,
+        positionX: settings.treeConfig.renderType === "verticalTree" ? 0 : 300,
+        positionY: 0,
+      };
+    }
+  });
+
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -145,6 +161,8 @@ export function StateProvider({ children }) {
     setGlobalBackgrounds,
     currentGlobalBackground,
     setCurrentGlobalBackground,
+    currentTransformState,
+    setCurrentTransformState,
   };
   return (
     // Providing all the states and functions to update the states
