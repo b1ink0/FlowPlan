@@ -27,6 +27,9 @@ export function StateProvider({ children }) {
       renderType: localStorage.getItem("renderType") || "verticalTree",
       useSavedTransformState: localStorage.getItem("useSavedTransformState") ?? "false",
     },
+    docConfig: {
+      fullscreen: localStorage.getItem("fullscreen") ?? "false",
+    }
   });
 
   // db state contains the database object to interact with the indexedDB database

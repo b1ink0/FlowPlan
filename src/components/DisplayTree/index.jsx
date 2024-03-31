@@ -19,9 +19,13 @@ const DisplayTree = ({ node }) => {
   } = useStateContext();
   const { treeConfig } = settings;
   // local state
+  const localTransformState = JSON.parse(
+    localStorage.getItem("currentTransformState")
+  );
   const transformState =
-    treeConfig.useSavedTransformState === "true"
-      ? JSON.parse(localStorage.getItem("currentTransformState"))
+    treeConfig.useSavedTransformState === "true" &&
+    localTransformState?.refId === currentFlowPlan?.refId
+      ? localTransformState
       : treeConfig.renderType === "verticalTree"
       ? {
           positionX: 0,
@@ -102,7 +106,7 @@ const ZoomHelper = ({
 }) => {
   // destructure tree configuration from settings
   const { treeConfig } = settings;
-  const { setCurrentTransformState } = useStateContext();
+  const { currentFlowPlan, setCurrentTransformState } = useStateContext();
 
   const handleResetTransform = () => {
     const x = treeConfig.renderType === "verticalTree" ? 0 : 300;
@@ -114,11 +118,12 @@ const ZoomHelper = ({
     if (treeConfig.useSavedTransformState === "false") return;
     let interval = setInterval(() => {
       setCurrentTransformState(() => {
-        localStorage.setItem(
-          "currentTransformState",
-          JSON.stringify(rest?.instance?.transformState)
-        );
-        return rest?.instance?.transformState;
+        const state = {
+          ...rest?.instance?.transformState,
+          refId: currentFlowPlan?.refId,
+        };
+        localStorage.setItem("currentTransformState", JSON.stringify(state));
+        return state;
       });
     }, 5000);
     return () => clearInterval(interval);

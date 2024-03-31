@@ -55,6 +55,8 @@ import BackIcon from "../../assets/Icons/BackIcon";
 
 function DisplayDocView() {
   const {
+    settings,
+    setSettings,
     currentFlowPlan,
     currentFlowPlanNode,
     setCurrentFlowPlanNode,
@@ -62,7 +64,6 @@ function DisplayDocView() {
   } = useStateContext();
   const [currentFieldType, setCurrentFieldType] = useState(null);
   const [currentField, setCurrentField] = useState(null);
-  const [fullScreen, setFullScreen] = useState(false);
   const [move, setMove] = useState({
     move: false,
     id: null,
@@ -72,6 +73,7 @@ function DisplayDocView() {
     index: null,
   });
   const [node, setNode] = useState(null);
+  const {docConfig} = settings;
 
   const handleEditField = (field, i) => {
     setCurrentFieldType(field.type);
@@ -87,7 +89,14 @@ function DisplayDocView() {
   };
 
   const handleFullScreen = () => {
-    setFullScreen((prev) => !prev);
+    setSettings((prev) => ({
+      ...prev,
+      docConfig: {
+        ...prev.docConfig,
+        fullscreen: prev.docConfig.fullscreen !== "true" ? "true" : "false",
+      },
+    }));
+    localStorage.setItem("fullscreen", docConfig.fullscreen !== "true" ? "true" : "false");
   };
 
   const handleResetShowAdd = () => {
@@ -110,12 +119,12 @@ function DisplayDocView() {
   return (
     <div
       style={{
-        width: `${fullScreen ? "100vw" : ""}`,
+        width: `${docConfig?.fullscreen === "true" ? "100vw" : ""}`,
       }}
       className={`${
         // if addEditNode.show is true then show component else hide component
         !node ? "translate-x-full" : ""
-      } z-10 transition-all duration-200 w-fit bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 bg-[var(--bg-primary-translucent)] text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
+      } z-10 transition-all duration-200 max-md:w-full  max-w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
       <button
         className="absolute top-0 left-0 w-8 h-8 rounded-full"
@@ -129,7 +138,7 @@ function DisplayDocView() {
       >
         <FullScreenIcon />
       </button>
-      <div className="w-full max-w-[750px] h-full flex flex-col justify-start items-center gap-1">
+      <div className="w-full w-full h-full flex flex-col justify-start items-center gap-1">
         <h3
           style={{
             fontSize: `${node?.config?.titleConfig?.fontSize}px`,

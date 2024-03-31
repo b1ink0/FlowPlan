@@ -98,6 +98,7 @@ function SideNavbar() {
         location: null,
         type: "add",
       });
+      localStorage.setItem("prevRefId", refId);
     } catch (error) {
       console.error(error);
     }
@@ -160,6 +161,10 @@ function SideNavbar() {
   useEffect(() => {
     if (flowPlans?.length === 0) return;
     if (currentFlowPlan !== null) return;
+    if (localStorage.getItem("prevRefId")) {
+      handleSetCurrentFlowPlan(localStorage.getItem("prevRefId"));
+      return;
+    }
     handleSetCurrentFlowPlan(flowPlans[0]?.refId);
   }, [flowPlans]);
 
