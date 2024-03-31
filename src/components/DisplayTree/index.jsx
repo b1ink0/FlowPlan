@@ -24,8 +24,8 @@ const DisplayTree = ({ node }) => {
   );
   const transformState =
     treeConfig.useSavedTransformState === "true" &&
-    localTransformState?.refId === currentFlowPlan?.refId
-      ? localTransformState
+    localTransformState[currentFlowPlan?.refId]
+      ? localTransformState[currentFlowPlan?.refId]
       : treeConfig.renderType === "verticalTree"
       ? {
           positionX: 0,
@@ -118,9 +118,12 @@ const ZoomHelper = ({
     if (treeConfig.useSavedTransformState === "false") return;
     let interval = setInterval(() => {
       setCurrentTransformState(() => {
+        const localState = JSON.parse(
+          localStorage.getItem("currentTransformState")
+        ) ?? {};
         const state = {
-          ...rest?.instance?.transformState,
-          refId: currentFlowPlan?.refId,
+          ...localState,
+          [currentFlowPlan?.refId]: rest?.instance?.transformState ?? {},
         };
         localStorage.setItem("currentTransformState", JSON.stringify(state));
         return state;
