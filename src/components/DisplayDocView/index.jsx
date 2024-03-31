@@ -110,12 +110,12 @@ function DisplayDocView() {
   return (
     <div
       style={{
-        width: `${fullScreen ? "100vw" : "50vw"}`,
+        width: `${fullScreen ? "100vw" : ""}`,
       }}
       className={`${
         // if addEditNode.show is true then show component else hide component
         !node ? "translate-x-full" : ""
-      } z-10 transition-all duration-200 w-1/2 grow-0 h-full absolute right-0 top-0 bg-[var(--bg-primary-translucent)] text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
+      } z-10 transition-all duration-200 w-fit bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 bg-[var(--bg-primary-translucent)] text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
       <button
         className="absolute top-0 left-0 w-8 h-8 rounded-full"
@@ -565,20 +565,12 @@ const DocRenderView = ({
           onDoubleClick={() => handleEditField(field, i)}
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
-          <div className="w-full flex justify-center items-center overflow-x-hidden">
-            <span
-              style={{
-                color: `${field?.config?.color}`,
-              }}
-              className="w-3 h-5 mr-1 block"
-            >
-              <LinkIcon />
-            </span>
+          <div className="w-full flex justify-start items-center overflow-x-hidden">
             <a
               href={field?.data?.link}
               target="_blank"
               rel="noreferrer"
-              className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none hover:underline break-all"
+              className="w-fit flex text-[var(--text-primary)] cursor-pointer bg-transparent outline-none hover:underline break-all"
               style={{
                 fontSize: `${field?.config?.fontSize}px`,
                 textDecoration: `${
@@ -591,6 +583,14 @@ const DocRenderView = ({
                 textAlign: `${field?.config?.align}`,
               }}
             >
+              <span
+                style={{
+                  color: `${field?.config?.color}`,
+                }}
+                className="w-3 h-5 mr-1 block shrink-0"
+              >
+                <LinkIcon />
+              </span>
               {field?.data?.link}
             </a>
           </div>
@@ -734,23 +734,23 @@ const DocRenderView = ({
             opacity: showMenu ? 1 : 0,
             pointerEvents: showMenu ? "all" : "none",
           }}
-          className="transition-opacity absolute flex justify-center items-center gap-1 w-fit h-8 -bottom-4 z-10"
+          className="transition-opacity absolute flex justify-center items-center gap-1 w-fit h-6 right-0 top-1 z-10"
         >
           <button
             onClick={() => handleEditField(field, i)}
-            className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
+            className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md"
           >
             <EditBtnIcon />
           </button>
           <button
             onClick={handleSetAdd}
-            className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
+            className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md"
           >
             <AddIcon />
           </button>
           <button
             onClick={handleSetMove}
-            className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
+            className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md"
           >
             <MoveIcon />
           </button>
@@ -797,9 +797,7 @@ const DocRenderView = ({
         />
       )}
       {showAdd.show && showAdd.index === i && (
-        <div
-          className="flex justify-center items-center"
-        >
+        <div className="flex justify-center items-center">
           <MenuButtons
             setCurrentField={setCurrentField}
             setType={setCurrentFieldType}
@@ -1830,7 +1828,7 @@ const InputTitleButtons = ({
         </div>
       )}
 
-      {currentField.type === "heading" && (
+      {currentField?.type === "heading" && (
         <div className="relative">
           <button
             type="button"
@@ -1873,220 +1871,227 @@ const InputTitleButtons = ({
         </div>
       )}
 
-      <button
-        type="button"
-        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
-        onClick={handleStrickthroughClick}
-      >
-        <StrickthroughIcon />
-        <span
-          style={{
-            textDecoration: `${
-              config?.strickthrough ? "line-through" : "none"
-            }`,
-          }}
-          className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
-        >
-          T
-        </span>
-      </button>
-      <button
-        type="button"
-        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-move)] transition-colors duration-300"
-        onClick={handleItalicClick}
-      >
-        <ItalicIcon />
-        <span
-          style={{
-            fontStyle: `${config?.italic ? "italic" : "normal"}`,
-          }}
-          className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
-        >
-          T
-        </span>
-      </button>
-      <button
-        type="button"
-        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
-        onClick={handleBoldClick}
-      >
-        <BoldIcon />
-        <span
-          style={{
-            fontWeight: `${config?.bold ? "bold" : "normal"}`,
-          }}
-          className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
-        >
-          T
-        </span>
-      </button>
-      <div className="relative">
-        <button
-          type="button"
-          className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
-          onClick={handleColorClick}
-        >
-          <ColorIcon />
-          <span
-            className="absolute w-3 h-3 rounded-full inline-block -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
-            style={{
-              background: config?.color,
-            }}
-          ></span>
-        </button>
-        {colorActive && (
-          <div
-            ref={colorRef}
-            className="hide z-10 absolute flex flex-col items-center gap-1 w-8 top-9 p-1 rounded-md  bg-[var(--btn-secondary)] overflow-hidden"
-          >
-            {colors.map((color) => (
-              <label
-                key={`color-id-${color}`}
-                className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300 hover:cursor-pointer"
-                style={{
-                  background: color,
-                }}
-              >
-                <input
-                  className="w-full h-full absolute opacity-0 cursor-pointer"
-                  type="radio"
-                  value={color}
-                  checked={config?.color === color}
-                  onChange={handleColorChange}
-                />
-              </label>
-            ))}
-            <label
-              className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300"
-              style={{
-                background:
-                  "linear-gradient(90deg, rgba(255,0,0,1) 0%, rgba(255,190,0,1) 35%, rgba(0,213,255,1) 100%)",
-              }}
-            >
-              <input
-                className="w-full h-full absolute opacity-0 cursor-pointer"
-                type="color"
-                value={config?.color}
-                onChange={handleActiveColorChange}
-              />
-            </label>
-            <label className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300">
-              <RandomIcon />
-              <button
-                type="button"
-                className="w-full h-full absolute opacity-0 cursor-pointer"
-                onClick={() => handleSetTitleColor(handleGetRandomColor())}
-              ></button>
-            </label>
-          </div>
-        )}
-      </div>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={handleFontFamilyClick}
-          className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
-        >
-          <FontIcon />
-          <span
-            style={{
-              fontFamily: `${config?.fontFamily}`,
-            }}
-            className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
-          >
-            Aa
-          </span>
-        </button>
-        {fontFamilyActive && (
-          <div
-            ref={fontFamilyRef}
-            className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
-          >
-            {fontFamilies.map((fontFamily) => (
-              <label
-                key={`fontsize-id-${fontFamily}`}
-                className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
-                style={{
-                  fontFamily: `${fontFamily}`,
-                  backgroundColor: `${
-                    config?.fontFamily === fontFamily ? "var(--btn-edit)" : ""
-                  }`,
-                }}
-              >
-                <input
-                  title={fontFamily}
-                  className="w-full h-full bg-blue-500 absolute opacity-0"
-                  type="radio"
-                  value={fontFamily}
-                  checked={config?.fontFamily === fontFamily}
-                  onChange={handleFontFamilytChange}
-                />
-                Aa
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-      {(currentField.type === "heading" ||
-        currentField.type === "paragraph" ||
-        currentField.type === "table") && (
-        <div className="relative">
+      {currentField?.type !== "image" && (
+        <>
           <button
             type="button"
-            onClick={handleAlignClick}
-            className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
+            onClick={handleStrickthroughClick}
           >
-            {config?.align ? (
-              aligns.find((item) => item.type === config?.align)?.icon
-            ) : (
-              <LeftAlignIcon />
-            )}
-            <span className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
-              {config?.align
-                ? aligns.find((item) => item.type === config?.align)?.a
-                : "L"}
+            <StrickthroughIcon />
+            <span
+              style={{
+                textDecoration: `${
+                  config?.strickthrough ? "line-through" : "none"
+                }`,
+              }}
+              className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
+            >
+              T
             </span>
           </button>
-          {alignActive && (
-            <div
-              ref={alignRef}
-              className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+          <button
+            type="button"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-move)] transition-colors duration-300"
+            onClick={handleItalicClick}
+          >
+            <ItalicIcon />
+            <span
+              style={{
+                fontStyle: `${config?.italic ? "italic" : "normal"}`,
+              }}
+              className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
             >
-              {aligns.map((align) => (
+              T
+            </span>
+          </button>
+          <button
+            type="button"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
+            onClick={handleBoldClick}
+          >
+            <BoldIcon />
+            <span
+              style={{
+                fontWeight: `${config?.bold ? "bold" : "normal"}`,
+              }}
+              className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
+            >
+              T
+            </span>
+          </button>
+          <div className="relative">
+            <button
+              type="button"
+              className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+              onClick={handleColorClick}
+            >
+              <ColorIcon />
+              <span
+                className="absolute w-3 h-3 rounded-full inline-block -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
+                style={{
+                  background: config?.color,
+                }}
+              ></span>
+            </button>
+            {colorActive && (
+              <div
+                ref={colorRef}
+                className="hide z-10 absolute flex flex-col items-center gap-1 w-8 top-9 p-1 rounded-md  bg-[var(--btn-secondary)] overflow-hidden"
+              >
+                {colors.map((color) => (
+                  <label
+                    key={`color-id-${color}`}
+                    className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300 hover:cursor-pointer"
+                    style={{
+                      background: color,
+                    }}
+                  >
+                    <input
+                      className="w-full h-full absolute opacity-0 cursor-pointer"
+                      type="radio"
+                      value={color}
+                      checked={config?.color === color}
+                      onChange={handleColorChange}
+                    />
+                  </label>
+                ))}
                 <label
-                  key={`align-id-${align.type}`}
-                  className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                  className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300"
                   style={{
-                    backgroundColor: `${
-                      config?.align === align.type ? "var(--btn-add)" : ""
-                    }`,
+                    background:
+                      "linear-gradient(90deg, rgba(255,0,0,1) 0%, rgba(255,190,0,1) 35%, rgba(0,213,255,1) 100%)",
                   }}
                 >
                   <input
-                    title={align.type}
-                    className="w-full h-full bg-blue-500 absolute opacity-0"
-                    type="radio"
-                    value={align.type}
-                    checked={config?.align === align.type}
-                    onChange={handleAlignChange}
+                    className="w-full h-full absolute opacity-0 cursor-pointer"
+                    type="color"
+                    value={config?.color}
+                    onChange={handleActiveColorChange}
                   />
-                  <span className="w-5 h-5 flex justify-center items-center">
-                    {align.icon}
-                  </span>
                 </label>
-              ))}
+                <label className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300">
+                  <RandomIcon />
+                  <button
+                    type="button"
+                    className="w-full h-full absolute opacity-0 cursor-pointer"
+                    onClick={() => handleSetTitleColor(handleGetRandomColor())}
+                  ></button>
+                </label>
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleFontFamilyClick}
+              className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
+            >
+              <FontIcon />
+              <span
+                style={{
+                  fontFamily: `${config?.fontFamily}`,
+                }}
+                className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
+              >
+                Aa
+              </span>
+            </button>
+            {fontFamilyActive && (
+              <div
+                ref={fontFamilyRef}
+                className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+              >
+                {fontFamilies.map((fontFamily) => (
+                  <label
+                    key={`fontsize-id-${fontFamily}`}
+                    className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                    style={{
+                      fontFamily: `${fontFamily}`,
+                      backgroundColor: `${
+                        config?.fontFamily === fontFamily
+                          ? "var(--btn-edit)"
+                          : ""
+                      }`,
+                    }}
+                  >
+                    <input
+                      title={fontFamily}
+                      className="w-full h-full bg-blue-500 absolute opacity-0"
+                      type="radio"
+                      value={fontFamily}
+                      checked={config?.fontFamily === fontFamily}
+                      onChange={handleFontFamilytChange}
+                    />
+                    Aa
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {(currentField.type === "heading" ||
+            currentField.type === "paragraph" ||
+            currentField.type === "table") && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={handleAlignClick}
+                className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
+              >
+                {config?.align ? (
+                  aligns.find((item) => item.type === config?.align)?.icon
+                ) : (
+                  <LeftAlignIcon />
+                )}
+                <span className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
+                  {config?.align
+                    ? aligns.find((item) => item.type === config?.align)?.a
+                    : "L"}
+                </span>
+              </button>
+              {alignActive && (
+                <div
+                  ref={alignRef}
+                  className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+                >
+                  {aligns.map((align) => (
+                    <label
+                      key={`align-id-${align.type}`}
+                      className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                      style={{
+                        backgroundColor: `${
+                          config?.align === align.type ? "var(--btn-add)" : ""
+                        }`,
+                      }}
+                    >
+                      <input
+                        title={align.type}
+                        className="w-full h-full bg-blue-500 absolute opacity-0"
+                        type="radio"
+                        value={align.type}
+                        checked={config?.align === align.type}
+                        onChange={handleAlignChange}
+                      />
+                      <span className="w-5 h-5 flex justify-center items-center">
+                        {align.icon}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-        </div>
+          <button
+            type="button"
+            onClick={handleResetToDefaultTitleConfig}
+            title="Reset To Default"
+            className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300 relative"
+          >
+            <ResetToDefaultIcon />
+          </button>
+        </>
       )}
-      <button
-        type="button"
-        onClick={handleResetToDefaultTitleConfig}
-        title="Reset To Default"
-        className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300 relative"
-      >
-        <ResetToDefaultIcon />
-      </button>
       {currentField?.id && (
         <button
           type="button"
@@ -2903,7 +2908,7 @@ const Link = ({
   const [link, setLink] = useState(currentField?.data?.link ?? "");
   const [isValidLink, setIsValidLink] = useState(true);
   const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const handleLinkChange = (e) => {
     if (e.target.value === "") {
@@ -3010,8 +3015,9 @@ const Link = ({
   };
 
   useEffect(() => {
+    if (!currentField?.config?.preview) return;
     handlePreview();
-  }, [link]);
+  }, [link, currentField?.config?.preview]);
 
   return (
     <form
@@ -3612,18 +3618,10 @@ const FileView = ({
     >
       <div className="w-full flex justify-center items-center overflow-x-hidden gap-1 pr-1">
         <span
-          style={{
-            color: `${field?.config?.color}`,
-          }}
-          className="w-4 h-4 ml-1 mr-1 block"
-        >
-          <FileIcon />
-        </span>
-        <span
           href={field?.data?.file?.url}
           target="_blank"
           rel="noreferrer"
-          className="w-full text-[var(--text-primary)] bg-transparent outline-none hover:underline break-all"
+          className="w-full flex gap-1 text-[var(--text-primary)] bg-transparent outline-none hover:underline break-all"
           style={{
             fontSize: `${field?.config?.fontSize}px`,
             textDecoration: `${
@@ -3636,13 +3634,21 @@ const FileView = ({
             textAlign: `${field?.config?.align}`,
           }}
         >
+          <span
+            style={{
+              color: `${field?.config?.color}`,
+            }}
+            className="w-4 h-4 shrink-0 ml-1 mr-1 block"
+          >
+            <FileIcon />
+          </span>
+          <span
+            className=" shrink-0 w-4 h-4 p-0 flex justify-center items-center bg-[var(--bg-secondary)] rounded-sm hover:bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+            onClick={handleDownload}
+          >
+            <DownloadIcon />
+          </span>
           {field?.data?.file?.name}
-        </span>
-        <span
-          className="w-6 h-6 p-1 flex justify-center items-center bg-[var(--bg-secondary)] rounded-sm hover:bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
-          onClick={handleDownload}
-        >
-          <DownloadIcon />
         </span>
       </div>
     </div>
