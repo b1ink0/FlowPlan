@@ -80,7 +80,26 @@ function DisplayDocView() {
     parent: null,
     firstChild: null,
   });
+
+  const [isResizing, setIsResizing] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(750);
+
   const { docConfig } = settings;
+
+  const handleMouseDown = () => {
+    let resize = true;
+    document.body.style.cursor = "ew-resize";
+    document.onmousemove = (e) => {
+      if (!resize) return;
+      const newWidth = window.innerWidth - e.clientX;
+      setPanelWidth(newWidth);
+    };
+    document.onmouseup = () => {
+      console.log("mouseup");
+      document.body.style.cursor = "default";
+      resize = false;
+    };
+  };
 
   const handleEditField = (field, i) => {
     setCurrentFieldType(field.type);
@@ -164,12 +183,14 @@ function DisplayDocView() {
   return (
     <div
       style={{
-        width: `${docConfig?.fullscreen === "true" ? "100vw" : ""}`,
+        width: `${
+          docConfig?.fullscreen === "true" ? "100vw" : `${panelWidth}px`
+        }`,
       }}
       className={`${
         // if addEditNode.show is true then show component else hide component
         !node ? "translate-x-full" : ""
-      } z-10 transition-all duration-200 max-md:w-full  max-w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
+      } z-10 transition-all duration-200 max-md:w-full w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
       <button
         className="absolute top-0 left-0 w-8 h-8 rounded-full"
@@ -183,6 +204,10 @@ function DisplayDocView() {
       >
         <FullScreenIcon />
       </button>
+      <button
+        onMouseDown={handleMouseDown}
+        className="w-[2px] hover:w-2 transition-all bg-[var(--border-primary)] z-[20] h-full absolute top-0 -left-1 cursor-ew-resize"
+      ></button>
       <div className="w-full w-full h-full flex flex-col justify-start items-center gap-1">
         <h3
           style={{
@@ -254,7 +279,7 @@ function DisplayDocView() {
           {node?.data?.length ? (
             <div></div>
           ) : (
-            <div className="flex justify-center items-center flex-col">
+            <div className=" flex justify-center items-center flex-col">
               <p className="text-[var(--text-primary)]">
                 Add Something From Below Menu
               </p>
