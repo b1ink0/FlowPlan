@@ -52,6 +52,7 @@ import FullScreenIcon from "../../assets/Icons/FullScreenIcon";
 import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 import MoveIcon from "../../assets/Icons/MoveIcon";
 import BackIcon from "../../assets/Icons/BackIcon";
+import { TimeAndDate } from "../Helpers/TimeAndDate";
 
 function DisplayDocView() {
   const {
@@ -73,7 +74,13 @@ function DisplayDocView() {
     index: null,
   });
   const [node, setNode] = useState(null);
-  const {docConfig} = settings;
+  const [nodeNavigation, setNodeNavigation] = useState({
+    preSibling: null,
+    nextSibling: null,
+    parent: null,
+    firstChild: null,
+  });
+  const { docConfig } = settings;
 
   const handleEditField = (field, i) => {
     setCurrentFieldType(field.type);
@@ -96,7 +103,10 @@ function DisplayDocView() {
         fullscreen: prev.docConfig.fullscreen !== "true" ? "true" : "false",
       },
     }));
-    localStorage.setItem("fullscreen", docConfig.fullscreen !== "true" ? "true" : "false");
+    localStorage.setItem(
+      "fullscreen",
+      docConfig.fullscreen !== "true" ? "true" : "false"
+    );
   };
 
   const handleResetShowAdd = () => {
@@ -106,14 +116,49 @@ function DisplayDocView() {
     });
   };
 
+  const handleNavigation = (node) => {
+    if (!node) return;
+    setCurrentFlowPlanNode(node);
+  };
+
   useEffect(() => {
     if (!currentFlowPlanNode) return;
     let root = currentFlowPlan.root;
     let node = root;
-    currentFlowPlanNode.forEach((i) => {
+    let parentNodeChildrenLength = null;
+    const currentFlowPlanNodeLength = currentFlowPlanNode.length;
+    currentFlowPlanNode.forEach((i, index) => {
+      if (index === currentFlowPlanNodeLength - 1) {
+        parentNodeChildrenLength = node.children.length;
+      }
       node = node.children[i];
     });
     setNode(node);
+    let tempNodeNavigation = structuredClone(nodeNavigation);
+    if (currentFlowPlanNodeLength === 1) {
+      tempNodeNavigation.preSibling = null;
+      tempNodeNavigation.nextSibling = null;
+      tempNodeNavigation.parent = null;
+      tempNodeNavigation.firstChild = node.children[0];
+    } else {
+      tempNodeNavigation.parent = currentFlowPlanNode.slice(0, -1);
+      tempNodeNavigation.preSibling =
+        currentFlowPlanNode[currentFlowPlanNodeLength - 1] === 0
+          ? null
+          : currentFlowPlanNode
+              .slice(0, -1)
+              .concat(currentFlowPlanNode[currentFlowPlanNodeLength - 1] - 1);
+      tempNodeNavigation.nextSibling =
+        currentFlowPlanNode[currentFlowPlanNodeLength - 1] + 1 >
+        parentNodeChildrenLength - 1
+          ? null
+          : currentFlowPlanNode
+              .slice(0, -1)
+              .concat(currentFlowPlanNode[currentFlowPlanNodeLength - 1] + 1);
+      tempNodeNavigation.firstChild =
+        node.children.length === 0 ? null : currentFlowPlanNode.concat(0);
+    }
+    setNodeNavigation(tempNodeNavigation);
     console.log(node);
   }, [currentFlowPlanNode]);
   return (
@@ -155,10 +200,56 @@ function DisplayDocView() {
             fontFamily: `${node?.config?.titleConfig?.fontFamily}`,
             borderColor: `${node?.config?.nodeConfig?.borderColor}`,
           }}
-          className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300"
+          className="text-[var(--text-primary)] relative w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 pb-3 px-2  transition-colors duration-300"
         >
           {node?.title}
+
+          {node?.createdAt && (
+            <span className="block text-xs bottom-0 right-0 absolute text-[var(--text-secondary)]">
+              <span className="absolute right-24 -top-[18px]">Created:</span>
+              <TimeAndDate timeDate={new Date(node?.createdAt)} />
+            </span>
+          )}
+          {node?.updatedAt && (
+            <span className="block text-xs bottom-0 left-[150px] absolute text-[var(--text-secondary)]">
+              <span className="absolute -left-[150px] -top-[18px]">
+                Updated:
+              </span>
+              <TimeAndDate timeDate={new Date(node?.createdAt)} />
+            </span>
+          )}
         </h3>
+        <div className="flex justify-between items-center w-full gap-5 mt-1">
+          <button
+            style={{
+              cursor: !nodeNavigation.parent ? "not-allowed" : "pointer",
+              opacity: !nodeNavigation.parent ? "0.5" : "1",
+            }}
+            onClick={() => handleNavigation(nodeNavigation.parent)}
+            className="w-24 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
+            disabled={!nodeNavigation.parent}
+          >
+            <span className="block w-3 h-3 rotate-180">
+              <BackIcon />
+            </span>
+            <span>Parent</span>
+          </button>
+          <button
+            style={{
+              cursor: !nodeNavigation.firstChild ? "not-allowed" : "pointer",
+              opacity: !nodeNavigation.firstChild ? "0.5" : "1",
+            }}
+            onClick={() => handleNavigation(nodeNavigation.firstChild)}
+            className="w-28 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
+            disabled={!nodeNavigation.firstChild}
+          >
+            <span>First Child</span>
+            <span className="block w-3 h-3">
+              <BackIcon />
+            </span>
+          </button>
+        </div>
+
         <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-9 overflow-x-hidden">
           {node?.data?.length ? (
             <div></div>
@@ -210,6 +301,36 @@ function DisplayDocView() {
             showAdd={showAdd}
             setShowAdd={setShowAdd}
           />
+        </div>
+        <div className="flex justify-between items-center w-full gap-5 mb-1">
+          <button
+            style={{
+              cursor: !nodeNavigation.preSibling ? "not-allowed" : "pointer",
+              opacity: !nodeNavigation.preSibling ? "0.5" : "1",
+            }}
+            onClick={() => handleNavigation(nodeNavigation.preSibling)}
+            className="w-40 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
+            disabled={!nodeNavigation.preSibling}
+          >
+            <span className="block w-3 h-3 rotate-180">
+              <BackIcon />
+            </span>
+            <span>Previous Sibling</span>
+          </button>
+          <button
+            style={{
+              cursor: !nodeNavigation.nextSibling ? "not-allowed" : "pointer",
+              opacity: !nodeNavigation.nextSibling ? "0.5" : "1",
+            }}
+            onClick={() => handleNavigation(nodeNavigation.nextSibling)}
+            className="w-40 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
+            disabled={!nodeNavigation.nextSibling}
+          >
+            <span>Next Sibling</span>
+            <span className="block w-3 h-3">
+              <BackIcon />
+            </span>
+          </button>
         </div>
       </div>
     </div>
