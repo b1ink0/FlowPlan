@@ -197,14 +197,14 @@ function DisplayDocView() {
       } z-10 transition-all duration-200 max-md:w-full w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
       <button
-        className="absolute top-0 left-0 w-8 h-8 rounded-full"
+        className="absolute top-0 left-0 w-8 h-8 rounded-full z-10"
         onClick={handleCloseDocView}
       >
         <CloseBtnIcon />
       </button>
       <button
         onClick={handleFullScreen}
-        className="absolute top-2 right-2 w-5 h-5 rounded-full"
+        className="absolute top-2 right-2 w-5 h-5 rounded-full z-10"
       >
         <FullScreenIcon />
       </button>
