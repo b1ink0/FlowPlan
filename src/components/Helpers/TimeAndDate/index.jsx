@@ -1,5 +1,4 @@
 export const TimeAndDate = ({ timeDate }) => {
-    console.log(timeDate);
   return (
     <span className="text-[var(--text-secondary)] absolute text-[10px] group-hover:opacity-0 transition-opacity right-2 bottom-[1px]">
       {timeDate
