@@ -29,6 +29,7 @@ export function StateProvider({ children }) {
     },
     docConfig: {
       fullscreen: localStorage.getItem("fullscreen") ?? "false",
+      width: localStorage.getItem("docWidth") || "750",
     }
   });
 
