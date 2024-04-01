@@ -81,9 +81,6 @@ function DisplayDocView() {
     firstChild: null,
   });
 
-  const [isResizing, setIsResizing] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(750);
-
   const { docConfig } = settings;
 
   const handleMouseDown = () => {
@@ -92,7 +89,14 @@ function DisplayDocView() {
     document.onmousemove = (e) => {
       if (!resize) return;
       const newWidth = window.innerWidth - e.clientX;
-      setPanelWidth(newWidth);
+      localStorage.setItem("docWidth", newWidth);
+      setSettings((prev) => ({
+        ...prev,
+        docConfig: {
+          ...prev.docConfig,
+          width: newWidth,
+        },
+      }));
     };
     document.onmouseup = () => {
       console.log("mouseup");
@@ -184,7 +188,7 @@ function DisplayDocView() {
     <div
       style={{
         width: `${
-          docConfig?.fullscreen === "true" ? "100vw" : `${panelWidth}px`
+          docConfig?.fullscreen === "true" ? "100vw" : `${docConfig.width}px`
         }`,
       }}
       className={`${
