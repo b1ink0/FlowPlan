@@ -2,7 +2,6 @@
 import React, { useContext, useState } from "react";
 import bg_1 from "../assets/backgrounds/bg-1.png";
 import bg_2 from "../assets/backgrounds/bg-2.png";
-import bg_3 from "../assets/backgrounds/bg-3.jpg";
 
 // Creating Context
 const StateContext = React.createContext();
@@ -99,13 +98,13 @@ export function StateProvider({ children }) {
       backgroundPosition: "center",
       opacity: "0.2",
     },
-    {
-      backgroundImage: "url(" + bg_3 + ")",
-      backgroundRepeat: "no-repeat",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      opacity: "0.2",
-    },
+    // {
+    //   backgroundImage: "url(" + bg_3 + ")",
+    //   backgroundRepeat: "no-repeat",
+    //   backgroundSize: "cover",
+    //   backgroundPosition: "center",
+    //   opacity: "0.2",
+    // },
   ]);
   const [currentGlobalBackground, setCurrentGlobalBackground] = useState(() => {
     const currentGlobalBackground = localStorage.getItem(

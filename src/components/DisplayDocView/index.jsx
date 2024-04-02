@@ -146,7 +146,10 @@ function DisplayDocView() {
   };
 
   useEffect(() => {
-    if (!currentFlowPlanNode) return;
+    if (!currentFlowPlanNode) {
+      setNode(null);
+      return;
+    }
     let root = currentFlowPlan.root;
     let node = root;
     let parentNodeChildrenLength = null;
@@ -196,7 +199,7 @@ function DisplayDocView() {
       className={`${
         // if addEditNode.show is true then show component else hide component
         !node ? "translate-x-full" : ""
-      } z-10 transition-all duration-200 max-md:w-full w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
+    } z-10 transition-all duration-200 max-md:w-full max-w-[100vw] w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
       <button
         className="absolute top-0 left-0 w-8 h-8 rounded-full z-10"
@@ -406,12 +409,12 @@ const DocRenderViewContainer = ({
     <SortableList
       items={node?.data}
       onChange={handleMove}
-      renderItem={(item, active) => (
+      renderItem={(item, active, index) => (
         <SortableList.Item id={item.id}>
           <DocRenderView
             key={"field-id-" + item.type + "-" + item.id}
             field={item}
-            i={item.id}
+            i={index}
             length={node.data.length}
             node={node}
             move={move}
@@ -680,7 +683,7 @@ const DocRenderView = ({
         >
           {field?.data?.list?.map((item, j) => (
             <div
-              key={`shown-list-item-${j}`}
+              key={`shown-list-item-${item?.id ?? j}`}
               className="w-full flex justify-center items-center text-sm"
               onDoubleClick={() => handleEditField(field, i)}
             >
@@ -710,7 +713,7 @@ const DocRenderView = ({
                   textAlign: `${field?.config?.align}`,
                 }}
               >
-                {item}
+                {item?.value ?? item}
               </span>
             </div>
           ))}
@@ -725,7 +728,7 @@ const DocRenderView = ({
         >
           {field?.data?.list?.map((item, j) => (
             <div
-              key={`shown-list-item-${j}`}
+              key={`shown-list-item-${item?.id}`}
               className="w-full flex justify-center items-center text-sm"
               onDoubleClick={() => handleEditField(field, i)}
             >
@@ -766,7 +769,7 @@ const DocRenderView = ({
         >
           {field?.data?.list?.map((item, j) => (
             <div
-              key={`shown-list-item-${j}`}
+              key={`shown-list-item-${item?.id ?? j}`}
               className="w-full flex justify-center items-center text-sm"
               onDoubleClick={() => handleEditField(field, i)}
             >
@@ -796,7 +799,7 @@ const DocRenderView = ({
                   textAlign: `${field?.config?.align}`,
                 }}
               >
-                {item}
+                {item?.value ?? item}
               </span>
             </div>
           ))}
@@ -1061,6 +1064,7 @@ const DocRenderView = ({
       )}
       {currentField?.id === field?.id && (
         <AddEditField
+          dataIndex={i}
           setCurrentFieldType={setCurrentFieldType}
           node={node}
           setNode={setNode}
@@ -1926,6 +1930,7 @@ const InputTitleButtons = ({
   };
 
   const handleDelete = async (index) => {
+    console.log(currentField);
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
@@ -2524,7 +2529,10 @@ const UnorderedList = ({
   const handleItemChange = (e, i = null) => {
     let newList = [...list];
     if (i !== null) {
-      newList[i] = e.target.value;
+      newList[i] = {
+        id: list[i].id,
+        value: e.target.value,
+      };
       setList(newList);
     } else {
       setItem(e.target.value);
@@ -2534,7 +2542,13 @@ const UnorderedList = ({
 
   const handleAdd = (e) => {
     e.preventDefault();
-    setList((prev) => [...prev, item]);
+    setList((prev) => [
+      ...prev,
+      {
+        id: v4(),
+        value: item,
+      },
+    ]);
     setItem("");
   };
 
@@ -2549,7 +2563,12 @@ const UnorderedList = ({
   };
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
-    let finalList = item === "" ? list : [...list, item];
+    let finalList = item === "" ? list : [...list, 
+      {
+        id: v4(),
+        value: item,
+      }
+    ];
     if (finalList.length === 0) {
       return;
     }
@@ -2582,15 +2601,81 @@ const UnorderedList = ({
     setCurrentFieldType(null);
     setCurrentField(null);
   };
-
+  const handleMove = (items) => {
+    setList(items);
+  };
   const handleDelete = async (index) => {
     let newList = [...list];
     newList.splice(index, 1);
     setList(newList);
   };
 
+  useEffect(() => {
+    console.log(list);
+  }, [list]);
   return (
     <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
+      <SortableList
+        items={list}
+        onChange={handleMove}
+        className="flex flex-col gap-1"
+        renderItem={(item, active, index) => (
+          <SortableList.Item id={item?.id}>
+            <div
+              key={`list-item-${item?.id}`}
+              className="group w-full flex justify-center items-center text-sm relative"
+            >
+              <span
+                style={{
+                  color: `${currentField?.config?.color}`,
+                }}
+                className="w-3 h-3 mr-1 block"
+              >
+                {
+                  listStyles?.find(
+                    (listStyle) =>
+                      listStyle.type === currentField.config?.listStyle
+                  )?.icon
+                }
+              </span>
+              <input
+                required
+                type="text"
+                placeholder="Enter List Item..."
+                value={item.value}
+                onChange={(e) => handleItemChange(e, index)}
+                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                style={{
+                  fontSize: `${currentField?.config?.fontSize}px`,
+                  textDecoration: `${
+                    currentField?.config?.strickthrough
+                      ? "line-through"
+                      : "none"
+                  }`,
+                  fontStyle: `${
+                    currentField?.config?.italic ? "italic" : "normal"
+                  }`,
+                  fontWeight: `${
+                    currentField?.config?.bold ? "bold" : "normal"
+                  }`,
+                  fontFamily: `${currentField?.config?.fontFamily}`,
+                  color: `${currentField?.config?.color}`,
+                  textAlign: `${currentField?.config?.align}`,
+                }}
+              />
+              <SortableList.DragHandle className="opacity-0 group-hover:opacity-100 w-5 h-5 absolute right-9 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+              <button
+                type="button"
+                onClick={() => handleDelete(index)}
+                className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+              >
+                <DeleteIcon />
+              </button>
+            </div>
+          </SortableList.Item>
+        )}
+      />
+      {/* 
       {list.map((item, i) => (
         <div
           key={`list-item-${i}`}
@@ -2637,7 +2722,7 @@ const UnorderedList = ({
             <DeleteIcon />
           </button>
         </div>
-      ))}
+      ))} */}
 
       <form
         onSubmit={handleAdd}
@@ -2717,6 +2802,7 @@ const TaskList = ({
     if (i !== null) {
       newList[i] = {
         ...newList[i],
+        id: newList[i].id,
         text: e.target.value,
       };
 
@@ -2731,7 +2817,13 @@ const TaskList = ({
 
   const handleAdd = (e) => {
     e.preventDefault();
-    setList((prev) => [...prev, item]);
+    setList((prev) => [
+      ...prev,
+      {
+        ...item,
+        id: v4(),
+      },
+    ]);
     setItem({
       text: "",
       completed: false,
@@ -2749,7 +2841,12 @@ const TaskList = ({
   };
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
-    let finalList = item.text === "" ? list : [...list, item];
+    let finalList = item.text === "" ? list : [...list, 
+      {
+        ...item,
+        id: v4(),
+      }
+    ];
     if (finalList.length === 0) {
       return;
     }
@@ -2802,52 +2899,68 @@ const TaskList = ({
     newList.splice(index, 1);
     setList(newList);
   };
+
+  const handleMove = (items) => {
+    setList(items);
+  };
   return (
     <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
-      {list.map((item, i) => (
-        <div
-          key={`list-item-${i}`}
-          className="group w-full flex justify-center items-center text-sm relative"
-        >
-          <span
-            style={{
-              color: `${currentField?.config?.color}`,
-            }}
-            className="w-5 h-5 mr-1 block cursor-pointer"
-            onClick={(e) => handleCompleteToggle(e, i)}
-          >
-            {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
-          </span>
-          <input
-            required
-            type="text"
-            placeholder="Enter List Item..."
-            value={item?.text}
-            onChange={(e) => handleItemChange(e, i)}
-            className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-            style={{
-              fontSize: `${currentField?.config?.fontSize}px`,
-              textDecoration: `${
-                currentField?.config?.strickthrough ? "line-through" : "none"
-              }`,
-              fontStyle: `${
-                currentField?.config?.italic ? "italic" : "normal"
-              }`,
-              fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
-              fontFamily: `${currentField?.config?.fontFamily}`,
-              color: `${currentField?.config?.color}`,
-              textAlign: `${currentField?.config?.align}`,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => handleDelete(i)}
-            className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-          >
-            <DeleteIcon />
-          </button>
-        </div>
-      ))}
+      <SortableList
+        items={list}
+        onChange={handleMove}
+        className="flex flex-col gap-1"
+        renderItem={(item, active, index) => (
+          <SortableList.Item id={item?.id}>
+            <div
+              key={`tasklist-item-${item?.id}`}
+              className="group w-full flex justify-center items-center text-sm relative"
+            >
+              <span
+                style={{
+                  color: `${currentField?.config?.color}`,
+                }}
+                className="w-5 h-5 mr-1 block cursor-pointer"
+                onClick={(e) => handleCompleteToggle(e, index)}
+              >
+                {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
+              </span>
+              <input
+                required
+                type="text"
+                placeholder="Enter List Item..."
+                value={item?.text}
+                onChange={(e) => handleItemChange(e, index)}
+                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                style={{
+                  fontSize: `${currentField?.config?.fontSize}px`,
+                  textDecoration: `${
+                    currentField?.config?.strickthrough
+                      ? "line-through"
+                      : "none"
+                  }`,
+                  fontStyle: `${
+                    currentField?.config?.italic ? "italic" : "normal"
+                  }`,
+                  fontWeight: `${
+                    currentField?.config?.bold ? "bold" : "normal"
+                  }`,
+                  fontFamily: `${currentField?.config?.fontFamily}`,
+                  color: `${currentField?.config?.color}`,
+                  textAlign: `${currentField?.config?.align}`,
+                }}
+              />
+              <SortableList.DragHandle className="opacity-0 group-hover:opacity-100 w-5 h-5 absolute right-9 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+              <button
+                type="button"
+                onClick={() => handleDelete(index)}
+                className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+              >
+                <DeleteIcon />
+              </button>
+            </div>
+          </SortableList.Item>
+        )}
+      />
 
       <form
         onSubmit={handleAdd}
@@ -2977,7 +3090,10 @@ const NumberList = ({
   const handleItemChange = (e, i = null) => {
     let newList = [...list];
     if (i !== null) {
-      newList[i] = e.target.value;
+      newList[i] = {
+        id: newList[i].id,
+        value: e.target.value,
+      };
       setList(newList);
     } else {
       setItem(e.target.value);
@@ -2986,7 +3102,13 @@ const NumberList = ({
 
   const handleAdd = (e) => {
     e.preventDefault();
-    setList((prev) => [...prev, item]);
+    setList((prev) => [
+      ...prev,
+      {
+        id: v4(),
+        value: item,
+      },
+    ]);
     setItem("");
   };
 
@@ -3001,7 +3123,16 @@ const NumberList = ({
   };
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
-    let finalList = item === "" ? list : [...list, item];
+    let finalList =
+      item === ""
+        ? list
+        : [
+            ...list,
+            {
+              id: v4(),
+              value: item,
+            },
+          ];
     if (finalList.length === 0) {
       return;
     }
@@ -3040,55 +3171,74 @@ const NumberList = ({
     newList.splice(index, 1);
     setList(newList);
   };
+
+  const handleMove = (items) => {
+    setList(items);
+  };
+
   return (
     <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
-      {list.map((item, i) => (
-        <div
-          key={`list-item-${i}`}
-          className="group w-full flex justify-center items-center text-sm relative"
-        >
-          <span
-            style={{
-              color: `${currentField?.config?.color}`,
-            }}
-            className="w-3 h-full mr-1  flex justify-center items-center"
-          >
-            {listStyles
-              ?.find(
-                (listStyle) => listStyle.type === currentField.config?.listStyle
-              )
-              ?.icon(i) + "."}
-          </span>
-          <input
-            required
-            type="text"
-            placeholder="Enter List Item..."
-            value={item}
-            onChange={(e) => handleItemChange(e, i)}
-            className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-            style={{
-              fontSize: `${currentField?.config?.fontSize}px`,
-              textDecoration: `${
-                currentField?.config?.strickthrough ? "line-through" : "none"
-              }`,
-              fontStyle: `${
-                currentField?.config?.italic ? "italic" : "normal"
-              }`,
-              fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
-              fontFamily: `${currentField?.config?.fontFamily}`,
-              color: `${currentField?.config?.color}`,
-              textAlign: `${currentField?.config?.align}`,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => handleDelete(i)}
-            className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-          >
-            <DeleteIcon />
-          </button>
-        </div>
-      ))}
+      <SortableList
+        items={list}
+        onChange={handleMove}
+        className="flex flex-col gap-1"
+        renderItem={(item, active, index) => (
+          <SortableList.Item id={item?.id}>
+            <div
+              key={`numberlist-item-${item?.id}`}
+              className="group w-full flex justify-center items-center text-sm relative"
+            >
+              <span
+                style={{
+                  color: `${currentField?.config?.color}`,
+                }}
+                className="w-3 h-full mr-1  flex justify-center items-center"
+              >
+                {listStyles
+                  ?.find(
+                    (listStyle) =>
+                      listStyle.type === currentField.config?.listStyle
+                  )
+                  ?.icon(index) + "."}
+              </span>
+              <input
+                required
+                type="text"
+                placeholder="Enter List Item..."
+                value={item?.value}
+                onChange={(e) => handleItemChange(e, index)}
+                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                style={{
+                  fontSize: `${currentField?.config?.fontSize}px`,
+                  textDecoration: `${
+                    currentField?.config?.strickthrough
+                      ? "line-through"
+                      : "none"
+                  }`,
+                  fontStyle: `${
+                    currentField?.config?.italic ? "italic" : "normal"
+                  }`,
+                  fontWeight: `${
+                    currentField?.config?.bold ? "bold" : "normal"
+                  }`,
+                  fontFamily: `${currentField?.config?.fontFamily}`,
+                  color: `${currentField?.config?.color}`,
+                  textAlign: `${currentField?.config?.align}`,
+                }}
+              />
+              <SortableList.DragHandle className="opacity-0 group-hover:opacity-100 w-5 h-5 absolute right-9 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+              <button
+                type="button"
+                onClick={() => handleDelete(index)}
+                className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+              >
+                <DeleteIcon />
+              </button>
+            </div>
+          </SortableList.Item>
+        )}
+      />
+
       <form
         onSubmit={handleAdd}
         className="w-full flex justify-center items-center text-sm"

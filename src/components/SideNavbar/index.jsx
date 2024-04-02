@@ -22,6 +22,7 @@ function SideNavbar() {
     setFlowPlans,
     currentFlowPlan,
     setCurrentFlowPlan,
+    setCurrentFlowPlanNode,
     setAddEditNode,
     defaultNodeConfig,
   } = useStateContext();
@@ -99,6 +100,7 @@ function SideNavbar() {
         location: null,
         type: "add",
       });
+      setCurrentFlowPlanNode(null);
       localStorage.setItem("prevRefId", refId);
     } catch (error) {
       console.error(error);

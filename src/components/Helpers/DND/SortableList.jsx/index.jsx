@@ -18,10 +18,10 @@ import {
 import { DragHandle, SortableItem, } from "../Sortable";
 import { SortableOverlay } from "../Overlay"
 
-export function SortableList({ items, onChange, renderItem }) {
+export function SortableList({ items, onChange, renderItem, className }) {
   const [active, setActive] = useState(null);
   const activeItem = useMemo(
-    () => items.find((item) => item.id === active?.id),
+    () => items.find((item) => item?.id === active?.id),
     [active, items]
   );
   const sensors = useSensors(
@@ -38,7 +38,7 @@ export function SortableList({ items, onChange, renderItem }) {
         setActive(active);
       }}
       onDragEnd={({ active, over }) => {
-        if (over && active.id !== over?.id) {
+        if (over && active?.id !== over?.id) {
           const activeIndex = items.findIndex(({ id }) => id === active.id);
           const overIndex = items.findIndex(({ id }) => id === over.id);
 
@@ -51,14 +51,14 @@ export function SortableList({ items, onChange, renderItem }) {
       }}
     >
       <SortableContext items={items}>
-        <ul className="SortableList list-none w-full" role="application">
-          {items.map((item) => (
-            <React.Fragment key={item.id}>{renderItem(item, active)}</React.Fragment>
+        <ul className={"SortableList list-none w-full " + className} role="application">
+          {items.map((item, index) => (
+            <React.Fragment key={item?.id}>{renderItem(item, active, index)}</React.Fragment>
           ))}
         </ul>
       </SortableContext>
       <SortableOverlay>
-        {activeItem ? renderItem(activeItem, active) : null}
+        {activeItem ? renderItem(activeItem, active, null) : null}
       </SortableOverlay>
     </DndContext>
   );
