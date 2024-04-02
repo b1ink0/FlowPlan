@@ -1,5 +1,5 @@
 // @ts-check
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useStateContext } from "../../context/StateContext";
 import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import * as Themes from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -53,6 +53,7 @@ import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 import MoveIcon from "../../assets/Icons/MoveIcon";
 import BackIcon from "../../assets/Icons/BackIcon";
 import { TimeAndDate } from "../Helpers/TimeAndDate";
+import { SortableList } from "../Helpers/DND/SortableList.jsx";
 
 function DisplayDocView() {
   const {
@@ -157,6 +158,7 @@ function DisplayDocView() {
       node = node.children[i];
     });
     setNode(node);
+
     let tempNodeNavigation = structuredClone(nodeNavigation);
     if (currentFlowPlanNodeLength === 1) {
       tempNodeNavigation.preSibling = null;
@@ -244,7 +246,7 @@ function DisplayDocView() {
               <span className="absolute -left-[150px] -top-[18px]">
                 Updated:
               </span>
-              <TimeAndDate timeDate={new Date(node?.createdAt)} />
+              <TimeAndDate timeDate={new Date(node?.updatedAt)} />
             </span>
           )}
         </h3>
@@ -281,20 +283,7 @@ function DisplayDocView() {
 
         <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-9 overflow-x-hidden">
           {node?.data?.length ? (
-            <div></div>
-          ) : (
-            <div className=" flex justify-center items-center flex-col">
-              <p className="text-[var(--text-primary)]">
-                Add Something From Below Menu
-              </p>
-            </div>
-          )}
-          {node?.data?.map((field, i) => (
-            <DocRenderView
-              key={"field-id-" + field.type + "-" + i}
-              field={field}
-              i={i}
-              length={node.data.length}
+            <DocRenderViewContainer
               node={node}
               move={move}
               setMove={setMove}
@@ -308,8 +297,13 @@ function DisplayDocView() {
               handleEditField={handleEditField}
               handleResetShowAdd={handleResetShowAdd}
             />
-          ))}
-
+          ) : (
+            <div className=" flex justify-center items-center flex-col">
+              <p className="text-[var(--text-primary)]">
+                Add Something From Below Menu
+              </p>
+            </div>
+          )}
           {!currentField?.id && !showAdd.show && (
             <AddEditField
               setCurrentFieldType={setCurrentFieldType}
@@ -365,6 +359,80 @@ function DisplayDocView() {
     </div>
   );
 }
+const DocRenderViewContainer = ({
+  node,
+  move,
+  setMove,
+  setNode,
+  showAdd,
+  setShowAdd,
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleEditField,
+  handleResetShowAdd,
+}) => {
+  const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
+    useStateContext();
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleMove = async (items) => {
+    if (items?.length === 0) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data = items;
+    node.updatedAt = new Date();
+    handleResetShowAdd();
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  return (
+    <SortableList
+      items={node?.data}
+      onChange={handleMove}
+      renderItem={(item, active) => (
+        <SortableList.Item id={item.id}>
+          <DocRenderView
+            key={"field-id-" + item.type + "-" + item.id}
+            field={item}
+            i={item.id}
+            length={node.data.length}
+            node={node}
+            move={move}
+            setMove={setMove}
+            setNode={setNode}
+            showAdd={showAdd}
+            setShowAdd={setShowAdd}
+            currentField={currentField}
+            setCurrentField={setCurrentField}
+            currentFieldType={currentFieldType}
+            setCurrentFieldType={setCurrentFieldType}
+            handleEditField={handleEditField}
+            handleResetShowAdd={handleResetShowAdd}
+            DragHandle={SortableList.DragHandle}
+            active={active}
+          />
+        </SortableList.Item>
+      )}
+    />
+  );
+};
 
 const DocRenderView = ({
   field,
@@ -382,6 +450,8 @@ const DocRenderView = ({
   setCurrentFieldType,
   handleEditField,
   handleResetShowAdd,
+  DragHandle,
+  active,
 }) => {
   const {
     db,
@@ -535,6 +605,22 @@ const DocRenderView = ({
       onMouseEnter={() => setShowMenu(true)}
       onMouseLeave={() => setShowMenu(false)}
       className="group w-full relative flex justify-center items-center flex-col gap-1"
+      style={
+        active?.id === field?.id
+          ? {
+              border: "2px solid",
+              borderRadius: "5px",
+              borderColor: "var(--btn-add)",
+            }
+          : active?.id
+          ? {
+              border: "2px solid",
+              borderRadius: "5px",
+              borderColor: "var(--btn-move)",
+              marginBottom: "4px",
+            }
+          : {}
+      }
     >
       {field.type === "heading" && (
         <div
@@ -895,6 +981,7 @@ const DocRenderView = ({
           }}
           className="transition-opacity absolute flex justify-center items-center gap-1 w-fit h-6 right-0 top-1 z-10"
         >
+          <DragHandle className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
           <button
             onClick={() => handleEditField(field, i)}
             className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md"
