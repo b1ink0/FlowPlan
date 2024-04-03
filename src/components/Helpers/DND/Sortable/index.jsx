@@ -35,9 +35,9 @@ export function SortableItem({ children, id }) {
   };
   return (
     <SortableItemContext.Provider value={context}>
-      <li className="SortableItem list-none w-full" ref={setNodeRef} style={style}>
+      <div className="SortableItem list-none w-full" ref={setNodeRef} style={style}>
         {children}
-      </li>
+      </div>
     </SortableItemContext.Provider>
   );
 }
