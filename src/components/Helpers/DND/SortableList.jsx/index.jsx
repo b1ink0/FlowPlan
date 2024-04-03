@@ -15,8 +15,8 @@ import {
 
 // import "./SortableList.css";
 
-import { DragHandle, SortableItem, } from "../Sortable";
-import { SortableOverlay } from "../Overlay"
+import { DragHandle, SortableItem } from "../Sortable";
+import { SortableOverlay } from "../Overlay";
 
 export function SortableList({ items, onChange, renderItem, className }) {
   const [active, setActive] = useState(null);
@@ -51,11 +51,16 @@ export function SortableList({ items, onChange, renderItem, className }) {
       }}
     >
       <SortableContext items={items}>
-        <ul className={"SortableList list-none w-full " + className} role="application">
+        <div
+          className={"SortableList list-none w-full " + className}
+          role="application"
+        >
           {items.map((item, index) => (
-            <React.Fragment key={item?.id}>{renderItem(item, active, index)}</React.Fragment>
+            <React.Fragment key={item?.id}>
+              {renderItem(item, active, index)}
+            </React.Fragment>
           ))}
-        </ul>
+        </div>
       </SortableContext>
       <SortableOverlay>
         {activeItem ? renderItem(activeItem, active, null) : null}

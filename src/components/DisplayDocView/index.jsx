@@ -54,6 +54,7 @@ import MoveIcon from "../../assets/Icons/MoveIcon";
 import BackIcon from "../../assets/Icons/BackIcon";
 import { TimeAndDate } from "../Helpers/TimeAndDate";
 import { SortableList } from "../Helpers/DND/SortableList.jsx";
+import IndentationIcon from "../../assets/Icons/IndentationIcon.jsx";
 
 function DisplayDocView() {
   const {
@@ -199,7 +200,7 @@ function DisplayDocView() {
       className={`${
         // if addEditNode.show is true then show component else hide component
         !node ? "translate-x-full" : ""
-    } z-10 transition-all duration-200 max-md:w-full max-w-[100vw] w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
+      } z-10 transition-all duration-200 max-md:w-full max-w-[100vw] w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
       <button
         className="absolute top-0 left-0 w-8 h-8 rounded-full z-10"
@@ -617,10 +618,10 @@ const DocRenderView = ({
             }
           : active?.id
           ? {
-              border: "2px solid",
-              borderRadius: "5px",
-              borderColor: "var(--btn-move)",
-              marginBottom: "4px",
+              // border: "2px solid",
+              // borderRadius: "5px",
+              // borderColor: "var(--btn-move)",
+              // marginBottom: "4px",
             }
           : {}
       }
@@ -678,6 +679,7 @@ const DocRenderView = ({
         <div
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
+            paddingLeft: `${field?.config?.indentation * 10 || 4}px`,
           }}
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
@@ -688,19 +690,7 @@ const DocRenderView = ({
               onDoubleClick={() => handleEditField(field, i)}
             >
               <span
-                style={{
-                  color: `${field?.config?.color}`,
-                }}
-                className="w-3 h-3 mr-1 block"
-              >
-                {
-                  listStyles?.find(
-                    (listStyle) => listStyle.type === field.config?.listStyle
-                  )?.icon
-                }
-              </span>
-              <span
-                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
                 style={{
                   fontSize: `${field?.config?.fontSize}px`,
                   textDecoration: `${
@@ -713,6 +703,19 @@ const DocRenderView = ({
                   textAlign: `${field?.config?.align}`,
                 }}
               >
+                <span
+                  style={{
+                    color: `${field?.config?.color}`,
+                  }}
+                  className="w-3 h-5 mr-1 block shrink-0"
+                >
+                  {
+                    listStyles?.find(
+                      (listStyle) => listStyle.type === field.config?.listStyle
+                    )?.icon
+                  }
+                </span>
+
                 {item?.value ?? item}
               </span>
             </div>
@@ -723,6 +726,7 @@ const DocRenderView = ({
         <div
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
+            paddingLeft: `${field?.config?.indentation * 10 || 4}px`,
           }}
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
@@ -733,15 +737,7 @@ const DocRenderView = ({
               onDoubleClick={() => handleEditField(field, i)}
             >
               <span
-                style={{
-                  color: `${field?.config?.color}`,
-                }}
-                className="w-5 h-5 mr-1 block cursor-pointer group"
-              >
-                {item?.completed ? <CheckedIcon /> : <UncheckedIcon />}
-              </span>
-              <span
-                className="w-full text-[var(--text-primary)] cursor- bg-transparent outline-none"
+                className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
                 style={{
                   fontSize: `${field?.config?.fontSize}px`,
                   textDecoration: `${
@@ -754,6 +750,14 @@ const DocRenderView = ({
                   textAlign: `${field?.config?.align}`,
                 }}
               >
+                <span
+                  style={{
+                    color: `${field?.config?.color}`,
+                  }}
+                  className="w-5 h-5 mr-1 block shrink-0 cursor-pointer group"
+                >
+                  {item?.completed ? <CheckedIcon /> : <UncheckedIcon />}
+                </span>
                 {item?.text}
               </span>
             </div>
@@ -764,6 +768,7 @@ const DocRenderView = ({
         <div
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
+            paddingLeft: `${field?.config?.indentation * 10 || 4}px`,
           }}
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
@@ -774,19 +779,7 @@ const DocRenderView = ({
               onDoubleClick={() => handleEditField(field, i)}
             >
               <span
-                style={{
-                  color: `${field?.config?.color}`,
-                }}
-                className="w-3 h-full mr-1  flex justify-center items-center"
-              >
-                {numberListStyles
-                  ?.find(
-                    (listStyle) => listStyle.type === field?.config?.listStyle
-                  )
-                  ?.icon(j) + "."}
-              </span>
-              <span
-                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
                 style={{
                   fontSize: `${field?.config?.fontSize}px`,
                   textDecoration: `${
@@ -799,6 +792,19 @@ const DocRenderView = ({
                   textAlign: `${field?.config?.align}`,
                 }}
               >
+                <span
+                  style={{
+                    color: `${field?.config?.color}`,
+                  }}
+                  className="w-3 h-5 mr-1 shrink-0 flex justify-center items-center text-sm"
+                >
+                  {numberListStyles
+                    ?.find(
+                      (listStyle) => listStyle.type === field?.config?.listStyle
+                    )
+                    ?.icon(j) + "."}
+                </span>
+
                 {item?.value ?? item}
               </span>
             </div>
@@ -1240,12 +1246,14 @@ const AddEditField = ({
           align: "left",
           fontSize: 16,
           listStyle: "filledCircle",
+          indentation: 0,
         };
       case "taskList":
         return {
           ...defaultNodeConfig.titleConfig,
           align: "left",
           fontSize: 16,
+          indentation: 0,
         };
       case "numberList":
         return {
@@ -1253,6 +1261,7 @@ const AddEditField = ({
           align: "left",
           fontSize: 16,
           listStyle: "number",
+          indentation: 0,
         };
       case "link":
         return {
@@ -1672,6 +1681,11 @@ const InputTitleButtons = ({
     isActive: numberListStyleActive,
     setIsActive: setNumberListStyleActive,
   } = useClickOutside(false);
+  const {
+    ref: indentationRef,
+    isActive: indentationActive,
+    setIsActive: setIndentationActive,
+  } = useClickOutside(false);
 
   const fontSizes = [10, 12, 14, 16, 18, 20, 22, 24, 26];
   const colors = [
@@ -1757,6 +1771,45 @@ const InputTitleButtons = ({
       icon: <AlphabetListIcon />,
     },
   ];
+
+  const indentations = [
+    {
+      type: 0,
+    },
+    {
+      type: 1,
+    },
+    {
+      type: 2,
+    },
+    {
+      type: 3,
+    },
+    {
+      type: 4,
+    },
+  ];
+
+  const [showToolTip, setShowToolTip] = useState({
+    show: false,
+    type: null,
+  });
+
+  const handleIndentationClick = () => {
+    setIndentationActive((prev) => !prev);
+  };
+
+  const handleIndentationChange = (e) => {
+    e.stopPropagation();
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        indentation: parseInt(e.target.value),
+      },
+    });
+    setIndentationActive(false);
+  };
 
   const handleFontSizeClick = () => {
     setFontSizeActive((prev) => !prev);
@@ -2055,6 +2108,64 @@ const InputTitleButtons = ({
                   />
                   <span className="absolute w-6 h-6 rounded-full inline-block text-[var(--text-primary)] text-xs font-medium">
                     {listStyle.icon}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {(currentField?.type === "unorderedList" ||
+        currentField?.type === "numberList" ||
+        currentField?.type === "taskList") && (
+        <div className="relative">
+          <button
+            type="button"
+            title="Indentation"
+            onClick={handleIndentationClick}
+            className="w-8 h-8 group flex justify-center items-center relative text-xs text-[var(--text-primary)] bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
+            onMouseEnter={() =>
+              setShowToolTip({ show: true, type: "Indentation" })
+            }
+            onMouseLeave={() => setShowToolTip({ show: false, type: null })}
+          >
+            <IndentationIcon />
+            <span className="absolute w-2 h-2 -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
+              {currentField?.config?.indentation ?? 0}
+            </span>
+            {showToolTip.show && showToolTip.type === "Indentation" && (
+              <ToolTip text="Indentation" />
+            )}
+          </button>
+          {indentationActive && (
+            <div
+              ref={indentationRef}
+              className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+            >
+              {indentations.map((indentation) => (
+                <label
+                  key={`indentation-id-${indentation.type}`}
+                  className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                  style={{
+                    backgroundColor: `${
+                      currentField?.config?.indentation === indentation.type
+                        ? "var(--btn-edit)"
+                        : ""
+                    }`,
+                  }}
+                >
+                  <input
+                    className="w-full h-full bg-blue-500 absolute opacity-0"
+                    type="radio"
+                    value={indentation.type}
+                    checked={
+                      currentField?.config?.indentation === indentation.type
+                    }
+                    onChange={handleIndentationChange}
+                  />
+                  <span className="absolute w-4 h-4 rounded-full inline-block text-[var(--text-primary)] text-sm text-center font-medium">
+                    {indentation.type}
                   </span>
                 </label>
               ))}
@@ -2563,12 +2674,16 @@ const UnorderedList = ({
   };
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
-    let finalList = item === "" ? list : [...list, 
-      {
-        id: v4(),
-        value: item,
-      }
-    ];
+    let finalList =
+      item === ""
+        ? list
+        : [
+            ...list,
+            {
+              id: v4(),
+              value: item,
+            },
+          ];
     if (finalList.length === 0) {
       return;
     }
@@ -2614,7 +2729,12 @@ const UnorderedList = ({
     console.log(list);
   }, [list]);
   return (
-    <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
+    <div
+      style={{
+        paddingLeft: `${currentField?.config?.indentation * 10 || 4}px`,
+      }}
+      className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md"
+    >
       <SortableList
         items={list}
         onChange={handleMove}
@@ -2675,54 +2795,6 @@ const UnorderedList = ({
           </SortableList.Item>
         )}
       />
-      {/* 
-      {list.map((item, i) => (
-        <div
-          key={`list-item-${i}`}
-          className="group w-full flex justify-center items-center text-sm relative"
-        >
-          <span
-            style={{
-              color: `${currentField?.config?.color}`,
-            }}
-            className="w-3 h-3 mr-1 block"
-          >
-            {
-              listStyles?.find(
-                (listStyle) => listStyle.type === currentField.config?.listStyle
-              )?.icon
-            }
-          </span>
-          <input
-            required
-            type="text"
-            placeholder="Enter List Item..."
-            value={item}
-            onChange={(e) => handleItemChange(e, i)}
-            className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-            style={{
-              fontSize: `${currentField?.config?.fontSize}px`,
-              textDecoration: `${
-                currentField?.config?.strickthrough ? "line-through" : "none"
-              }`,
-              fontStyle: `${
-                currentField?.config?.italic ? "italic" : "normal"
-              }`,
-              fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
-              fontFamily: `${currentField?.config?.fontFamily}`,
-              color: `${currentField?.config?.color}`,
-              textAlign: `${currentField?.config?.align}`,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => handleDelete(i)}
-            className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-          >
-            <DeleteIcon />
-          </button>
-        </div>
-      ))} */}
 
       <form
         onSubmit={handleAdd}
@@ -2841,12 +2913,16 @@ const TaskList = ({
   };
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
-    let finalList = item.text === "" ? list : [...list, 
-      {
-        ...item,
-        id: v4(),
-      }
-    ];
+    let finalList =
+      item.text === ""
+        ? list
+        : [
+            ...list,
+            {
+              ...item,
+              id: v4(),
+            },
+          ];
     if (finalList.length === 0) {
       return;
     }
@@ -2904,7 +2980,12 @@ const TaskList = ({
     setList(items);
   };
   return (
-    <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
+    <div
+      style={{
+        paddingLeft: `${currentField?.config?.indentation * 10 || 4}px`,
+      }}
+      className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md"
+    >
       <SortableList
         items={list}
         onChange={handleMove}
@@ -3177,7 +3258,12 @@ const NumberList = ({
   };
 
   return (
-    <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
+    <div
+      style={{
+        paddingLeft: `${currentField?.config?.indentation * 10 || 4}px`,
+      }}
+      className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md"
+    >
       <SortableList
         items={list}
         onChange={handleMove}
