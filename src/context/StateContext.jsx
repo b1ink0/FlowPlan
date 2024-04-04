@@ -24,12 +24,13 @@ export function StateProvider({ children }) {
     treeConfig: {
       scaleMultiplier: 0.1,
       renderType: localStorage.getItem("renderType") || "verticalTree",
-      useSavedTransformState: localStorage.getItem("useSavedTransformState") ?? "false",
+      useSavedTransformState:
+        localStorage.getItem("useSavedTransformState") ?? "false",
     },
     docConfig: {
       fullscreen: localStorage.getItem("fullscreen") ?? "false",
       width: localStorage.getItem("docWidth") || "750",
-    }
+    },
   });
 
   // db state contains the database object to interact with the indexedDB database
@@ -137,6 +138,11 @@ export function StateProvider({ children }) {
     }
   });
 
+  const [fieldStyles, setFieldStyles] = useState({
+    type: null,
+    config: null,
+  });
+
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -166,6 +172,8 @@ export function StateProvider({ children }) {
     setCurrentGlobalBackground,
     currentTransformState,
     setCurrentTransformState,
+    fieldStyles,
+    setFieldStyles,
   };
   return (
     // Providing all the states and functions to update the states

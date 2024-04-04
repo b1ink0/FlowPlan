@@ -55,6 +55,7 @@ import BackIcon from "../../assets/Icons/BackIcon";
 import { TimeAndDate } from "../Helpers/TimeAndDate";
 import { SortableList } from "../Helpers/DND/SortableList.jsx";
 import IndentationIcon from "../../assets/Icons/IndentationIcon.jsx";
+import PasteIcon from "../../assets/Icons/PasteIcon.jsx";
 
 function DisplayDocView() {
   const {
@@ -464,9 +465,13 @@ const DocRenderView = ({
     defaultNodeConfig,
     currentFlowPlanNode,
     setCurrentFlowPlanNode,
+    fieldStyles,
+    setFieldStyles,
   } = useStateContext();
   const { copyToClipboard } = useFunctions();
+
   const [showMenu, setShowMenu] = useState(false);
+  const [showSubMenu, setShowSubMenu] = useState(false);
   const listStyles = [
     {
       type: "filledCircle",
@@ -603,11 +608,79 @@ const DocRenderView = ({
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
+  const handleDublicateField = async () => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let temp = structuredClone(node.data[i]);
+    temp.id = v4();
+    if (
+      field.type === "unorderedList" ||
+      field.type === "numberList" ||
+      field.type === "taskList"
+    ) {
+      temp.data.list = temp.data.list.map((item) => {
+        item.id = v4();
+        return item;
+      });
+    }
+    node.data.splice(i + 1, 0, temp);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+  const handleDeleteField = async () => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data.splice(i, 1);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
+  const handleCopyFieldStyles = () => {
+    setFieldStyles({
+      type: field.type,
+      config: structuredClone(field.config),
+    });
+  };
+
+  const handlePasteFieldStyles = async () => {
+    if (!fieldStyles.config) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+
+    if (fieldStyles.type !== field.type) {
+      let oldConfig = structuredClone(node.data[i].config);
+      let newConfig = structuredClone(fieldStyles.config);
+      Object.keys(oldConfig).forEach((key) => {
+        if (newConfig[key]) {
+          oldConfig[key] = newConfig[key];
+        }
+      });
+      node.data[i].config = structuredClone(oldConfig);
+    } else {
+      node.data[i].config = structuredClone(fieldStyles.config);
+    }
+
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
 
   return (
     <div
+      onClick={() => setShowMenu(true)}
       onMouseEnter={() => setShowMenu(true)}
-      onMouseLeave={() => setShowMenu(false)}
+      onMouseLeave={() => {
+        setShowMenu(false);
+        setShowSubMenu(false);
+      }}
       className="group w-full relative flex justify-center items-center flex-col gap-1"
       style={
         active?.id === field?.id
@@ -987,10 +1060,12 @@ const DocRenderView = ({
           style={{
             opacity: showMenu ? 1 : 0,
             pointerEvents: showMenu ? "all" : "none",
+            top: field.type === "codeBlock" ? "40px" : "4px",
           }}
-          className="transition-opacity absolute flex justify-center items-center gap-1 w-fit h-6 right-0 top-1 z-10"
+          className="transition-opacity absolute flex justify-center items-center gap-1 w-fit h-6 right-1 top-1 z-10"
         >
           <DragHandle className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+
           <button
             onClick={() => handleEditField(field, i)}
             className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md"
@@ -1009,6 +1084,46 @@ const DocRenderView = ({
           >
             <MoveIcon />
           </button>
+          <span
+            className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md relative cursor-pointer"
+            onClick={() => setShowSubMenu(true)}
+            onMouseEnter={() => setShowSubMenu(true)}
+          >
+            <EditIcon />
+            {showSubMenu && (
+              <div className="w-full h-full gap-1 absolute right-[84px] top-7 flex">
+                <button
+                  onClick={handleDublicateField}
+                  className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0 rotate-180"
+                  title="Duplicate Field"
+                >
+                  <CopyIcon />
+                </button>
+                <button
+                  onClick={handleCopyFieldStyles}
+                  className="w-full h-full  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  title="Copy Field Styles"
+                >
+                  <CopyIcon />
+                </button>
+                <button
+                  onClick={handlePasteFieldStyles}
+                  className="w-full h-wull bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  title="Paste Field Styles"
+                >
+                  <PasteIcon />
+                </button>
+
+                <button
+                  onClick={handleDeleteField}
+                  className="w-full h-full hover:bg-[var(--btn-delete)]  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  title="Delete Field"
+                >
+                  <DeleteIcon />
+                </button>
+              </div>
+            )}
+          </span>
         </span>
       )}
       {move.move && move.id === field.id && (
@@ -1646,9 +1761,9 @@ const InputTitleButtons = ({
     db,
     currentFlowPlan,
     setCurrentFlowPlan,
-    defaultNodeConfig,
     currentFlowPlanNode,
-    setCurrentFlowPlanNode,
+    fieldStyles,
+    setFieldStyles,
   } = useStateContext();
   const { handleGetRandomColor } = useFunctions();
   const {
@@ -1994,6 +2109,58 @@ const InputTitleButtons = ({
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
     setCurrentFieldType(null);
     setCurrentField(null);
+  };
+
+  const handleDublicateField = async (i) => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((j) => {
+      node = node.children[j];
+    });
+    let temp = structuredClone(node.data[i]);
+    temp.id = v4();
+    if (
+      node.data[i].type === "unorderedList" ||
+      node.data[i].type === "numberList" ||
+      node.data[i].type === "taskList"
+    ) {
+      temp.data.list = temp.data.list.map((item) => {
+        item.id = v4();
+        return item;
+      });
+    }
+    node.data.splice(i + 1, 0, temp);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
+  const handleCopyFieldStyles = (i) => {
+    setFieldStyles({
+      type: currentField.type,
+      config: structuredClone(currentField.config),
+    });
+  };
+
+  const handlePasteFieldStyles = async (i) => {
+    if (!fieldStyles.config) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((j) => {
+      node = node.children[j];
+    });
+
+    if (fieldStyles.type !== currentField.type) {
+      let oldConfig = structuredClone(node.data[i].config);
+      let newConfig = structuredClone(fieldStyles.config);
+      Object.keys(oldConfig).forEach((key) => {
+        if (newConfig[key]) {
+          oldConfig[key] = newConfig[key];
+        }
+      });
+      setCurrentField((prev) => ({ ...prev, config: oldConfig }));
+    } else {
+      setCurrentField((prev) => ({ ...prev, config: fieldStyles.config }));
+    }
   };
 
   return (
@@ -2455,13 +2622,40 @@ const InputTitleButtons = ({
         </>
       )}
       {currentField?.id && (
-        <button
-          type="button"
-          onClick={() => handleDelete(currentField.index)}
-          className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-        >
-          <DeleteIcon />
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => handleCopyFieldStyles(currentField.index)}
+            title="Copy Field Style"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
+          >
+            <CopyIcon />
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePasteFieldStyles(currentField.index)}
+            title="Paste Field Styles"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
+          >
+            <PasteIcon />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDublicateField(currentField.index)}
+            title="Dublicate Field"
+            className="w-8 h-8 group rotate-180 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
+          >
+            <CopyIcon />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDelete(currentField.index)}
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+          >
+            <DeleteIcon />
+          </button>
+        </>
       )}
 
       <button
