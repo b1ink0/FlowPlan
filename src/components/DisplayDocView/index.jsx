@@ -165,11 +165,22 @@ function DisplayDocView() {
     setNode(node);
 
     let tempNodeNavigation = structuredClone(nodeNavigation);
-    if (currentFlowPlanNodeLength === 1) {
+    if (currentFlowPlanNodeLength === 0) {
+      tempNodeNavigation.parent = null;
       tempNodeNavigation.preSibling = null;
       tempNodeNavigation.nextSibling = null;
-      tempNodeNavigation.parent = null;
-      tempNodeNavigation.firstChild = node.children[0];
+      tempNodeNavigation.firstChild =
+        currentFlowPlan.root.children.length === 0 ? null : [0];
+    } else if (currentFlowPlanNodeLength === 1) {
+      tempNodeNavigation.preSibling =
+        currentFlowPlanNode[0] === 0 ? null : [currentFlowPlanNode[0] - 1];
+      tempNodeNavigation.nextSibling =
+        currentFlowPlanNode[0] + 1 > parentNodeChildrenLength - 1
+          ? null
+          : [currentFlowPlanNode[0] + 1];
+      tempNodeNavigation.parent = [];
+      tempNodeNavigation.firstChild =
+        node.children.length === 0 ? null : currentFlowPlanNode.concat(0);
     } else {
       tempNodeNavigation.parent = currentFlowPlanNode.slice(0, -1);
       tempNodeNavigation.preSibling =
@@ -189,7 +200,6 @@ function DisplayDocView() {
         node.children.length === 0 ? null : currentFlowPlanNode.concat(0);
     }
     setNodeNavigation(tempNodeNavigation);
-    console.log(node);
   }, [currentFlowPlanNode]);
   return (
     <div
@@ -890,7 +900,7 @@ const DocRenderView = ({
             display: field?.id === currentField?.id ? "none" : "flex",
           }}
           onDoubleClick={() => handleEditField(field, i)}
-          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-2"
         >
           <div className="w-full flex justify-start items-center overflow-x-hidden">
             <a
@@ -1756,6 +1766,9 @@ const InputTitleButtons = ({
   handleSave,
   type,
   handleGetDefaultConfig,
+  linkPreviewLoading,
+  linkPreview,
+  setLinkPreview,
 }) => {
   const {
     db,
@@ -1909,6 +1922,8 @@ const InputTitleButtons = ({
     show: false,
     type: null,
   });
+
+  const [showPreviewConfig, setShowPreviewConfig] = useState(false);
 
   const handleIndentationClick = () => {
     setIndentationActive((prev) => !prev);
@@ -2163,6 +2178,16 @@ const InputTitleButtons = ({
     }
   };
 
+  const handleSetPreviewLink = (key) => {
+    setLinkPreview((prev) => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        show: prev[key].show ? false : true,
+      },
+    }));
+  };
+
   return (
     <div className="w-full mt-2 mb-1  flex flex-wrap justify-center items-center gap-2">
       <button
@@ -2342,18 +2367,44 @@ const InputTitleButtons = ({
       )}
 
       {currentField?.type === "link" && (
-        <div className="relative group">
+        <div className="relative group flex gap-2">
           <button
             type="button"
             onClick={handlePreviewLinkClick}
-            title="Preview Link"
-            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+            title="Preview Details"
+            className="w-8 h-8 shrink-0 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
           >
             <PreviewIcon />
             {!currentField?.config?.preview && (
               <span className="absolute block w-[2px] rotate-45 rounded-full h-6 bg-[var(--logo-primary)]"></span>
             )}
           </button>
+          <div className="relative w-full shrink-0 flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={!currentField?.config?.preview || linkPreviewLoading}
+              style={
+                !currentField?.config?.preview || linkPreviewLoading
+                  ? {
+                      opacity: 0.5,
+                      cursor: "not-allowed",
+                    }
+                  : {}
+              }
+              onClick={() => setShowPreviewConfig((prev) => !prev)}
+              className="w-fit h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+            >
+              Preview Config
+            </button>
+            {showPreviewConfig &&
+              currentField?.config?.preview &&
+              !linkPreviewLoading && (
+                <LinkPreviewConfig
+                  linkPreview={linkPreview}
+                  setLinkPreview={setLinkPreview}
+                />
+              )}
+          </div>
         </div>
       )}
 
@@ -2665,6 +2716,60 @@ const InputTitleButtons = ({
       >
         Save
       </button>
+    </div>
+  );
+};
+
+const LinkPreviewConfig = ({ linkPreview, setLinkPreview }) => {
+  const previewFields = [
+    {
+      type: "title",
+      text: "Title",
+    },
+    {
+      type: "description",
+      text: "Description",
+    },
+    {
+      type: "favicon",
+      text: "Favicon",
+    },
+    {
+      type: "siteName",
+      text: "Sitename",
+    },
+    {
+      type: "previewImages",
+      text: "Images",
+    },
+  ];
+  const handleSetPreviewLink = (key) => {
+    setLinkPreview((prev) => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        show: prev[key].show ? false : true,
+      },
+    }));
+  };
+  return (
+    <div className="absolute px-2 py-1 rounded-md left-0 top-9 w-fit flex flex-col gap-2 bg-[var(--btn-secondary)] z-10">
+      {previewFields.map((item) => (
+        <div
+          key={`preview-id-${item.type}`}
+          className="w-full flex gap-1 justify-start items-center "
+        >
+          <span
+            className="w-4 h-4 mr-1 block cursor-pointer"
+            onClick={() => handleSetPreviewLink(item.type)}
+          >
+            {linkPreview[item.type]?.show ? <CheckedIcon /> : <UncheckedIcon />}
+          </span>
+          <label className="text-xs text-[var(--text-primary)]">
+            {item.text}
+          </label>
+        </div>
+      ))}
     </div>
   );
 };
@@ -3583,7 +3688,9 @@ const Link = ({
 
   const [link, setLink] = useState(currentField?.data?.link ?? "");
   const [isValidLink, setIsValidLink] = useState(true);
-  const [preview, setPreview] = useState(null);
+  const [preview, setPreview] = useState(
+    currentField?.data?.previewLink ?? null
+  );
   const [loading, setLoading] = useState(false);
 
   const handleLinkChange = (e) => {
@@ -3658,15 +3765,36 @@ const Link = ({
         method: "GET",
         // mode: "no-cors",
       });
-      console.log(data);
       let res = await data.json();
       if (!res.success) {
         setPreview(null);
         setLoading(false);
         return;
       }
-      console.log(res);
-      setPreview(res.data);
+      let tempPreview = {};
+      Object.keys(res.data).forEach((key) => {
+        if (res.data[key] !== "") {
+          if (key === "previewImages") {
+            tempPreview[key] = {
+              value: res.data[key].map((image, i) => ({
+                url: image,
+                show:
+                  currentField?.data?.previewLink?.previewImages?.value[i]
+                    ?.show ?? true,
+              })),
+              show:
+                currentField?.data?.previewLink?.previewImages?.show ?? true,
+            };
+          } else {
+            tempPreview[key] = {
+              value: res.data[key],
+              show: currentField?.data?.previewLink?.[key]?.show ?? true,
+            };
+          }
+        }
+      });
+
+      setPreview(tempPreview);
       setCurrentField({
         ...currentField,
         config: {
@@ -3688,6 +3816,19 @@ const Link = ({
     if (src.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
     let domain = link.split("/")[2];
     return "https://" + domain + src;
+  };
+
+  const handlePreviewImageShow = (index) => {
+    setPreview((prev) => ({
+      ...prev,
+      previewImages: {
+        ...prev.previewImages,
+        value: prev.previewImages.value.map((image, i) => ({
+          ...image,
+          show: i === index ? !image.show : image.show,
+        })),
+      },
+    }));
   };
 
   useEffect(() => {
@@ -3734,42 +3875,52 @@ const Link = ({
           <div className="w-full h-fit flex justify-center items-center flex-col p-1">
             {preview?.favicon && (
               <div className="w-full flex justify-start items-center gap-1 ">
-                {preview?.favicon && (
+                {preview?.favicon?.show && (
                   <img
-                    src={handleFaviconSrc(preview.favicon, link)}
+                    src={handleFaviconSrc(preview.favicon.value, link)}
                     alt="favicon"
                     className="w-5 h-5 rounded-full"
                   />
                 )}
-                {preview?.siteName && (
+                {preview?.siteName?.show && (
                   <span className="text-sm font-bold text-[var(--text-primary)]">
-                    {preview.siteName}
+                    {preview.siteName.value}
                   </span>
                 )}
               </div>
             )}
-            {preview?.title && (
-              <h1 className="w-full text-[var(--text-primary)]  text-sm font-bold">
-                {preview.title}
+            {preview?.title?.show && (
+              <h1 className="w-full text-[var(--text-primary)]  text-sm font-medium">
+                {preview.title.value}
               </h1>
             )}
-            {preview?.description && (
+            {preview?.description?.show && (
               <p className="w-full text-start text-[var(--text-primary)] text-xs">
-                {preview.description}
+                {preview.description.value}
               </p>
             )}
-            {preview?.previewImages?.length > 0 &&
-              preview.previewImages.map((image, i) => (
+            {preview?.previewImages?.show &&
+              preview?.previewImages?.value?.length > 0 &&
+              preview?.previewImages?.value?.map((image, i) => (
                 <div
-                  key={`preview-image-${i}-`}
+                  key={`preview-image-${currentField?.id}-${i}-`}
                   className="w-full h-fit relative flex justify-center items-center"
                 >
                   <img
-                    key={`preview-image-${i}`}
-                    src={image}
+                    src={image?.url}
                     alt="preview"
                     className="mt-2 rounded-md object-contain"
                   />
+                  <div className="absolute bottom-0 right-0 w-fit h-fit flex justify-center items-center">
+                    <button
+                      type="button"
+                      onClick={() => handlePreviewImageShow(i)}
+                      className="w-6 h-6 flex justify-center items-center bg-[var(--bg-tertiary)] p-1 rounded-tl-md transition-colors duration-300"
+                      title="Show This Image"
+                    >
+                      {image?.show ? <CheckedIcon /> : <UncheckedIcon />}
+                    </button>
+                  </div>
                 </div>
               ))}
           </div>
@@ -3788,6 +3939,9 @@ const Link = ({
         handleSave={handleSave}
         type={currentField.type}
         handleGetDefaultConfig={handleGetDefaultConfig}
+        linkPreviewLoading={loading}
+        linkPreview={preview}
+        setLinkPreview={setPreview}
       />
     </form>
   );
@@ -3795,7 +3949,7 @@ const Link = ({
 
 const LinkPreview = ({ link, previewLink }) => {
   const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const handlePreview = async () => {
     setPreview(null);
@@ -3812,7 +3966,28 @@ const LinkPreview = ({ link, previewLink }) => {
         setLoading(false);
         return;
       }
-      setPreview(res.data);
+
+      let tempPreview = {};
+      Object.keys(res.data).forEach((key) => {
+        if (res.data[key] !== "") {
+          if (key === "previewImages") {
+            tempPreview[key] = {
+              value: res.data[key].map((image, i) => ({
+                url: image,
+                show: previewLink[key]?.value?.[i]?.show ?? true,
+              })),
+              show: previewLink[key]?.show || true,
+            };
+          } else {
+            tempPreview[key] = {
+              value: res.data[key],
+              show: previewLink[key]?.show || true,
+            };
+          }
+        }
+      });
+      console.log(tempPreview);
+      setPreview(tempPreview);
       setLoading(false);
     } catch (e) {
       console.log(e);
@@ -3822,6 +3997,7 @@ const LinkPreview = ({ link, previewLink }) => {
   };
 
   const handleFaviconSrc = (src, link) => {
+    if (!src) return "";
     if (src === "") return "";
     if (src.startsWith("data:image")) return src;
     if (src.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
@@ -3831,94 +4007,100 @@ const LinkPreview = ({ link, previewLink }) => {
 
   useEffect(() => {
     handlePreview();
-  }, [link]);
+  }, [link, previewLink]);
 
   return (
-    <div className="w-full h-fit flex justify-center items-center flex-col p-1">
+    <div className="w-full h-fit flex justify-center items-center flex-col">
       {loading ? (
         <>
           {previewLink?.favicon && (
             <div className="w-full flex justify-start items-center gap-1 ">
-              {previewLink?.favicon && (
+              {previewLink?.favicon?.show && (
                 <img
-                  src={handleFaviconSrc(previewLink.favicon, link)}
+                  src={handleFaviconSrc(previewLink.favicon?.value, link)}
                   alt="favicon"
                   className="w-5 h-5 rounded-full"
                 />
               )}
-              {previewLink?.siteName && (
+              {previewLink?.siteName?.show && (
                 <span className="text-sm font-bold text-[var(--text-primary)]">
-                  {previewLink.siteName}
+                  {previewLink.siteName?.value}
                 </span>
               )}
             </div>
           )}
-          {previewLink?.title && (
+          {previewLink?.title?.show && (
             <h1 className="w-full text-[var(--text-primary)]  text-sm font-medium">
-              {previewLink.title}
+              {previewLink.title?.value}
             </h1>
           )}
-          {previewLink?.description && (
+          {previewLink?.description?.show && (
             <p className="w-full text-[var(--text-primary)] text-xs text-start">
-              {previewLink.description}
+              {previewLink.description?.value}
             </p>
           )}
-          {previewLink?.previewImages?.length > 0 &&
-            previewLink.previewImages.map((image, i) => (
-              <div
-                key={`preview-image-${i}-`}
-                className="w-full h-fit relative flex justify-center items-center overflow-hidden"
-              >
-                <img
-                  src={image}
-                  alt="preview"
-                  className="mt-2 rounded-md object-contain"
-                />
-              </div>
-            ))}
+          {previewLink?.previewImages?.show &&
+            previewLink?.previewImages?.value?.length > 0 &&
+            previewLink.previewImages?.value.map((image, i) =>
+              image?.show ? (
+                <div
+                  key={`preview-image-${i}-${image.url}`}
+                  className="w-full h-fit relative flex justify-center items-center overflow-hidden"
+                >
+                  <img
+                    src={image.url}
+                    alt="preview"
+                    className="mt-2 rounded-md object-contain"
+                  />
+                </div>
+              ) : null
+            )}
         </>
       ) : (
         <>
-          {preview?.favicon && (
+          {(preview?.favicon || preview?.siteName) && (
             <div className="w-full flex justify-start items-center gap-1 ">
-              {preview?.favicon && (
+              {previewLink?.favicon?.show && (
                 <img
-                  src={handleFaviconSrc(preview.favicon, link)}
+                  src={handleFaviconSrc(preview?.favicon?.value, link)}
                   alt="favicon"
                   className="w-5 h-5 rounded-full"
                 />
               )}
-              {preview?.siteName && (
+              {previewLink?.siteName?.show && (
                 <span className="text-sm font-bold text-[var(--text-primary)]">
-                  {preview.siteName}
+                  {preview?.siteName?.value}
                 </span>
               )}
             </div>
           )}
-          {preview?.title && (
+          {previewLink?.title?.show && (
             <h1 className="w-full text-[var(--text-primary)]  text-sm font-medium">
-              {preview.title}
+              {preview?.title?.value}
             </h1>
           )}
-          {preview?.description && (
+          {previewLink?.description?.show && (
             <p className="w-full text-[var(--text-primary)] text-xs text-start">
-              {preview.description}
+              {preview?.description?.value}
             </p>
           )}
-          {preview?.previewImages?.length > 0 &&
-            preview.previewImages.map((image, i) => (
-              <div
-                key={`preview-image-${i}-`}
-                className="w-full h-fit relative flex justify-center items-center overflow-hidden"
-              >
-                <ImageWithPlaceholder
-                  key={`preview-image-${i}`}
-                  src={image}
-                  placeholderSrc={preview?.favicon}
-                  alt="preview"
-                />
-              </div>
-            ))}
+          {previewLink?.previewImages?.show &&
+            preview?.previewImages?.value?.length > 0 &&
+            preview?.previewImages?.value?.map((image, i) =>
+              image?.show ? (
+                <div
+                  key={`preview-image-${i}-${image?.url}`}
+                  className="w-full h-fit relative flex justify-center items-center overflow-hidden"
+                >
+                  <ImageWithPlaceholder
+                    key={`preview-image-${i}`}
+                    src={image?.url}
+                    placeholderSrc={preview?.favicon?.value}
+                    alt="preview"
+                  />
+                </div>
+              ) : null
+            )}
         </>
       )}
     </div>
