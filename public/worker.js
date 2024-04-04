@@ -1,24 +1,5 @@
 var CACHE_NAME = "FlowPlan";
-var urlsToCache = [
-    "index.html",
-    "android-chrome-192x192.png",
-    "android-chrome-512x512.png",
-    "flowplan.svg",
-    "manifest.json",
-    "maskable_icon.png",
-    "maskable_icon_x192.png",
-    "maskable_icon_x384.png",
-    "screenshot_treeview.png",
-    "screenshot_mobile.jpg",
-    "worker.js",
-    "robots.txt",
-    "assets/bg-1.png",
-    "assets/bg-2.png",
-    "assets/bg-3.jpg",
-    "assets/core.js",
-    "assets/index.css",
-    "assets/index.js",
-];
+var urlsToCache = [];
 
 // Install a service worker
 self.addEventListener("install", (event) => {
