@@ -212,6 +212,7 @@ export function StateProvider({ children }) {
   });
 
   const [copyField, setCopyField] = useState(null);
+  const [copyNode, setCopyNode] = useState(null);
 
   // values contains all the states and functions to update the states
   const values = {
@@ -246,6 +247,8 @@ export function StateProvider({ children }) {
     setFieldStyles,
     copyField,
     setCopyField,
+    copyNode,
+    setCopyNode,
   };
   return (
     // Providing all the states and functions to update the states

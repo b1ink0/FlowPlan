@@ -9,6 +9,10 @@ import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 import { useStateContext } from "../../context/StateContext";
 import { useFunctions } from "../../hooks/useFunctions";
 import ReorderNode from "../ReorderNode";
+import EditIcon from "../../assets/Icons/EditIcon";
+import CopyIcon from "../../assets/Icons/CopyIcon";
+import PasteIcon from "../../assets/Icons/PasteIcon";
+import DublicateIcon from "../../assets/Icons/DublicateIcon";
 
 function DisplayNode({ node }) {
   // destructure state from context
@@ -72,6 +76,8 @@ function Node({
     update,
     animation,
     setCurrentFlowPlanNode,
+    copyNode,
+    setCopyNode,
   } = useStateContext();
 
   // destructure node config from settings
@@ -84,10 +90,16 @@ function Node({
     handleMoveNode,
     handleReorderNode,
     handleExpanded,
+    handleCopyNode,
+    handlePasteNode,
+    handleDublicate
   } = useFunctions();
 
   // local state
   const [deleteMenu, setDeleteMenu] = useState(false);
+  const [subMenu, setSubMenu] = useState(false);
+  const [copyMenu, setCopyMenu] = useState(false);
+  const [pasteMenu, setPasteMenu] = useState(false);
 
   // for init animation
   // here first translate is calculated so that the node is placed at the same position as of its parent
@@ -167,6 +179,21 @@ function Node({
       // if type is reorder then handle reorder node
       case "reorder":
         handleReorderNode(parent, data, location[location.length - 1]);
+        break;
+      case "copy":
+        handleCopyNode(node, "single");
+        break;
+      case "copyAll":
+        handleCopyNode(node, "all");
+        break;
+      case "pasteSibling":
+        handlePasteNode(parent, location, copyNode, "sibling");
+        break;
+      case "pasteChild":
+        handlePasteNode(node, location, copyNode, "child");
+        break;
+      case "dublicate":
+        handleDublicate(parent, node, location);
         break;
       default:
         console.log("provide a valid type");
@@ -267,6 +294,10 @@ function Node({
               "important"
             )
           }
+          onMouseLeave={() => {
+            setDeleteMenu(false);
+            setSubMenu(false);
+          }}
         >
           {/* Node Body */}
           <div className="w-full h-full flex flex-col justify-between items-center">
@@ -310,12 +341,43 @@ function Node({
             )}
             {/* Delete Menu*/}
             {deleteMenu && (
-              <DeleteMenu
-                node={node}
-                handleNode={handleNode}
-                setDeleteMenu={setDeleteMenu}
+              <Menu
+                handleOne={() => handleNode("delete")}
+                handleTwo={() => handleNode("deleteAll")}
+                iconOne={<DeleteIcon />}
+                iconTwo={<DeleteIcon />}
+                textOne="Delete Only Current Node"
+                textTwo="Delete Node & its Children"
+                setMenu={setDeleteMenu}
+                showTwo={node?.children?.length > 0}
               />
             )}
+            {/* Copy Menu */}
+            {copyMenu && (
+              <Menu
+                handleOne={() => handleNode("copy")}
+                handleTwo={() => handleNode("copyAll")}
+                iconOne={<CopyIcon />}
+                iconTwo={<CopyIcon />}
+                textOne="Copy Only Current Node"
+                textTwo="Copy Node & its Children"
+                setMenu={setCopyMenu}
+                showTwo={node?.children?.length > 0}
+              />
+            )}
+            {/* Paste Menu */}
+            {pasteMenu && copyNode !== null && (
+              <Menu
+                handleOne={() => handleNode("pasteSibling")}
+                handleTwo={() => handleNode("pasteChild")}
+                iconOne={<PasteIcon />}
+                iconTwo={<PasteIcon />}
+                textOne="Paste as Sibling"
+                textTwo="Paste as Child"
+                setMenu={setPasteMenu}
+              />
+            )}
+
             {/* Node Buttons */}
             <ButtonsWrapper
               handleExpanded={handleExpanded}
@@ -326,10 +388,16 @@ function Node({
               nodeConfig={nodeConfig}
               rootNodeFp={rootNodeFp}
               setDeleteMenu={setDeleteMenu}
+              subMenu={subMenu}
+              setSubMenu={setSubMenu}
+              setCopyMenu={setCopyMenu}
+              setPasteMenu={setPasteMenu}
               move={move}
               setMove={setMove}
               translate={translate}
               treeConfig={treeConfig}
+              copyNode={copyNode}
+              handleDublicate={() => handleNode("dublicate")}
             />
           </div>
         </div>
@@ -491,46 +559,53 @@ const MoveNodeOverlay = ({
 };
 
 // Delete Menu
-const DeleteMenu = ({ node, handleNode, setDeleteMenu }) => {
+const Menu = ({
+  handleOne,
+  handleTwo,
+  iconOne,
+  iconTwo,
+  textOne,
+  textTwo,
+  showTwo = true,
+  setMenu,
+}) => {
   return (
-    <div className="spread absolute w-full h-full z-10 flex flex-col justify-center items-center gap-3">
+    <div className="spread rounded-md overflow-hidden absolute w-full h-full z-10 flex flex-col justify-center items-center gap-3">
       <div className="w-full h-full p-2 bg-[var(--bg-quaternary)] flex flex-col justify-center items-center gap-2">
-        {/* This button will delete the node without its children */}
         <div className="w-full flex justify-between items-center rounded-md">
           <button
-            // delete node without its children
-            onClick={() => handleNode("delete")}
+            onClick={() => {
+              handleOne();
+              setMenu(false);
+            }}
             title="Deleting a node will make its children become children of the node's parent."
-            className="w-full h-6 px-2 flex justify-center items-center relative text-xs bg-[var(--bg-tertiary)] py-1 rounded-sm hover:bg-red-500 transition-colors duration-300"
+            className="w-full h-6 px-2 flex justify-center items-center relative text-xs bg-[var(--bg-tertiary)] py-1 rounded-md hover:bg-red-500 transition-colors duration-300"
           >
             <h3 className="text-[var(--text-primary)] text-xs whitespace-nowrap w-full text-start">
-              Delete Only Current Node
+              {textOne}
             </h3>
-            <div className="w-8 h-4">
-              <DeleteIcon />
-            </div>
+            <div className="w-8 h-4">{iconOne}</div>
           </button>
         </div>
-        {/* This button will delete the node with its children */}
-        {node.children?.length > 0 && (
+        {showTwo && (
           <div className="w-full flex justify-between items-center rounded-md">
             <button
-              // delete node with its children
-              onClick={() => handleNode("deleteAll")}
-              className="text-[var(--text-primary)] w-full h-6 px-2 flex justify-between items-center relative text-xs bg-[var(--bg-tertiary)] py-1 rounded-sm hover:bg-red-500 transition-colors duration-300"
+              onClick={() => {
+                handleTwo();
+                setMenu(false);
+              }}
+              className="text-[var(--text-primary)] w-full h-6 px-2 flex justify-between items-center relative text-xs bg-[var(--bg-tertiary)] py-1 rounded-md hover:bg-red-500 transition-colors duration-300"
             >
               <h3 className="text-xs whitespace-nowrap text-start w-full">
-                Delete Node & Its Children
+                {textTwo}
               </h3>
-              <div className="w-8 h-4">
-                <DeleteIcon />
-              </div>
+              <div className="w-8 h-4">{iconTwo}</div>
             </button>
           </div>
         )}
-        {/* This button will cancel the delete menu */}
+        {/* This button will cancel the menu */}
         <button
-          onClick={() => setDeleteMenu(false)}
+          onClick={() => setMenu(false)}
           className="text-[var(--text-primary)] w-full h-5 group flex justify-center items-center relative text-xs bg-[var(--bg-tertiary)] py-1 px-2 hover:bg-green-700 transition-colors duration-300 rounded-md"
         >
           Cancel
@@ -554,6 +629,12 @@ const ButtonsWrapper = ({
   handleExpanded,
   setDeleteMenu,
   treeConfig,
+  subMenu,
+  setSubMenu,
+  setCopyMenu,
+  setPasteMenu,
+  copyNode,
+  handleDublicate
 }) => {
   // function to handle move node
   const handleInitMove = () => {
@@ -590,7 +671,7 @@ const ButtonsWrapper = ({
 
   return (
     // Buttons Wrapper
-    <div className="w-full flex justify-center items-center gap-2 p-2">
+    <div className="w-full flex justify-center items-center gap-2 p-2 relative">
       {/* Move Node Button */}
       <button
         className={`${
@@ -620,13 +701,13 @@ const ButtonsWrapper = ({
         node?.children?.length > 0 && (
           //  then show expand node button
           <button
-            className="absolute bottom-0 w-8 h-6 group text-xs bg-[var(--btn-secondary)] pb-[4px] rounded-b-lg border-r-2 border-b-2 border-l-2 hover:bg-[var(--btn-expand)] transition-colors duration-300"
+            className="absolute w-8 h-6 group text-xs bg-[var(--btn-secondary)] pb-[4px] rounded-b-lg border-r-2 border-b-2 border-l-2 hover:bg-[var(--btn-expand)] transition-colors duration-300"
             onClick={() => handleExpanded(node)}
             style={{
               background: node?.config?.nodeConfig?.backgroundColor,
               borderColor: node?.config?.nodeConfig?.borderColor,
               bottom: treeConfig.renderType === "verticalTree" ? 0 : "unset",
-              top: treeConfig.renderType === "verticalTree" ? "unset" : 35,
+              top: treeConfig.renderType === "verticalTree" ? "unset" : -12,
               right: treeConfig.renderType === "verticalTree" ? "unset" : 0,
               transform:
                 treeConfig.renderType === "verticalTree"
@@ -666,6 +747,50 @@ const ButtonsWrapper = ({
       >
         <DeleteIcon />
       </button>
+      <button
+        className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+        onClick={() => setSubMenu((prev) => !prev)}
+        style={{
+          background: node?.config?.nodeConfig?.buttonColor,
+        }}
+      >
+        <EditIcon />
+      </button>
+      {subMenu && (
+        <div className="absolute -top-12 w-full flex justify-center items-center gap-2 p-2">
+           <button
+            className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+            title="Dublicate Node"
+            onClick={handleDublicate}
+            style={{
+              background: node?.config?.nodeConfig?.buttonColor,
+            }}
+          >
+            <DublicateIcon />
+          </button>
+          <button
+            className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+            title="Copy Node"
+            onClick={() => setCopyMenu(true)}
+            style={{
+              background: node?.config?.nodeConfig?.buttonColor,
+            }}
+          >
+            <CopyIcon />
+          </button>
+          <button
+            className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+            title="Paste Node"
+            onClick={() => setPasteMenu(true)}
+            style={{
+              background: node?.config?.nodeConfig?.buttonColor,
+              cursor: copyNode === null ? "not-allowed" : "pointer",
+            }}
+          >
+            <PasteIcon />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
