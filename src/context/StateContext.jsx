@@ -2,7 +2,6 @@
 import React, { useContext, useState } from "react";
 import bg_1 from "../assets/backgrounds/bg-1.png";
 import bg_2 from "../assets/backgrounds/bg-2.png";
-import bg_3 from "../assets/backgrounds/bg-3.jpg";
 
 // Creating Context
 const StateContext = React.createContext();
@@ -25,7 +24,80 @@ export function StateProvider({ children }) {
     treeConfig: {
       scaleMultiplier: 0.1,
       renderType: localStorage.getItem("renderType") || "verticalTree",
-      useSavedTransformState: localStorage.getItem("useSavedTransformState") ?? "false",
+      useSavedTransformState:
+        localStorage.getItem("useSavedTransformState") ?? "true",
+    },
+    docConfig: {
+      fullscreen: localStorage.getItem("fullscreen") ?? "false",
+      width: localStorage.getItem("docWidth") || "750",
+    },
+    rootConfig: {
+      fonts: [
+        {
+          label: "Poppins",
+          value: "Poppins, sans-serif",
+        },
+        {
+          label: "Arial",
+          value: "Arial, sans-serif",
+        },
+        {
+          label: "Courier New",
+          value: "Courier New, monospace",
+        },
+        {
+          label: "Monospace",
+          value: "Monospace",
+        },
+        {
+          label: "Cursive",
+          value: "Cursive",
+        },
+        {
+          label: "Fantasy",
+          value: "Fantasy",
+        },
+        {
+          label: "Georgia",
+          value: "Georgia, serif",
+        },
+        {
+          label: "Lucida Console",
+          value: "Lucida Console, monospace",
+        },
+        {
+          label: "Tahoma",
+          value: "Tahoma, sans-serif",
+        },
+        {
+          label: "Times New Roman",
+          value: "Times New Roman, serif",
+        },
+        {
+          label: "Trebuchet MS",
+          value: "Trebuchet MS, sans-serif",
+        },
+        {
+          label: "Verdana",
+          value: "Verdana, sans-serif",
+        },
+        {
+          label: "Open Sans",
+          value: "Open Sans, sans-serif",
+        },
+        {
+          label: "Roboto",
+          value: "Roboto, sans-serif",
+        },
+        {
+          label: "Montserrat",
+          value: "Montserrat, sans-serif",
+        },
+        {
+          label: "Impact",
+          value: "Impact, sans-serif",
+        }
+      ],
     },
   });
 
@@ -95,13 +167,13 @@ export function StateProvider({ children }) {
       backgroundPosition: "center",
       opacity: "0.2",
     },
-    {
-      backgroundImage: "url(" + bg_3 + ")",
-      backgroundRepeat: "no-repeat",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      opacity: "0.2",
-    },
+    // {
+    //   backgroundImage: "url(" + bg_3 + ")",
+    //   backgroundRepeat: "no-repeat",
+    //   backgroundSize: "cover",
+    //   backgroundPosition: "center",
+    //   opacity: "0.2",
+    // },
   ]);
   const [currentGlobalBackground, setCurrentGlobalBackground] = useState(() => {
     const currentGlobalBackground = localStorage.getItem(
@@ -134,6 +206,13 @@ export function StateProvider({ children }) {
     }
   });
 
+  const [fieldStyles, setFieldStyles] = useState({
+    type: null,
+    config: null,
+  });
+
+  const [copyField, setCopyField] = useState(null);
+
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -163,6 +242,10 @@ export function StateProvider({ children }) {
     setCurrentGlobalBackground,
     currentTransformState,
     setCurrentTransformState,
+    fieldStyles,
+    setFieldStyles,
+    copyField,
+    setCopyField,
   };
   return (
     // Providing all the states and functions to update the states
