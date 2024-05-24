@@ -25,11 +25,79 @@ export function StateProvider({ children }) {
       scaleMultiplier: 0.1,
       renderType: localStorage.getItem("renderType") || "verticalTree",
       useSavedTransformState:
-        localStorage.getItem("useSavedTransformState") ?? "false",
+        localStorage.getItem("useSavedTransformState") ?? "true",
     },
     docConfig: {
       fullscreen: localStorage.getItem("fullscreen") ?? "false",
       width: localStorage.getItem("docWidth") || "750",
+    },
+    rootConfig: {
+      fonts: [
+        {
+          label: "Poppins",
+          value: "Poppins, sans-serif",
+        },
+        {
+          label: "Arial",
+          value: "Arial, sans-serif",
+        },
+        {
+          label: "Courier New",
+          value: "Courier New, monospace",
+        },
+        {
+          label: "Monospace",
+          value: "Monospace",
+        },
+        {
+          label: "Cursive",
+          value: "Cursive",
+        },
+        {
+          label: "Fantasy",
+          value: "Fantasy",
+        },
+        {
+          label: "Georgia",
+          value: "Georgia, serif",
+        },
+        {
+          label: "Lucida Console",
+          value: "Lucida Console, monospace",
+        },
+        {
+          label: "Tahoma",
+          value: "Tahoma, sans-serif",
+        },
+        {
+          label: "Times New Roman",
+          value: "Times New Roman, serif",
+        },
+        {
+          label: "Trebuchet MS",
+          value: "Trebuchet MS, sans-serif",
+        },
+        {
+          label: "Verdana",
+          value: "Verdana, sans-serif",
+        },
+        {
+          label: "Open Sans",
+          value: "Open Sans, sans-serif",
+        },
+        {
+          label: "Roboto",
+          value: "Roboto, sans-serif",
+        },
+        {
+          label: "Montserrat",
+          value: "Montserrat, sans-serif",
+        },
+        {
+          label: "Impact",
+          value: "Impact, sans-serif",
+        }
+      ],
     },
   });
 
@@ -143,6 +211,8 @@ export function StateProvider({ children }) {
     config: null,
   });
 
+  const [copyField, setCopyField] = useState(null);
+
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -174,6 +244,8 @@ export function StateProvider({ children }) {
     setCurrentTransformState,
     fieldStyles,
     setFieldStyles,
+    copyField,
+    setCopyField,
   };
   return (
     // Providing all the states and functions to update the states

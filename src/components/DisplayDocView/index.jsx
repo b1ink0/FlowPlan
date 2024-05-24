@@ -1,7 +1,7 @@
 // @ts-check
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useStateContext } from "../../context/StateContext";
-import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import * as Themes from "react-syntax-highlighter/dist/esm/styles/prism";
 import * as Languages from "react-syntax-highlighter/dist/esm/languages/prism";
 import LinewrapIcon from "../../assets/Icons/LinewrapIcon";
@@ -56,6 +56,10 @@ import { TimeAndDate } from "../Helpers/TimeAndDate";
 import { SortableList } from "../Helpers/DND/SortableList.jsx";
 import IndentationIcon from "../../assets/Icons/IndentationIcon.jsx";
 import PasteIcon from "../../assets/Icons/PasteIcon.jsx";
+import TopbarIcon from "../../assets/Icons/TopbarIcon.jsx";
+import CopyStyleIcon from "../../assets/Icons/CopyStyleIcon.jsx";
+import PasteStyleIcon from "../../assets/Icons/PasteStyleIcon.jsx";
+import DublicateIcon from "../../assets/Icons/DublicateIcon.jsx";
 
 function DisplayDocView() {
   const {
@@ -477,6 +481,8 @@ const DocRenderView = ({
     setCurrentFlowPlanNode,
     fieldStyles,
     setFieldStyles,
+    copyField,
+    setCopyField,
   } = useStateContext();
   const { copyToClipboard } = useFunctions();
 
@@ -683,6 +689,37 @@ const DocRenderView = ({
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
 
+  const handleCopyField = () => {
+    let newField = structuredClone(field);
+    setCopyField(newField);
+  };
+
+  const handlePasteField = async () => {
+    if (!copyField) return;
+    console.log(copyField);
+    let newField = structuredClone(copyField);
+    if (
+      newField.type === "unorderedList" ||
+      newField.type === "numberList" ||
+      newField.type === "taskList"
+    ) {
+      newField.data.list = newField.data.list.map((item) => {
+        item.id = v4();
+        return item;
+      });
+    }
+    newField.id = v4();
+    console.log(newField);
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data.splice(i + 1, 0, newField);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
   return (
     <div
       onClick={() => setShowMenu(true)}
@@ -768,7 +805,7 @@ const DocRenderView = ({
         >
           {field?.data?.list?.map((item, j) => (
             <div
-              key={`shown-list-item-${item?.id ?? j}`}
+              key={`shown-list-item-${item?.id || j}`}
               className="w-full flex justify-center items-center text-sm"
               onDoubleClick={() => handleEditField(field, i)}
             >
@@ -815,7 +852,7 @@ const DocRenderView = ({
         >
           {field?.data?.list?.map((item, j) => (
             <div
-              key={`shown-list-item-${item?.id}`}
+              key={`shown-list-item-${item?.id || j}`}
               className="w-full flex justify-center items-center text-sm"
               onDoubleClick={() => handleEditField(field, i)}
             >
@@ -857,7 +894,7 @@ const DocRenderView = ({
         >
           {field?.data?.list?.map((item, j) => (
             <div
-              key={`shown-list-item-${item?.id ?? j}`}
+              key={`shown-list-item-${item?.id || j}`}
               className="w-full flex justify-center items-center text-sm"
               onDoubleClick={() => handleEditField(field, i)}
             >
@@ -1034,24 +1071,30 @@ const DocRenderView = ({
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col"
           onDoubleClick={() => handleEditField(field, i)}
         >
-          <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
-            <span>{field?.data?.code?.language}</span>
-            <button
-              onClick={() => copyToClipboard(currentField?.data?.code?.string)}
-              className="w-6 h-6 p-1 flex justify-center items-center hover:bg-[var(--bg-secondary)] rounded-md bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
-              title="Copy Code"
-            >
-              <span className="w-full h-full flex justify-center items-center">
-                <CopyIcon />
-              </span>
-            </button>
-          </div>
+          {!field?.data?.code?.hideTop && (
+            <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
+              <span>{field?.data?.code?.language}</span>
+              <button
+                onClick={() =>
+                  copyToClipboard(currentField?.data?.code?.string)
+                }
+                className="w-6 h-6 p-1 flex justify-center items-center hover:bg-[var(--bg-secondary)] rounded-md bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+                title="Copy Code"
+              >
+                <span className="w-full h-full flex justify-center items-center">
+                  <CopyIcon />
+                </span>
+              </button>
+            </div>
+          )}
           <SyntaxHighlighter
             customStyle={{
               width: "100%",
               margin: "0px",
               padding: "3px",
-              borderRadius: "0px 0px 5px 5px",
+              borderRadius: field?.data?.code?.hideTop
+                ? "5px"
+                : "0px 0px 5px 5px",
             }}
             className="small-scroll-bar"
             showLineNumbers={field?.data?.code?.lineNumbers ?? false}
@@ -1101,27 +1144,43 @@ const DocRenderView = ({
           >
             <EditIcon />
             {showSubMenu && (
-              <div className="w-full h-full gap-1 absolute right-[84px] top-7 flex">
+              <div className="w-full h-full gap-1 absolute right-[140px] top-7 flex">
                 <button
-                  onClick={handleDublicateField}
-                  className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0 rotate-180"
-                  title="Duplicate Field"
+                  onClick={handleCopyField}
+                  className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  title="Copy Field"
                 >
                   <CopyIcon />
                 </button>
+
+                <button
+                  onClick={handlePasteField}
+                  className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0 "
+                  title="Paste Field Below"
+                >
+                  <PasteIcon />
+                </button>
+                <button
+                  onClick={handleDublicateField}
+                  className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  title="Duplicate Field"
+                >
+                  <DublicateIcon />
+                </button>
+
                 <button
                   onClick={handleCopyFieldStyles}
                   className="w-full h-full  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Copy Field Styles"
                 >
-                  <CopyIcon />
+                  <CopyStyleIcon />
                 </button>
                 <button
                   onClick={handlePasteFieldStyles}
                   className="w-full h-wull bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Paste Field Styles"
                 >
-                  <PasteIcon />
+                  <PasteStyleIcon />
                 </button>
 
                 <button
@@ -1184,6 +1243,7 @@ const DocRenderView = ({
             setShowAdd={setShowAdd}
             showAdd={showAdd}
             hide={true}
+            currentFieldIndex={i}
           />
           <button
             onClick={handleResetShowAdd}
@@ -1215,7 +1275,15 @@ const MenuButtons = ({
   showAdd,
   setShowAdd,
   hide = false,
+  currentFieldIndex = null,
 }) => {
+  const {
+    db,
+    copyField,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    currentFlowPlanNode,
+  } = useStateContext();
   const [showToolTip, setShowToolTip] = useState({
     show: false,
     index: null,
@@ -1295,6 +1363,46 @@ const MenuButtons = ({
     });
   };
 
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handlePasteField = async () => {
+    if (!copyField) return;
+    console.log(copyField);
+    let newField = structuredClone(copyField);
+    if (
+      newField.type === "unorderedList" ||
+      newField.type === "numberList" ||
+      newField.type === "taskList"
+    ) {
+      newField.data.list = newField.data.list.map((item) => {
+        item.id = v4();
+        return item;
+      });
+    }
+    newField.id = v4();
+    console.log(newField);
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    if (currentFieldIndex !== null) {
+      node.data.splice(currentFieldIndex + 1, 0, newField);
+    } else {
+      node.data.push(newField);
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
   return (
     <div className="w-fit rounded-md h-fit flex justify-center items-center flex-wrap gap-2 p-1 bg-[var(--bg-secondary)] mt-2">
       {buttons.map((button, i) => (
@@ -1309,6 +1417,16 @@ const MenuButtons = ({
           {button.icon}
         </Button>
       ))}
+      {copyField && (
+        <Button
+          onClick={handlePasteField}
+          text={"Paste Field"}
+          showToolTip={showToolTip}
+          setShowToolTip={setShowToolTip}
+        >
+          <PasteIcon />
+        </Button>
+      )}
     </div>
   );
 };
@@ -1497,6 +1615,7 @@ const AddEditField = ({
           lineNumbers: true,
           wrapLines: true,
           string: "",
+          hideTop: false,
         },
       },
       config: handleGetConfig(type),
@@ -1777,7 +1896,9 @@ const InputTitleButtons = ({
     currentFlowPlanNode,
     fieldStyles,
     setFieldStyles,
+    settings
   } = useStateContext();
+  const {rootConfig} = settings
   const { handleGetRandomColor } = useFunctions();
   const {
     ref: fontSizeRef,
@@ -1824,21 +1945,7 @@ const InputTitleButtons = ({
     "#ffc100",
     "#2a9d8f",
   ];
-  const fontFamilies = [
-    "Poppins",
-    "Monospace",
-    "Times",
-    "Courier New",
-    "Courier",
-    "Verdana",
-    "Georgia",
-    "Palatino",
-    "Garamond",
-    "Comic Sans MS",
-    "Trebuchet MS",
-    "Arial Black",
-    "Impact",
-  ];
+  const fontFamilies = rootConfig.fonts
   const aligns = [
     {
       a: "L",
@@ -2584,10 +2691,10 @@ const InputTitleButtons = ({
               >
                 {fontFamilies.map((fontFamily) => (
                   <label
-                    key={`fontsize-id-${fontFamily}`}
+                    key={`fontsize-id-${fontFamily.value}`}
                     className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
                     style={{
-                      fontFamily: `${fontFamily}`,
+                      fontFamily: `${fontFamily.value}`,
                       backgroundColor: `${
                         config?.fontFamily === fontFamily
                           ? "var(--btn-edit)"
@@ -2596,11 +2703,11 @@ const InputTitleButtons = ({
                     }}
                   >
                     <input
-                      title={fontFamily}
+                      title={fontFamily.label}
                       className="w-full h-full bg-blue-500 absolute opacity-0"
                       type="radio"
-                      value={fontFamily}
-                      checked={config?.fontFamily === fontFamily}
+                      value={fontFamily.value}
+                      checked={config?.fontFamily === fontFamily.value}
                       onChange={handleFontFamilytChange}
                     />
                     Aa
@@ -2680,7 +2787,7 @@ const InputTitleButtons = ({
             title="Copy Field Style"
             className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
           >
-            <CopyIcon />
+            <CopyStyleIcon />
           </button>
           <button
             type="button"
@@ -2688,15 +2795,15 @@ const InputTitleButtons = ({
             title="Paste Field Styles"
             className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
           >
-            <PasteIcon />
+            <PasteStyleIcon />
           </button>
           <button
             type="button"
             onClick={() => handleDublicateField(currentField.index)}
             title="Dublicate Field"
-            className="w-8 h-8 group rotate-180 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
           >
-            <CopyIcon />
+            <DublicateIcon />
           </button>
 
           <button
@@ -3024,9 +3131,6 @@ const UnorderedList = ({
     setList(newList);
   };
 
-  useEffect(() => {
-    console.log(list);
-  }, [list]);
   return (
     <div
       style={{
@@ -4049,7 +4153,7 @@ const LinkPreview = ({ link, previewLink }) => {
                 >
                   <img
                     src={image.url}
-                    alt="preview"
+                    alt="Preview Image"
                     className="mt-2 rounded-md object-contain"
                   />
                 </div>
@@ -5398,6 +5502,19 @@ const CodeBlock = ({
     });
   };
 
+  const handleHideTop = () => {
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        code: {
+          ...currentField.data.code,
+          hideTop: !currentField?.data?.code?.hideTop,
+        },
+      },
+    });
+  };
+
   const handleDelete = async (index) => {
     let root = currentFlowPlan.root;
     let node = root;
@@ -5454,24 +5571,28 @@ const CodeBlock = ({
 
   return (
     <div className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md p-1">
-      <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
-        <span>{language ?? "javascript"}</span>
-        <button
-          onClick={() => copyToClipboard(currentField?.data?.code?.string)}
-          className="w-6 h-6 p-1 flex justify-center items-center hover:bg-[var(--bg-secondary)] rounded-md bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
-          title="Copy Code"
-        >
-          <span className="w-full h-full flex justify-center items-center">
-            <CopyIcon />
-          </span>
-        </button>
-      </div>
+      {!currentField?.data?.code?.hideTop && (
+        <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
+          <span>{language ?? "javascript"}</span>
+          <button
+            onClick={() => copyToClipboard(currentField?.data?.code?.string)}
+            className="w-6 h-6 p-1 flex justify-center items-center hover:bg-[var(--bg-secondary)] rounded-md bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+            title="Copy Code"
+          >
+            <span className="w-full h-full flex justify-center items-center">
+              <CopyIcon />
+            </span>
+          </button>
+        </div>
+      )}
       <SyntaxHighlighter
         customStyle={{
           width: "100%",
           margin: "0px",
           padding: "3px",
-          borderRadius: "0px 0px 5px 5px",
+          borderRadius: currentField?.data?.code?.hideTop
+            ? "5px"
+            : "0px 0px 5px 5px",
         }}
         className="small-scroll-bar"
         showLineNumbers={currentField?.data?.code?.lineNumbers ?? false}
@@ -5553,6 +5674,19 @@ const CodeBlock = ({
             <span className="absolute w-8 h-[2px] rounded-full bg-[var(--logo-primary)] -rotate-45"></span>
           )}
         </button>
+        <button
+          title="Toggle Topbar"
+          className="w-8 h-8 px-1 relative text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={handleHideTop}
+        >
+          <span className="">
+            <TopbarIcon />
+          </span>
+          {currentField?.data?.code?.hideTop && (
+            <span className="absolute w-8 h-[2px] rounded-full bg-[var(--logo-primary)] -rotate-45"></span>
+          )}
+        </button>
+
         {currentField?.id && (
           <button
             className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
