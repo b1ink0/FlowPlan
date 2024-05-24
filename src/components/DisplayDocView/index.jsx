@@ -1114,31 +1114,34 @@ const DocRenderView = ({
             opacity: showMenu ? 1 : 0,
             pointerEvents: showMenu ? "all" : "none",
             top: field.type === "codeBlock" ? "40px" : "4px",
+            height: showSubMenu ? "55px" : "",
+            width: showSubMenu ? "165px" : "",
           }}
-          className="transition-opacity absolute flex justify-center items-center gap-1 w-fit h-6 right-1 top-1 z-10"
+          onMouseLeave={() => setShowSubMenu(false)}
+          className="transition-opacity absolute flex justify-end items-start gap-1 w-fit h-6 right-1 top-1 z-10"
         >
-          <DragHandle className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+          <DragHandle className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
 
           <button
             onClick={() => handleEditField(field, i)}
-            className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md"
+            className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md"
           >
             <EditBtnIcon />
           </button>
           <button
             onClick={handleSetAdd}
-            className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md"
+            className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md"
           >
             <AddIcon />
           </button>
           <button
             onClick={handleSetMove}
-            className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md"
+            className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md"
           >
             <MoveIcon />
           </button>
           <span
-            className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md relative cursor-pointer"
+            className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md relative cursor-pointer"
             onClick={() => setShowSubMenu(true)}
             onMouseEnter={() => setShowSubMenu(true)}
           >
@@ -1147,7 +1150,7 @@ const DocRenderView = ({
               <div className="w-full h-full gap-1 absolute right-[140px] top-7 flex">
                 <button
                   onClick={handleCopyField}
-                  className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Copy Field"
                 >
                   <CopyIcon />
@@ -1155,14 +1158,14 @@ const DocRenderView = ({
 
                 <button
                   onClick={handlePasteField}
-                  className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0 "
+                  className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0 "
                   title="Paste Field Below"
                 >
                   <PasteIcon />
                 </button>
                 <button
                   onClick={handleDublicateField}
-                  className="w-full h-full bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Duplicate Field"
                 >
                   <DublicateIcon />
@@ -1170,14 +1173,14 @@ const DocRenderView = ({
 
                 <button
                   onClick={handleCopyFieldStyles}
-                  className="w-full h-full  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  className="w-6 h-6  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Copy Field Styles"
                 >
                   <CopyStyleIcon />
                 </button>
                 <button
                   onClick={handlePasteFieldStyles}
-                  className="w-full h-wull bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Paste Field Styles"
                 >
                   <PasteStyleIcon />
@@ -1185,7 +1188,7 @@ const DocRenderView = ({
 
                 <button
                   onClick={handleDeleteField}
-                  className="w-full h-full hover:bg-[var(--btn-delete)]  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  className="w-6 h-6 hover:bg-[var(--btn-delete)]  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Delete Field"
                 >
                   <DeleteIcon />
@@ -1896,9 +1899,9 @@ const InputTitleButtons = ({
     currentFlowPlanNode,
     fieldStyles,
     setFieldStyles,
-    settings
+    settings,
   } = useStateContext();
-  const {rootConfig} = settings
+  const { rootConfig } = settings;
   const { handleGetRandomColor } = useFunctions();
   const {
     ref: fontSizeRef,
@@ -1945,7 +1948,7 @@ const InputTitleButtons = ({
     "#ffc100",
     "#2a9d8f",
   ];
-  const fontFamilies = rootConfig.fonts
+  const fontFamilies = rootConfig.fonts;
   const aligns = [
     {
       a: "L",
