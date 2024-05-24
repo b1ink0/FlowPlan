@@ -1,7 +1,7 @@
 // @ts-check
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useStateContext } from "../../context/StateContext";
-import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import * as Themes from "react-syntax-highlighter/dist/esm/styles/prism";
 import * as Languages from "react-syntax-highlighter/dist/esm/languages/prism";
 import LinewrapIcon from "../../assets/Icons/LinewrapIcon";
@@ -52,9 +52,19 @@ import FullScreenIcon from "../../assets/Icons/FullScreenIcon";
 import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 import MoveIcon from "../../assets/Icons/MoveIcon";
 import BackIcon from "../../assets/Icons/BackIcon";
+import { TimeAndDate } from "../Helpers/TimeAndDate";
+import { SortableList } from "../Helpers/DND/SortableList.jsx";
+import IndentationIcon from "../../assets/Icons/IndentationIcon.jsx";
+import PasteIcon from "../../assets/Icons/PasteIcon.jsx";
+import TopbarIcon from "../../assets/Icons/TopbarIcon.jsx";
+import CopyStyleIcon from "../../assets/Icons/CopyStyleIcon.jsx";
+import PasteStyleIcon from "../../assets/Icons/PasteStyleIcon.jsx";
+import DublicateIcon from "../../assets/Icons/DublicateIcon.jsx";
 
 function DisplayDocView() {
   const {
+    settings,
+    setSettings,
     currentFlowPlan,
     currentFlowPlanNode,
     setCurrentFlowPlanNode,
@@ -62,7 +72,6 @@ function DisplayDocView() {
   } = useStateContext();
   const [currentFieldType, setCurrentFieldType] = useState(null);
   const [currentField, setCurrentField] = useState(null);
-  const [fullScreen, setFullScreen] = useState(false);
   const [move, setMove] = useState({
     move: false,
     id: null,
@@ -72,6 +81,36 @@ function DisplayDocView() {
     index: null,
   });
   const [node, setNode] = useState(null);
+  const [nodeNavigation, setNodeNavigation] = useState({
+    preSibling: null,
+    nextSibling: null,
+    parent: null,
+    firstChild: null,
+  });
+
+  const { docConfig } = settings;
+
+  const handleMouseDown = () => {
+    let resize = true;
+    document.body.style.cursor = "ew-resize";
+    document.onmousemove = (e) => {
+      if (!resize) return;
+      const newWidth = window.innerWidth - e.clientX;
+      localStorage.setItem("docWidth", newWidth);
+      setSettings((prev) => ({
+        ...prev,
+        docConfig: {
+          ...prev.docConfig,
+          width: newWidth,
+        },
+      }));
+    };
+    document.onmouseup = () => {
+      console.log("mouseup");
+      document.body.style.cursor = "default";
+      resize = false;
+    };
+  };
 
   const handleEditField = (field, i) => {
     setCurrentFieldType(field.type);
@@ -87,7 +126,17 @@ function DisplayDocView() {
   };
 
   const handleFullScreen = () => {
-    setFullScreen((prev) => !prev);
+    setSettings((prev) => ({
+      ...prev,
+      docConfig: {
+        ...prev.docConfig,
+        fullscreen: prev.docConfig.fullscreen !== "true" ? "true" : "false",
+      },
+    }));
+    localStorage.setItem(
+      "fullscreen",
+      docConfig.fullscreen !== "true" ? "true" : "false"
+    );
   };
 
   const handleResetShowAdd = () => {
@@ -97,39 +146,94 @@ function DisplayDocView() {
     });
   };
 
+  const handleNavigation = (node) => {
+    if (!node) return;
+    setCurrentFlowPlanNode(node);
+  };
+
   useEffect(() => {
-    if (!currentFlowPlanNode) return;
+    if (!currentFlowPlanNode) {
+      setNode(null);
+      return;
+    }
     let root = currentFlowPlan.root;
     let node = root;
-    currentFlowPlanNode.forEach((i) => {
+    let parentNodeChildrenLength = null;
+    const currentFlowPlanNodeLength = currentFlowPlanNode.length;
+    currentFlowPlanNode.forEach((i, index) => {
+      if (index === currentFlowPlanNodeLength - 1) {
+        parentNodeChildrenLength = node.children.length;
+      }
       node = node.children[i];
     });
     setNode(node);
-    console.log(node);
+
+    let tempNodeNavigation = structuredClone(nodeNavigation);
+    if (currentFlowPlanNodeLength === 0) {
+      tempNodeNavigation.parent = null;
+      tempNodeNavigation.preSibling = null;
+      tempNodeNavigation.nextSibling = null;
+      tempNodeNavigation.firstChild =
+        currentFlowPlan.root.children.length === 0 ? null : [0];
+    } else if (currentFlowPlanNodeLength === 1) {
+      tempNodeNavigation.preSibling =
+        currentFlowPlanNode[0] === 0 ? null : [currentFlowPlanNode[0] - 1];
+      tempNodeNavigation.nextSibling =
+        currentFlowPlanNode[0] + 1 > parentNodeChildrenLength - 1
+          ? null
+          : [currentFlowPlanNode[0] + 1];
+      tempNodeNavigation.parent = [];
+      tempNodeNavigation.firstChild =
+        node.children.length === 0 ? null : currentFlowPlanNode.concat(0);
+    } else {
+      tempNodeNavigation.parent = currentFlowPlanNode.slice(0, -1);
+      tempNodeNavigation.preSibling =
+        currentFlowPlanNode[currentFlowPlanNodeLength - 1] === 0
+          ? null
+          : currentFlowPlanNode
+              .slice(0, -1)
+              .concat(currentFlowPlanNode[currentFlowPlanNodeLength - 1] - 1);
+      tempNodeNavigation.nextSibling =
+        currentFlowPlanNode[currentFlowPlanNodeLength - 1] + 1 >
+        parentNodeChildrenLength - 1
+          ? null
+          : currentFlowPlanNode
+              .slice(0, -1)
+              .concat(currentFlowPlanNode[currentFlowPlanNodeLength - 1] + 1);
+      tempNodeNavigation.firstChild =
+        node.children.length === 0 ? null : currentFlowPlanNode.concat(0);
+    }
+    setNodeNavigation(tempNodeNavigation);
   }, [currentFlowPlanNode]);
   return (
     <div
       style={{
-        width: `${fullScreen ? "100vw" : "50vw"}`,
+        width: `${
+          docConfig?.fullscreen === "true" ? "100vw" : `${docConfig.width}px`
+        }`,
       }}
       className={`${
         // if addEditNode.show is true then show component else hide component
         !node ? "translate-x-full" : ""
-      } z-10 transition-all duration-200 w-1/2 grow-0 h-full absolute right-0 top-0 bg-[var(--bg-primary-translucent)] text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
+      } z-10 transition-all duration-200 max-md:w-full max-w-[100vw] w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
       <button
-        className="absolute top-0 left-0 w-8 h-8 rounded-full"
+        className="absolute top-0 left-0 w-8 h-8 rounded-full z-10"
         onClick={handleCloseDocView}
       >
         <CloseBtnIcon />
       </button>
       <button
         onClick={handleFullScreen}
-        className="absolute top-2 right-2 w-5 h-5 rounded-full"
+        className="absolute top-2 right-2 w-5 h-5 rounded-full z-10"
       >
         <FullScreenIcon />
       </button>
-      <div className="w-full max-w-[750px] h-full flex flex-col justify-start items-center gap-1">
+      <button
+        onMouseDown={handleMouseDown}
+        className="w-[2px] hover:w-2 transition-all bg-[var(--border-primary)] z-[20] h-full absolute top-0 -left-1 cursor-ew-resize"
+      ></button>
+      <div className="w-full w-full h-full flex flex-col justify-start items-center gap-1">
         <h3
           style={{
             fontSize: `${node?.config?.titleConfig?.fontSize}px`,
@@ -146,26 +250,59 @@ function DisplayDocView() {
             fontFamily: `${node?.config?.titleConfig?.fontFamily}`,
             borderColor: `${node?.config?.nodeConfig?.borderColor}`,
           }}
-          className="text-[var(--text-primary)] w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 px-2  transition-colors duration-300"
+          className="text-[var(--text-primary)] relative w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 pb-3 px-2  transition-colors duration-300"
         >
           {node?.title}
+
+          {node?.createdAt && (
+            <span className="block text-xs bottom-0 right-0 absolute text-[var(--text-secondary)]">
+              <span className="absolute right-24 -top-[18px]">Created:</span>
+              <TimeAndDate timeDate={new Date(node?.createdAt)} />
+            </span>
+          )}
+          {node?.updatedAt && (
+            <span className="block text-xs bottom-0 left-[150px] absolute text-[var(--text-secondary)]">
+              <span className="absolute -left-[150px] -top-[18px]">
+                Updated:
+              </span>
+              <TimeAndDate timeDate={new Date(node?.updatedAt)} />
+            </span>
+          )}
         </h3>
+        <div className="flex justify-between items-center w-full gap-5 mt-1">
+          <button
+            style={{
+              cursor: !nodeNavigation.parent ? "not-allowed" : "pointer",
+              opacity: !nodeNavigation.parent ? "0.5" : "1",
+            }}
+            onClick={() => handleNavigation(nodeNavigation.parent)}
+            className="w-24 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
+            disabled={!nodeNavigation.parent}
+          >
+            <span className="block w-3 h-3 rotate-180">
+              <BackIcon />
+            </span>
+            <span>Parent</span>
+          </button>
+          <button
+            style={{
+              cursor: !nodeNavigation.firstChild ? "not-allowed" : "pointer",
+              opacity: !nodeNavigation.firstChild ? "0.5" : "1",
+            }}
+            onClick={() => handleNavigation(nodeNavigation.firstChild)}
+            className="w-28 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
+            disabled={!nodeNavigation.firstChild}
+          >
+            <span>First Child</span>
+            <span className="block w-3 h-3">
+              <BackIcon />
+            </span>
+          </button>
+        </div>
+
         <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-9 overflow-x-hidden">
           {node?.data?.length ? (
-            <div></div>
-          ) : (
-            <div className="flex justify-center items-center flex-col">
-              <p className="text-[var(--text-primary)]">
-                Add Something From Below Menu
-              </p>
-            </div>
-          )}
-          {node?.data?.map((field, i) => (
-            <DocRenderView
-              key={"field-id-" + field.type + "-" + i}
-              field={field}
-              i={i}
-              length={node.data.length}
+            <DocRenderViewContainer
               node={node}
               move={move}
               setMove={setMove}
@@ -179,8 +316,13 @@ function DisplayDocView() {
               handleEditField={handleEditField}
               handleResetShowAdd={handleResetShowAdd}
             />
-          ))}
-
+          ) : (
+            <div className=" flex justify-center items-center flex-col">
+              <p className="text-[var(--text-primary)]">
+                Add Something From Below Menu
+              </p>
+            </div>
+          )}
           {!currentField?.id && !showAdd.show && (
             <AddEditField
               setCurrentFieldType={setCurrentFieldType}
@@ -202,10 +344,114 @@ function DisplayDocView() {
             setShowAdd={setShowAdd}
           />
         </div>
+        <div className="flex justify-between items-center w-full gap-5 mb-1">
+          <button
+            style={{
+              cursor: !nodeNavigation.preSibling ? "not-allowed" : "pointer",
+              opacity: !nodeNavigation.preSibling ? "0.5" : "1",
+            }}
+            onClick={() => handleNavigation(nodeNavigation.preSibling)}
+            className="w-40 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
+            disabled={!nodeNavigation.preSibling}
+          >
+            <span className="block w-3 h-3 rotate-180">
+              <BackIcon />
+            </span>
+            <span>Previous Sibling</span>
+          </button>
+          <button
+            style={{
+              cursor: !nodeNavigation.nextSibling ? "not-allowed" : "pointer",
+              opacity: !nodeNavigation.nextSibling ? "0.5" : "1",
+            }}
+            onClick={() => handleNavigation(nodeNavigation.nextSibling)}
+            className="w-40 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
+            disabled={!nodeNavigation.nextSibling}
+          >
+            <span>Next Sibling</span>
+            <span className="block w-3 h-3">
+              <BackIcon />
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );
 }
+const DocRenderViewContainer = ({
+  node,
+  move,
+  setMove,
+  setNode,
+  showAdd,
+  setShowAdd,
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleEditField,
+  handleResetShowAdd,
+}) => {
+  const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
+    useStateContext();
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleMove = async (items) => {
+    if (items?.length === 0) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data = items;
+    node.updatedAt = new Date();
+    handleResetShowAdd();
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  return (
+    <SortableList
+      items={node?.data}
+      onChange={handleMove}
+      renderItem={(item, active, index) => (
+        <SortableList.Item id={item.id}>
+          <DocRenderView
+            key={"field-id-" + item.type + "-" + item.id}
+            field={item}
+            i={index}
+            length={node.data.length}
+            node={node}
+            move={move}
+            setMove={setMove}
+            setNode={setNode}
+            showAdd={showAdd}
+            setShowAdd={setShowAdd}
+            currentField={currentField}
+            setCurrentField={setCurrentField}
+            currentFieldType={currentFieldType}
+            setCurrentFieldType={setCurrentFieldType}
+            handleEditField={handleEditField}
+            handleResetShowAdd={handleResetShowAdd}
+            DragHandle={SortableList.DragHandle}
+            active={active}
+          />
+        </SortableList.Item>
+      )}
+    />
+  );
+};
 
 const DocRenderView = ({
   field,
@@ -223,6 +469,8 @@ const DocRenderView = ({
   setCurrentFieldType,
   handleEditField,
   handleResetShowAdd,
+  DragHandle,
+  active,
 }) => {
   const {
     db,
@@ -231,9 +479,15 @@ const DocRenderView = ({
     defaultNodeConfig,
     currentFlowPlanNode,
     setCurrentFlowPlanNode,
+    fieldStyles,
+    setFieldStyles,
+    copyField,
+    setCopyField,
   } = useStateContext();
   const { copyToClipboard } = useFunctions();
+
   const [showMenu, setShowMenu] = useState(false);
+  const [showSubMenu, setShowSubMenu] = useState(false);
   const listStyles = [
     {
       type: "filledCircle",
@@ -370,12 +624,127 @@ const DocRenderView = ({
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
+  const handleDublicateField = async () => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    let temp = structuredClone(node.data[i]);
+    temp.id = v4();
+    if (
+      field.type === "unorderedList" ||
+      field.type === "numberList" ||
+      field.type === "taskList"
+    ) {
+      temp.data.list = temp.data.list.map((item) => {
+        item.id = v4();
+        return item;
+      });
+    }
+    node.data.splice(i + 1, 0, temp);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+  const handleDeleteField = async () => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data.splice(i, 1);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
+  const handleCopyFieldStyles = () => {
+    setFieldStyles({
+      type: field.type,
+      config: structuredClone(field.config),
+    });
+  };
+
+  const handlePasteFieldStyles = async () => {
+    if (!fieldStyles.config) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+
+    if (fieldStyles.type !== field.type) {
+      let oldConfig = structuredClone(node.data[i].config);
+      let newConfig = structuredClone(fieldStyles.config);
+      Object.keys(oldConfig).forEach((key) => {
+        if (newConfig[key]) {
+          oldConfig[key] = newConfig[key];
+        }
+      });
+      node.data[i].config = structuredClone(oldConfig);
+    } else {
+      node.data[i].config = structuredClone(fieldStyles.config);
+    }
+
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
+  const handleCopyField = () => {
+    let newField = structuredClone(field);
+    setCopyField(newField);
+  };
+
+  const handlePasteField = async () => {
+    if (!copyField) return;
+    console.log(copyField);
+    let newField = structuredClone(copyField);
+    if (
+      newField.type === "unorderedList" ||
+      newField.type === "numberList" ||
+      newField.type === "taskList"
+    ) {
+      newField.data.list = newField.data.list.map((item) => {
+        item.id = v4();
+        return item;
+      });
+    }
+    newField.id = v4();
+    console.log(newField);
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data.splice(i + 1, 0, newField);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
 
   return (
     <div
+      onClick={() => setShowMenu(true)}
       onMouseEnter={() => setShowMenu(true)}
-      onMouseLeave={() => setShowMenu(false)}
+      onMouseLeave={() => {
+        setShowMenu(false);
+        setShowSubMenu(false);
+      }}
       className="group w-full relative flex justify-center items-center flex-col gap-1"
+      style={
+        active?.id === field?.id
+          ? {
+              border: "2px solid",
+              borderRadius: "5px",
+              borderColor: "var(--btn-add)",
+            }
+          : active?.id
+          ? {
+              // border: "2px solid",
+              // borderRadius: "5px",
+              // borderColor: "var(--btn-move)",
+              // marginBottom: "4px",
+            }
+          : {}
+      }
     >
       {field.type === "heading" && (
         <div
@@ -430,29 +799,18 @@ const DocRenderView = ({
         <div
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
+            paddingLeft: `${field?.config?.indentation * 10 || 4}px`,
           }}
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
           {field?.data?.list?.map((item, j) => (
             <div
-              key={`shown-list-item-${j}`}
+              key={`shown-list-item-${item?.id || j}`}
               className="w-full flex justify-center items-center text-sm"
               onDoubleClick={() => handleEditField(field, i)}
             >
               <span
-                style={{
-                  color: `${field?.config?.color}`,
-                }}
-                className="w-3 h-3 mr-1 block"
-              >
-                {
-                  listStyles?.find(
-                    (listStyle) => listStyle.type === field.config?.listStyle
-                  )?.icon
-                }
-              </span>
-              <span
-                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
                 style={{
                   fontSize: `${field?.config?.fontSize}px`,
                   textDecoration: `${
@@ -465,7 +823,20 @@ const DocRenderView = ({
                   textAlign: `${field?.config?.align}`,
                 }}
               >
-                {item}
+                <span
+                  style={{
+                    color: `${field?.config?.color}`,
+                  }}
+                  className="w-3 h-5 mr-1 block shrink-0"
+                >
+                  {
+                    listStyles?.find(
+                      (listStyle) => listStyle.type === field.config?.listStyle
+                    )?.icon
+                  }
+                </span>
+
+                {item?.value ?? item}
               </span>
             </div>
           ))}
@@ -475,25 +846,18 @@ const DocRenderView = ({
         <div
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
+            paddingLeft: `${field?.config?.indentation * 10 || 4}px`,
           }}
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
           {field?.data?.list?.map((item, j) => (
             <div
-              key={`shown-list-item-${j}`}
+              key={`shown-list-item-${item?.id || j}`}
               className="w-full flex justify-center items-center text-sm"
               onDoubleClick={() => handleEditField(field, i)}
             >
               <span
-                style={{
-                  color: `${field?.config?.color}`,
-                }}
-                className="w-5 h-5 mr-1 block cursor-pointer group"
-              >
-                {item?.completed ? <CheckedIcon /> : <UncheckedIcon />}
-              </span>
-              <span
-                className="w-full text-[var(--text-primary)] cursor- bg-transparent outline-none"
+                className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
                 style={{
                   fontSize: `${field?.config?.fontSize}px`,
                   textDecoration: `${
@@ -506,6 +870,14 @@ const DocRenderView = ({
                   textAlign: `${field?.config?.align}`,
                 }}
               >
+                <span
+                  style={{
+                    color: `${field?.config?.color}`,
+                  }}
+                  className="w-5 h-5 mr-1 block shrink-0 cursor-pointer group"
+                >
+                  {item?.completed ? <CheckedIcon /> : <UncheckedIcon />}
+                </span>
                 {item?.text}
               </span>
             </div>
@@ -516,29 +888,18 @@ const DocRenderView = ({
         <div
           style={{
             display: field?.id === currentField?.id ? "none" : "flex",
+            paddingLeft: `${field?.config?.indentation * 10 || 4}px`,
           }}
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
           {field?.data?.list?.map((item, j) => (
             <div
-              key={`shown-list-item-${j}`}
+              key={`shown-list-item-${item?.id || j}`}
               className="w-full flex justify-center items-center text-sm"
               onDoubleClick={() => handleEditField(field, i)}
             >
               <span
-                style={{
-                  color: `${field?.config?.color}`,
-                }}
-                className="w-3 h-full mr-1  flex justify-center items-center"
-              >
-                {numberListStyles
-                  ?.find(
-                    (listStyle) => listStyle.type === field?.config?.listStyle
-                  )
-                  ?.icon(j) + "."}
-              </span>
-              <span
-                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
                 style={{
                   fontSize: `${field?.config?.fontSize}px`,
                   textDecoration: `${
@@ -551,7 +912,20 @@ const DocRenderView = ({
                   textAlign: `${field?.config?.align}`,
                 }}
               >
-                {item}
+                <span
+                  style={{
+                    color: `${field?.config?.color}`,
+                  }}
+                  className="w-3 h-5 mr-1 shrink-0 flex justify-center items-center text-sm"
+                >
+                  {numberListStyles
+                    ?.find(
+                      (listStyle) => listStyle.type === field?.config?.listStyle
+                    )
+                    ?.icon(j) + "."}
+                </span>
+
+                {item?.value ?? item}
               </span>
             </div>
           ))}
@@ -563,22 +937,14 @@ const DocRenderView = ({
             display: field?.id === currentField?.id ? "none" : "flex",
           }}
           onDoubleClick={() => handleEditField(field, i)}
-          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-2"
         >
-          <div className="w-full flex justify-center items-center overflow-x-hidden">
-            <span
-              style={{
-                color: `${field?.config?.color}`,
-              }}
-              className="w-3 h-5 mr-1 block"
-            >
-              <LinkIcon />
-            </span>
+          <div className="w-full flex justify-start items-center overflow-x-hidden">
             <a
               href={field?.data?.link}
               target="_blank"
               rel="noreferrer"
-              className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none hover:underline break-all"
+              className="w-fit flex text-[var(--text-primary)] cursor-pointer bg-transparent outline-none hover:underline break-all"
               style={{
                 fontSize: `${field?.config?.fontSize}px`,
                 textDecoration: `${
@@ -591,6 +957,14 @@ const DocRenderView = ({
                 textAlign: `${field?.config?.align}`,
               }}
             >
+              <span
+                style={{
+                  color: `${field?.config?.color}`,
+                }}
+                className="w-3 h-5 mr-1 block shrink-0"
+              >
+                <LinkIcon />
+              </span>
               {field?.data?.link}
             </a>
           </div>
@@ -697,24 +1071,30 @@ const DocRenderView = ({
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col"
           onDoubleClick={() => handleEditField(field, i)}
         >
-          <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
-            <span>{field?.data?.code?.language}</span>
-            <button
-              onClick={() => copyToClipboard(currentField?.data?.code?.string)}
-              className="w-6 h-6 p-1 flex justify-center items-center hover:bg-[var(--bg-secondary)] rounded-md bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
-              title="Copy Code"
-            >
-              <span className="w-full h-full flex justify-center items-center">
-                <CopyIcon />
-              </span>
-            </button>
-          </div>
+          {!field?.data?.code?.hideTop && (
+            <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
+              <span>{field?.data?.code?.language}</span>
+              <button
+                onClick={() =>
+                  copyToClipboard(currentField?.data?.code?.string)
+                }
+                className="w-6 h-6 p-1 flex justify-center items-center hover:bg-[var(--bg-secondary)] rounded-md bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+                title="Copy Code"
+              >
+                <span className="w-full h-full flex justify-center items-center">
+                  <CopyIcon />
+                </span>
+              </button>
+            </div>
+          )}
           <SyntaxHighlighter
             customStyle={{
               width: "100%",
               margin: "0px",
               padding: "3px",
-              borderRadius: "0px 0px 5px 5px",
+              borderRadius: field?.data?.code?.hideTop
+                ? "5px"
+                : "0px 0px 5px 5px",
             }}
             className="small-scroll-bar"
             showLineNumbers={field?.data?.code?.lineNumbers ?? false}
@@ -733,27 +1113,89 @@ const DocRenderView = ({
           style={{
             opacity: showMenu ? 1 : 0,
             pointerEvents: showMenu ? "all" : "none",
+            top: field.type === "codeBlock" ? "40px" : "4px",
+            height: showSubMenu ? "55px" : "",
+            width: showSubMenu ? "165px" : "",
           }}
-          className="transition-opacity absolute flex justify-center items-center gap-1 w-fit h-8 -bottom-4 z-10"
+          onMouseLeave={() => setShowSubMenu(false)}
+          className="transition-opacity absolute flex justify-end items-start gap-1 w-fit h-6 right-1 top-1 z-10"
         >
+          <DragHandle className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+
           <button
             onClick={() => handleEditField(field, i)}
-            className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
+            className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md"
           >
             <EditBtnIcon />
           </button>
           <button
             onClick={handleSetAdd}
-            className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
+            className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md"
           >
             <AddIcon />
           </button>
           <button
             onClick={handleSetMove}
-            className="w-full h-full bg-[var(--bg-tertiary)] p-2 rounded-md"
+            className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md"
           >
             <MoveIcon />
           </button>
+          <span
+            className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md relative cursor-pointer"
+            onClick={() => setShowSubMenu(true)}
+            onMouseEnter={() => setShowSubMenu(true)}
+          >
+            <EditIcon />
+            {showSubMenu && (
+              <div className="w-full h-full gap-1 absolute right-[140px] top-7 flex">
+                <button
+                  onClick={handleCopyField}
+                  className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  title="Copy Field"
+                >
+                  <CopyIcon />
+                </button>
+
+                <button
+                  onClick={handlePasteField}
+                  className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0 "
+                  title="Paste Field Below"
+                >
+                  <PasteIcon />
+                </button>
+                <button
+                  onClick={handleDublicateField}
+                  className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  title="Duplicate Field"
+                >
+                  <DublicateIcon />
+                </button>
+
+                <button
+                  onClick={handleCopyFieldStyles}
+                  className="w-6 h-6  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  title="Copy Field Styles"
+                >
+                  <CopyStyleIcon />
+                </button>
+                <button
+                  onClick={handlePasteFieldStyles}
+                  className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  title="Paste Field Styles"
+                >
+                  <PasteStyleIcon />
+                </button>
+
+                <button
+                  onClick={handleDeleteField}
+                  className="w-6 h-6 hover:bg-[var(--btn-delete)]  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                  title="Delete Field"
+                >
+                  <DeleteIcon />
+                </button>
+              </div>
+            )}
+          </span>
         </span>
       )}
       {move.move && move.id === field.id && (
@@ -797,15 +1239,14 @@ const DocRenderView = ({
         />
       )}
       {showAdd.show && showAdd.index === i && (
-        <div
-          className="flex justify-center items-center"
-        >
+        <div className="flex justify-center items-center">
           <MenuButtons
             setCurrentField={setCurrentField}
             setType={setCurrentFieldType}
             setShowAdd={setShowAdd}
             showAdd={showAdd}
             hide={true}
+            currentFieldIndex={i}
           />
           <button
             onClick={handleResetShowAdd}
@@ -817,6 +1258,7 @@ const DocRenderView = ({
       )}
       {currentField?.id === field?.id && (
         <AddEditField
+          dataIndex={i}
           setCurrentFieldType={setCurrentFieldType}
           node={node}
           setNode={setNode}
@@ -836,7 +1278,15 @@ const MenuButtons = ({
   showAdd,
   setShowAdd,
   hide = false,
+  currentFieldIndex = null,
 }) => {
+  const {
+    db,
+    copyField,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    currentFlowPlanNode,
+  } = useStateContext();
   const [showToolTip, setShowToolTip] = useState({
     show: false,
     index: null,
@@ -916,6 +1366,46 @@ const MenuButtons = ({
     });
   };
 
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handlePasteField = async () => {
+    if (!copyField) return;
+    console.log(copyField);
+    let newField = structuredClone(copyField);
+    if (
+      newField.type === "unorderedList" ||
+      newField.type === "numberList" ||
+      newField.type === "taskList"
+    ) {
+      newField.data.list = newField.data.list.map((item) => {
+        item.id = v4();
+        return item;
+      });
+    }
+    newField.id = v4();
+    console.log(newField);
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    if (currentFieldIndex !== null) {
+      node.data.splice(currentFieldIndex + 1, 0, newField);
+    } else {
+      node.data.push(newField);
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
   return (
     <div className="w-fit rounded-md h-fit flex justify-center items-center flex-wrap gap-2 p-1 bg-[var(--bg-secondary)] mt-2">
       {buttons.map((button, i) => (
@@ -930,6 +1420,16 @@ const MenuButtons = ({
           {button.icon}
         </Button>
       ))}
+      {copyField && (
+        <Button
+          onClick={handlePasteField}
+          text={"Paste Field"}
+          showToolTip={showToolTip}
+          setShowToolTip={setShowToolTip}
+        >
+          <PasteIcon />
+        </Button>
+      )}
     </div>
   );
 };
@@ -992,12 +1492,14 @@ const AddEditField = ({
           align: "left",
           fontSize: 16,
           listStyle: "filledCircle",
+          indentation: 0,
         };
       case "taskList":
         return {
           ...defaultNodeConfig.titleConfig,
           align: "left",
           fontSize: 16,
+          indentation: 0,
         };
       case "numberList":
         return {
@@ -1005,6 +1507,7 @@ const AddEditField = ({
           align: "left",
           fontSize: 16,
           listStyle: "number",
+          indentation: 0,
         };
       case "link":
         return {
@@ -1115,6 +1618,7 @@ const AddEditField = ({
           lineNumbers: true,
           wrapLines: true,
           string: "",
+          hideTop: false,
         },
       },
       config: handleGetConfig(type),
@@ -1384,15 +1888,20 @@ const InputTitleButtons = ({
   handleSave,
   type,
   handleGetDefaultConfig,
+  linkPreviewLoading,
+  linkPreview,
+  setLinkPreview,
 }) => {
   const {
     db,
     currentFlowPlan,
     setCurrentFlowPlan,
-    defaultNodeConfig,
     currentFlowPlanNode,
-    setCurrentFlowPlanNode,
+    fieldStyles,
+    setFieldStyles,
+    settings,
   } = useStateContext();
+  const { rootConfig } = settings;
   const { handleGetRandomColor } = useFunctions();
   const {
     ref: fontSizeRef,
@@ -1424,6 +1933,11 @@ const InputTitleButtons = ({
     isActive: numberListStyleActive,
     setIsActive: setNumberListStyleActive,
   } = useClickOutside(false);
+  const {
+    ref: indentationRef,
+    isActive: indentationActive,
+    setIsActive: setIndentationActive,
+  } = useClickOutside(false);
 
   const fontSizes = [10, 12, 14, 16, 18, 20, 22, 24, 26];
   const colors = [
@@ -1434,21 +1948,7 @@ const InputTitleButtons = ({
     "#ffc100",
     "#2a9d8f",
   ];
-  const fontFamilies = [
-    "Poppins",
-    "Monospace",
-    "Times",
-    "Courier New",
-    "Courier",
-    "Verdana",
-    "Georgia",
-    "Palatino",
-    "Garamond",
-    "Comic Sans MS",
-    "Trebuchet MS",
-    "Arial Black",
-    "Impact",
-  ];
+  const fontFamilies = rootConfig.fonts;
   const aligns = [
     {
       a: "L",
@@ -1509,6 +2009,47 @@ const InputTitleButtons = ({
       icon: <AlphabetListIcon />,
     },
   ];
+
+  const indentations = [
+    {
+      type: 0,
+    },
+    {
+      type: 1,
+    },
+    {
+      type: 2,
+    },
+    {
+      type: 3,
+    },
+    {
+      type: 4,
+    },
+  ];
+
+  const [showToolTip, setShowToolTip] = useState({
+    show: false,
+    type: null,
+  });
+
+  const [showPreviewConfig, setShowPreviewConfig] = useState(false);
+
+  const handleIndentationClick = () => {
+    setIndentationActive((prev) => !prev);
+  };
+
+  const handleIndentationChange = (e) => {
+    e.stopPropagation();
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        indentation: parseInt(e.target.value),
+      },
+    });
+    setIndentationActive(false);
+  };
 
   const handleFontSizeClick = () => {
     setFontSizeActive((prev) => !prev);
@@ -1682,6 +2223,7 @@ const InputTitleButtons = ({
   };
 
   const handleDelete = async (index) => {
+    console.log(currentField);
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
@@ -1692,6 +2234,68 @@ const InputTitleButtons = ({
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
     setCurrentFieldType(null);
     setCurrentField(null);
+  };
+
+  const handleDublicateField = async (i) => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((j) => {
+      node = node.children[j];
+    });
+    let temp = structuredClone(node.data[i]);
+    temp.id = v4();
+    if (
+      node.data[i].type === "unorderedList" ||
+      node.data[i].type === "numberList" ||
+      node.data[i].type === "taskList"
+    ) {
+      temp.data.list = temp.data.list.map((item) => {
+        item.id = v4();
+        return item;
+      });
+    }
+    node.data.splice(i + 1, 0, temp);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
+  const handleCopyFieldStyles = (i) => {
+    setFieldStyles({
+      type: currentField.type,
+      config: structuredClone(currentField.config),
+    });
+  };
+
+  const handlePasteFieldStyles = async (i) => {
+    if (!fieldStyles.config) return;
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((j) => {
+      node = node.children[j];
+    });
+
+    if (fieldStyles.type !== currentField.type) {
+      let oldConfig = structuredClone(node.data[i].config);
+      let newConfig = structuredClone(fieldStyles.config);
+      Object.keys(oldConfig).forEach((key) => {
+        if (newConfig[key]) {
+          oldConfig[key] = newConfig[key];
+        }
+      });
+      setCurrentField((prev) => ({ ...prev, config: oldConfig }));
+    } else {
+      setCurrentField((prev) => ({ ...prev, config: fieldStyles.config }));
+    }
+  };
+
+  const handleSetPreviewLink = (key) => {
+    setLinkPreview((prev) => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        show: prev[key].show ? false : true,
+      },
+    }));
   };
 
   return (
@@ -1814,23 +2418,107 @@ const InputTitleButtons = ({
         </div>
       )}
 
+      {(currentField?.type === "unorderedList" ||
+        currentField?.type === "numberList" ||
+        currentField?.type === "taskList") && (
+        <div className="relative">
+          <button
+            type="button"
+            title="Indentation"
+            onClick={handleIndentationClick}
+            className="w-8 h-8 group flex justify-center items-center relative text-xs text-[var(--text-primary)] bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
+            onMouseEnter={() =>
+              setShowToolTip({ show: true, type: "Indentation" })
+            }
+            onMouseLeave={() => setShowToolTip({ show: false, type: null })}
+          >
+            <IndentationIcon />
+            <span className="absolute w-2 h-2 -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
+              {currentField?.config?.indentation ?? 0}
+            </span>
+            {showToolTip.show && showToolTip.type === "Indentation" && (
+              <ToolTip text="Indentation" />
+            )}
+          </button>
+          {indentationActive && (
+            <div
+              ref={indentationRef}
+              className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+            >
+              {indentations.map((indentation) => (
+                <label
+                  key={`indentation-id-${indentation.type}`}
+                  className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                  style={{
+                    backgroundColor: `${
+                      currentField?.config?.indentation === indentation.type
+                        ? "var(--btn-edit)"
+                        : ""
+                    }`,
+                  }}
+                >
+                  <input
+                    className="w-full h-full bg-blue-500 absolute opacity-0"
+                    type="radio"
+                    value={indentation.type}
+                    checked={
+                      currentField?.config?.indentation === indentation.type
+                    }
+                    onChange={handleIndentationChange}
+                  />
+                  <span className="absolute w-4 h-4 rounded-full inline-block text-[var(--text-primary)] text-sm text-center font-medium">
+                    {indentation.type}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {currentField?.type === "link" && (
-        <div className="relative group">
+        <div className="relative group flex gap-2">
           <button
             type="button"
             onClick={handlePreviewLinkClick}
-            title="Preview Link"
-            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+            title="Preview Details"
+            className="w-8 h-8 shrink-0 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
           >
             <PreviewIcon />
             {!currentField?.config?.preview && (
               <span className="absolute block w-[2px] rotate-45 rounded-full h-6 bg-[var(--logo-primary)]"></span>
             )}
           </button>
+          <div className="relative w-full shrink-0 flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={!currentField?.config?.preview || linkPreviewLoading}
+              style={
+                !currentField?.config?.preview || linkPreviewLoading
+                  ? {
+                      opacity: 0.5,
+                      cursor: "not-allowed",
+                    }
+                  : {}
+              }
+              onClick={() => setShowPreviewConfig((prev) => !prev)}
+              className="w-fit h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+            >
+              Preview Config
+            </button>
+            {showPreviewConfig &&
+              currentField?.config?.preview &&
+              !linkPreviewLoading && (
+                <LinkPreviewConfig
+                  linkPreview={linkPreview}
+                  setLinkPreview={setLinkPreview}
+                />
+              )}
+          </div>
         </div>
       )}
 
-      {currentField.type === "heading" && (
+      {currentField?.type === "heading" && (
         <div className="relative">
           <button
             type="button"
@@ -1873,228 +2561,262 @@ const InputTitleButtons = ({
         </div>
       )}
 
-      <button
-        type="button"
-        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
-        onClick={handleStrickthroughClick}
-      >
-        <StrickthroughIcon />
-        <span
-          style={{
-            textDecoration: `${
-              config?.strickthrough ? "line-through" : "none"
-            }`,
-          }}
-          className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
-        >
-          T
-        </span>
-      </button>
-      <button
-        type="button"
-        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-move)] transition-colors duration-300"
-        onClick={handleItalicClick}
-      >
-        <ItalicIcon />
-        <span
-          style={{
-            fontStyle: `${config?.italic ? "italic" : "normal"}`,
-          }}
-          className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
-        >
-          T
-        </span>
-      </button>
-      <button
-        type="button"
-        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
-        onClick={handleBoldClick}
-      >
-        <BoldIcon />
-        <span
-          style={{
-            fontWeight: `${config?.bold ? "bold" : "normal"}`,
-          }}
-          className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
-        >
-          T
-        </span>
-      </button>
-      <div className="relative">
-        <button
-          type="button"
-          className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
-          onClick={handleColorClick}
-        >
-          <ColorIcon />
-          <span
-            className="absolute w-3 h-3 rounded-full inline-block -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
-            style={{
-              background: config?.color,
-            }}
-          ></span>
-        </button>
-        {colorActive && (
-          <div
-            ref={colorRef}
-            className="hide z-10 absolute flex flex-col items-center gap-1 w-8 top-9 p-1 rounded-md  bg-[var(--btn-secondary)] overflow-hidden"
-          >
-            {colors.map((color) => (
-              <label
-                key={`color-id-${color}`}
-                className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300 hover:cursor-pointer"
-                style={{
-                  background: color,
-                }}
-              >
-                <input
-                  className="w-full h-full absolute opacity-0 cursor-pointer"
-                  type="radio"
-                  value={color}
-                  checked={config?.color === color}
-                  onChange={handleColorChange}
-                />
-              </label>
-            ))}
-            <label
-              className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300"
-              style={{
-                background:
-                  "linear-gradient(90deg, rgba(255,0,0,1) 0%, rgba(255,190,0,1) 35%, rgba(0,213,255,1) 100%)",
-              }}
-            >
-              <input
-                className="w-full h-full absolute opacity-0 cursor-pointer"
-                type="color"
-                value={config?.color}
-                onChange={handleActiveColorChange}
-              />
-            </label>
-            <label className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300">
-              <RandomIcon />
-              <button
-                type="button"
-                className="w-full h-full absolute opacity-0 cursor-pointer"
-                onClick={() => handleSetTitleColor(handleGetRandomColor())}
-              ></button>
-            </label>
-          </div>
-        )}
-      </div>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={handleFontFamilyClick}
-          className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
-        >
-          <FontIcon />
-          <span
-            style={{
-              fontFamily: `${config?.fontFamily}`,
-            }}
-            className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
-          >
-            Aa
-          </span>
-        </button>
-        {fontFamilyActive && (
-          <div
-            ref={fontFamilyRef}
-            className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
-          >
-            {fontFamilies.map((fontFamily) => (
-              <label
-                key={`fontsize-id-${fontFamily}`}
-                className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
-                style={{
-                  fontFamily: `${fontFamily}`,
-                  backgroundColor: `${
-                    config?.fontFamily === fontFamily ? "var(--btn-edit)" : ""
-                  }`,
-                }}
-              >
-                <input
-                  title={fontFamily}
-                  className="w-full h-full bg-blue-500 absolute opacity-0"
-                  type="radio"
-                  value={fontFamily}
-                  checked={config?.fontFamily === fontFamily}
-                  onChange={handleFontFamilytChange}
-                />
-                Aa
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-      {(currentField.type === "heading" ||
-        currentField.type === "paragraph" ||
-        currentField.type === "table") && (
-        <div className="relative">
+      {currentField?.type !== "image" && (
+        <>
           <button
             type="button"
-            onClick={handleAlignClick}
-            className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
+            onClick={handleStrickthroughClick}
           >
-            {config?.align ? (
-              aligns.find((item) => item.type === config?.align)?.icon
-            ) : (
-              <LeftAlignIcon />
-            )}
-            <span className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
-              {config?.align
-                ? aligns.find((item) => item.type === config?.align)?.a
-                : "L"}
+            <StrickthroughIcon />
+            <span
+              style={{
+                textDecoration: `${
+                  config?.strickthrough ? "line-through" : "none"
+                }`,
+              }}
+              className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
+            >
+              T
             </span>
           </button>
-          {alignActive && (
-            <div
-              ref={alignRef}
-              className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+          <button
+            type="button"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-move)] transition-colors duration-300"
+            onClick={handleItalicClick}
+          >
+            <ItalicIcon />
+            <span
+              style={{
+                fontStyle: `${config?.italic ? "italic" : "normal"}`,
+              }}
+              className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
             >
-              {aligns.map((align) => (
+              T
+            </span>
+          </button>
+          <button
+            type="button"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
+            onClick={handleBoldClick}
+          >
+            <BoldIcon />
+            <span
+              style={{
+                fontWeight: `${config?.bold ? "bold" : "normal"}`,
+              }}
+              className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
+            >
+              T
+            </span>
+          </button>
+          <div className="relative">
+            <button
+              type="button"
+              className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+              onClick={handleColorClick}
+            >
+              <ColorIcon />
+              <span
+                className="absolute w-3 h-3 rounded-full inline-block -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
+                style={{
+                  background: config?.color,
+                }}
+              ></span>
+            </button>
+            {colorActive && (
+              <div
+                ref={colorRef}
+                className="hide z-10 absolute flex flex-col items-center gap-1 w-8 top-9 p-1 rounded-md  bg-[var(--btn-secondary)] overflow-hidden"
+              >
+                {colors.map((color) => (
+                  <label
+                    key={`color-id-${color}`}
+                    className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300 hover:cursor-pointer"
+                    style={{
+                      background: color,
+                    }}
+                  >
+                    <input
+                      className="w-full h-full absolute opacity-0 cursor-pointer"
+                      type="radio"
+                      value={color}
+                      checked={config?.color === color}
+                      onChange={handleColorChange}
+                    />
+                  </label>
+                ))}
                 <label
-                  key={`align-id-${align.type}`}
-                  className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                  className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300"
                   style={{
-                    backgroundColor: `${
-                      config?.align === align.type ? "var(--btn-add)" : ""
-                    }`,
+                    background:
+                      "linear-gradient(90deg, rgba(255,0,0,1) 0%, rgba(255,190,0,1) 35%, rgba(0,213,255,1) 100%)",
                   }}
                 >
                   <input
-                    title={align.type}
-                    className="w-full h-full bg-blue-500 absolute opacity-0"
-                    type="radio"
-                    value={align.type}
-                    checked={config?.align === align.type}
-                    onChange={handleAlignChange}
+                    className="w-full h-full absolute opacity-0 cursor-pointer"
+                    type="color"
+                    value={config?.color}
+                    onChange={handleActiveColorChange}
                   />
-                  <span className="w-5 h-5 flex justify-center items-center">
-                    {align.icon}
-                  </span>
                 </label>
-              ))}
+                <label className="shrink-0 w-6 h-4 rounded-md flex justify-center items-center relative transition-colors duration-300">
+                  <RandomIcon />
+                  <button
+                    type="button"
+                    className="w-full h-full absolute opacity-0 cursor-pointer"
+                    onClick={() => handleSetTitleColor(handleGetRandomColor())}
+                  ></button>
+                </label>
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleFontFamilyClick}
+              className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
+            >
+              <FontIcon />
+              <span
+                style={{
+                  fontFamily: `${config?.fontFamily}`,
+                }}
+                className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium"
+              >
+                Aa
+              </span>
+            </button>
+            {fontFamilyActive && (
+              <div
+                ref={fontFamilyRef}
+                className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+              >
+                {fontFamilies.map((fontFamily) => (
+                  <label
+                    key={`fontsize-id-${fontFamily.value}`}
+                    className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                    style={{
+                      fontFamily: `${fontFamily.value}`,
+                      backgroundColor: `${
+                        config?.fontFamily === fontFamily
+                          ? "var(--btn-edit)"
+                          : ""
+                      }`,
+                    }}
+                  >
+                    <input
+                      title={fontFamily.label}
+                      className="w-full h-full bg-blue-500 absolute opacity-0"
+                      type="radio"
+                      value={fontFamily.value}
+                      checked={config?.fontFamily === fontFamily.value}
+                      onChange={handleFontFamilytChange}
+                    />
+                    Aa
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {(currentField.type === "heading" ||
+            currentField.type === "paragraph" ||
+            currentField.type === "table") && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={handleAlignClick}
+                className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300 relative"
+              >
+                {config?.align ? (
+                  aligns.find((item) => item.type === config?.align)?.icon
+                ) : (
+                  <LeftAlignIcon />
+                )}
+                <span className="absolute -top-1 -right-1 text-[var(--text-primary)] text-xs font-medium">
+                  {config?.align
+                    ? aligns.find((item) => item.type === config?.align)?.a
+                    : "L"}
+                </span>
+              </button>
+              {alignActive && (
+                <div
+                  ref={alignRef}
+                  className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+                >
+                  {aligns.map((align) => (
+                    <label
+                      key={`align-id-${align.type}`}
+                      className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
+                      style={{
+                        backgroundColor: `${
+                          config?.align === align.type ? "var(--btn-add)" : ""
+                        }`,
+                      }}
+                    >
+                      <input
+                        title={align.type}
+                        className="w-full h-full bg-blue-500 absolute opacity-0"
+                        type="radio"
+                        value={align.type}
+                        checked={config?.align === align.type}
+                        onChange={handleAlignChange}
+                      />
+                      <span className="w-5 h-5 flex justify-center items-center">
+                        {align.icon}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-        </div>
+          <button
+            type="button"
+            onClick={handleResetToDefaultTitleConfig}
+            title="Reset To Default"
+            className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300 relative"
+          >
+            <ResetToDefaultIcon />
+          </button>
+        </>
       )}
-      <button
-        type="button"
-        onClick={handleResetToDefaultTitleConfig}
-        title="Reset To Default"
-        className="w-8 h-8 group flex justify-center items-center text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300 relative"
-      >
-        <ResetToDefaultIcon />
-      </button>
       {currentField?.id && (
-        <button
-          type="button"
-          onClick={() => handleDelete(currentField.index)}
-          className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-        >
-          <DeleteIcon />
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => handleCopyFieldStyles(currentField.index)}
+            title="Copy Field Style"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
+          >
+            <CopyStyleIcon />
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePasteFieldStyles(currentField.index)}
+            title="Paste Field Styles"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
+          >
+            <PasteStyleIcon />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDublicateField(currentField.index)}
+            title="Dublicate Field"
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
+          >
+            <DublicateIcon />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDelete(currentField.index)}
+            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+          >
+            <DeleteIcon />
+          </button>
+        </>
       )}
 
       <button
@@ -2104,6 +2826,60 @@ const InputTitleButtons = ({
       >
         Save
       </button>
+    </div>
+  );
+};
+
+const LinkPreviewConfig = ({ linkPreview, setLinkPreview }) => {
+  const previewFields = [
+    {
+      type: "title",
+      text: "Title",
+    },
+    {
+      type: "description",
+      text: "Description",
+    },
+    {
+      type: "favicon",
+      text: "Favicon",
+    },
+    {
+      type: "siteName",
+      text: "Sitename",
+    },
+    {
+      type: "previewImages",
+      text: "Images",
+    },
+  ];
+  const handleSetPreviewLink = (key) => {
+    setLinkPreview((prev) => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        show: prev[key].show ? false : true,
+      },
+    }));
+  };
+  return (
+    <div className="absolute px-2 py-1 rounded-md left-0 top-9 w-fit flex flex-col gap-2 bg-[var(--btn-secondary)] z-10">
+      {previewFields.map((item) => (
+        <div
+          key={`preview-id-${item.type}`}
+          className="w-full flex gap-1 justify-start items-center "
+        >
+          <span
+            className="w-4 h-4 mr-1 block cursor-pointer"
+            onClick={() => handleSetPreviewLink(item.type)}
+          >
+            {linkPreview[item.type]?.show ? <CheckedIcon /> : <UncheckedIcon />}
+          </span>
+          <label className="text-xs text-[var(--text-primary)]">
+            {item.text}
+          </label>
+        </div>
+      ))}
     </div>
   );
 };
@@ -2273,7 +3049,10 @@ const UnorderedList = ({
   const handleItemChange = (e, i = null) => {
     let newList = [...list];
     if (i !== null) {
-      newList[i] = e.target.value;
+      newList[i] = {
+        id: list[i].id,
+        value: e.target.value,
+      };
       setList(newList);
     } else {
       setItem(e.target.value);
@@ -2283,7 +3062,13 @@ const UnorderedList = ({
 
   const handleAdd = (e) => {
     e.preventDefault();
-    setList((prev) => [...prev, item]);
+    setList((prev) => [
+      ...prev,
+      {
+        id: v4(),
+        value: item,
+      },
+    ]);
     setItem("");
   };
 
@@ -2298,7 +3083,16 @@ const UnorderedList = ({
   };
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
-    let finalList = item === "" ? list : [...list, item];
+    let finalList =
+      item === ""
+        ? list
+        : [
+            ...list,
+            {
+              id: v4(),
+              value: item,
+            },
+          ];
     if (finalList.length === 0) {
       return;
     }
@@ -2331,7 +3125,9 @@ const UnorderedList = ({
     setCurrentFieldType(null);
     setCurrentField(null);
   };
-
+  const handleMove = (items) => {
+    setList(items);
+  };
   const handleDelete = async (index) => {
     let newList = [...list];
     newList.splice(index, 1);
@@ -2339,54 +3135,72 @@ const UnorderedList = ({
   };
 
   return (
-    <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
-      {list.map((item, i) => (
-        <div
-          key={`list-item-${i}`}
-          className="group w-full flex justify-center items-center text-sm relative"
-        >
-          <span
-            style={{
-              color: `${currentField?.config?.color}`,
-            }}
-            className="w-3 h-3 mr-1 block"
-          >
-            {
-              listStyles?.find(
-                (listStyle) => listStyle.type === currentField.config?.listStyle
-              )?.icon
-            }
-          </span>
-          <input
-            required
-            type="text"
-            placeholder="Enter List Item..."
-            value={item}
-            onChange={(e) => handleItemChange(e, i)}
-            className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-            style={{
-              fontSize: `${currentField?.config?.fontSize}px`,
-              textDecoration: `${
-                currentField?.config?.strickthrough ? "line-through" : "none"
-              }`,
-              fontStyle: `${
-                currentField?.config?.italic ? "italic" : "normal"
-              }`,
-              fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
-              fontFamily: `${currentField?.config?.fontFamily}`,
-              color: `${currentField?.config?.color}`,
-              textAlign: `${currentField?.config?.align}`,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => handleDelete(i)}
-            className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-          >
-            <DeleteIcon />
-          </button>
-        </div>
-      ))}
+    <div
+      style={{
+        paddingLeft: `${currentField?.config?.indentation * 10 || 4}px`,
+      }}
+      className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md"
+    >
+      <SortableList
+        items={list}
+        onChange={handleMove}
+        className="flex flex-col gap-1"
+        renderItem={(item, active, index) => (
+          <SortableList.Item id={item?.id}>
+            <div
+              key={`list-item-${item?.id}`}
+              className="group w-full flex justify-center items-center text-sm relative"
+            >
+              <span
+                style={{
+                  color: `${currentField?.config?.color}`,
+                }}
+                className="w-3 h-3 mr-1 block"
+              >
+                {
+                  listStyles?.find(
+                    (listStyle) =>
+                      listStyle.type === currentField.config?.listStyle
+                  )?.icon
+                }
+              </span>
+              <input
+                required
+                type="text"
+                placeholder="Enter List Item..."
+                value={item.value}
+                onChange={(e) => handleItemChange(e, index)}
+                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                style={{
+                  fontSize: `${currentField?.config?.fontSize}px`,
+                  textDecoration: `${
+                    currentField?.config?.strickthrough
+                      ? "line-through"
+                      : "none"
+                  }`,
+                  fontStyle: `${
+                    currentField?.config?.italic ? "italic" : "normal"
+                  }`,
+                  fontWeight: `${
+                    currentField?.config?.bold ? "bold" : "normal"
+                  }`,
+                  fontFamily: `${currentField?.config?.fontFamily}`,
+                  color: `${currentField?.config?.color}`,
+                  textAlign: `${currentField?.config?.align}`,
+                }}
+              />
+              <SortableList.DragHandle className="opacity-0 group-hover:opacity-100 w-5 h-5 absolute right-9 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+              <button
+                type="button"
+                onClick={() => handleDelete(index)}
+                className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+              >
+                <DeleteIcon />
+              </button>
+            </div>
+          </SortableList.Item>
+        )}
+      />
 
       <form
         onSubmit={handleAdd}
@@ -2466,6 +3280,7 @@ const TaskList = ({
     if (i !== null) {
       newList[i] = {
         ...newList[i],
+        id: newList[i].id,
         text: e.target.value,
       };
 
@@ -2480,7 +3295,13 @@ const TaskList = ({
 
   const handleAdd = (e) => {
     e.preventDefault();
-    setList((prev) => [...prev, item]);
+    setList((prev) => [
+      ...prev,
+      {
+        ...item,
+        id: v4(),
+      },
+    ]);
     setItem({
       text: "",
       completed: false,
@@ -2498,7 +3319,16 @@ const TaskList = ({
   };
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
-    let finalList = item.text === "" ? list : [...list, item];
+    let finalList =
+      item.text === ""
+        ? list
+        : [
+            ...list,
+            {
+              ...item,
+              id: v4(),
+            },
+          ];
     if (finalList.length === 0) {
       return;
     }
@@ -2551,52 +3381,73 @@ const TaskList = ({
     newList.splice(index, 1);
     setList(newList);
   };
+
+  const handleMove = (items) => {
+    setList(items);
+  };
   return (
-    <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
-      {list.map((item, i) => (
-        <div
-          key={`list-item-${i}`}
-          className="group w-full flex justify-center items-center text-sm relative"
-        >
-          <span
-            style={{
-              color: `${currentField?.config?.color}`,
-            }}
-            className="w-5 h-5 mr-1 block cursor-pointer"
-            onClick={(e) => handleCompleteToggle(e, i)}
-          >
-            {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
-          </span>
-          <input
-            required
-            type="text"
-            placeholder="Enter List Item..."
-            value={item?.text}
-            onChange={(e) => handleItemChange(e, i)}
-            className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-            style={{
-              fontSize: `${currentField?.config?.fontSize}px`,
-              textDecoration: `${
-                currentField?.config?.strickthrough ? "line-through" : "none"
-              }`,
-              fontStyle: `${
-                currentField?.config?.italic ? "italic" : "normal"
-              }`,
-              fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
-              fontFamily: `${currentField?.config?.fontFamily}`,
-              color: `${currentField?.config?.color}`,
-              textAlign: `${currentField?.config?.align}`,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => handleDelete(i)}
-            className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-          >
-            <DeleteIcon />
-          </button>
-        </div>
-      ))}
+    <div
+      style={{
+        paddingLeft: `${currentField?.config?.indentation * 10 || 4}px`,
+      }}
+      className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md"
+    >
+      <SortableList
+        items={list}
+        onChange={handleMove}
+        className="flex flex-col gap-1"
+        renderItem={(item, active, index) => (
+          <SortableList.Item id={item?.id}>
+            <div
+              key={`tasklist-item-${item?.id}`}
+              className="group w-full flex justify-center items-center text-sm relative"
+            >
+              <span
+                style={{
+                  color: `${currentField?.config?.color}`,
+                }}
+                className="w-5 h-5 mr-1 block cursor-pointer"
+                onClick={(e) => handleCompleteToggle(e, index)}
+              >
+                {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
+              </span>
+              <input
+                required
+                type="text"
+                placeholder="Enter List Item..."
+                value={item?.text}
+                onChange={(e) => handleItemChange(e, index)}
+                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                style={{
+                  fontSize: `${currentField?.config?.fontSize}px`,
+                  textDecoration: `${
+                    currentField?.config?.strickthrough
+                      ? "line-through"
+                      : "none"
+                  }`,
+                  fontStyle: `${
+                    currentField?.config?.italic ? "italic" : "normal"
+                  }`,
+                  fontWeight: `${
+                    currentField?.config?.bold ? "bold" : "normal"
+                  }`,
+                  fontFamily: `${currentField?.config?.fontFamily}`,
+                  color: `${currentField?.config?.color}`,
+                  textAlign: `${currentField?.config?.align}`,
+                }}
+              />
+              <SortableList.DragHandle className="opacity-0 group-hover:opacity-100 w-5 h-5 absolute right-9 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+              <button
+                type="button"
+                onClick={() => handleDelete(index)}
+                className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+              >
+                <DeleteIcon />
+              </button>
+            </div>
+          </SortableList.Item>
+        )}
+      />
 
       <form
         onSubmit={handleAdd}
@@ -2726,7 +3577,10 @@ const NumberList = ({
   const handleItemChange = (e, i = null) => {
     let newList = [...list];
     if (i !== null) {
-      newList[i] = e.target.value;
+      newList[i] = {
+        id: newList[i].id,
+        value: e.target.value,
+      };
       setList(newList);
     } else {
       setItem(e.target.value);
@@ -2735,7 +3589,13 @@ const NumberList = ({
 
   const handleAdd = (e) => {
     e.preventDefault();
-    setList((prev) => [...prev, item]);
+    setList((prev) => [
+      ...prev,
+      {
+        id: v4(),
+        value: item,
+      },
+    ]);
     setItem("");
   };
 
@@ -2750,7 +3610,16 @@ const NumberList = ({
   };
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
-    let finalList = item === "" ? list : [...list, item];
+    let finalList =
+      item === ""
+        ? list
+        : [
+            ...list,
+            {
+              id: v4(),
+              value: item,
+            },
+          ];
     if (finalList.length === 0) {
       return;
     }
@@ -2789,55 +3658,79 @@ const NumberList = ({
     newList.splice(index, 1);
     setList(newList);
   };
+
+  const handleMove = (items) => {
+    setList(items);
+  };
+
   return (
-    <div className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
-      {list.map((item, i) => (
-        <div
-          key={`list-item-${i}`}
-          className="group w-full flex justify-center items-center text-sm relative"
-        >
-          <span
-            style={{
-              color: `${currentField?.config?.color}`,
-            }}
-            className="w-3 h-full mr-1  flex justify-center items-center"
-          >
-            {listStyles
-              ?.find(
-                (listStyle) => listStyle.type === currentField.config?.listStyle
-              )
-              ?.icon(i) + "."}
-          </span>
-          <input
-            required
-            type="text"
-            placeholder="Enter List Item..."
-            value={item}
-            onChange={(e) => handleItemChange(e, i)}
-            className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-            style={{
-              fontSize: `${currentField?.config?.fontSize}px`,
-              textDecoration: `${
-                currentField?.config?.strickthrough ? "line-through" : "none"
-              }`,
-              fontStyle: `${
-                currentField?.config?.italic ? "italic" : "normal"
-              }`,
-              fontWeight: `${currentField?.config?.bold ? "bold" : "normal"}`,
-              fontFamily: `${currentField?.config?.fontFamily}`,
-              color: `${currentField?.config?.color}`,
-              textAlign: `${currentField?.config?.align}`,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => handleDelete(i)}
-            className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-          >
-            <DeleteIcon />
-          </button>
-        </div>
-      ))}
+    <div
+      style={{
+        paddingLeft: `${currentField?.config?.indentation * 10 || 4}px`,
+      }}
+      className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md"
+    >
+      <SortableList
+        items={list}
+        onChange={handleMove}
+        className="flex flex-col gap-1"
+        renderItem={(item, active, index) => (
+          <SortableList.Item id={item?.id}>
+            <div
+              key={`numberlist-item-${item?.id}`}
+              className="group w-full flex justify-center items-center text-sm relative"
+            >
+              <span
+                style={{
+                  color: `${currentField?.config?.color}`,
+                }}
+                className="w-3 h-full mr-1  flex justify-center items-center"
+              >
+                {listStyles
+                  ?.find(
+                    (listStyle) =>
+                      listStyle.type === currentField.config?.listStyle
+                  )
+                  ?.icon(index) + "."}
+              </span>
+              <input
+                required
+                type="text"
+                placeholder="Enter List Item..."
+                value={item?.value}
+                onChange={(e) => handleItemChange(e, index)}
+                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                style={{
+                  fontSize: `${currentField?.config?.fontSize}px`,
+                  textDecoration: `${
+                    currentField?.config?.strickthrough
+                      ? "line-through"
+                      : "none"
+                  }`,
+                  fontStyle: `${
+                    currentField?.config?.italic ? "italic" : "normal"
+                  }`,
+                  fontWeight: `${
+                    currentField?.config?.bold ? "bold" : "normal"
+                  }`,
+                  fontFamily: `${currentField?.config?.fontFamily}`,
+                  color: `${currentField?.config?.color}`,
+                  textAlign: `${currentField?.config?.align}`,
+                }}
+              />
+              <SortableList.DragHandle className="opacity-0 group-hover:opacity-100 w-5 h-5 absolute right-9 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+              <button
+                type="button"
+                onClick={() => handleDelete(index)}
+                className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+              >
+                <DeleteIcon />
+              </button>
+            </div>
+          </SortableList.Item>
+        )}
+      />
+
       <form
         onSubmit={handleAdd}
         className="w-full flex justify-center items-center text-sm"
@@ -2902,8 +3795,10 @@ const Link = ({
 
   const [link, setLink] = useState(currentField?.data?.link ?? "");
   const [isValidLink, setIsValidLink] = useState(true);
-  const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [preview, setPreview] = useState(
+    currentField?.data?.previewLink ?? null
+  );
+  const [loading, setLoading] = useState(false);
 
   const handleLinkChange = (e) => {
     if (e.target.value === "") {
@@ -2977,15 +3872,36 @@ const Link = ({
         method: "GET",
         // mode: "no-cors",
       });
-      console.log(data);
       let res = await data.json();
       if (!res.success) {
         setPreview(null);
         setLoading(false);
         return;
       }
-      console.log(res);
-      setPreview(res.data);
+      let tempPreview = {};
+      Object.keys(res.data).forEach((key) => {
+        if (res.data[key] !== "") {
+          if (key === "previewImages") {
+            tempPreview[key] = {
+              value: res.data[key].map((image, i) => ({
+                url: image,
+                show:
+                  currentField?.data?.previewLink?.previewImages?.value[i]
+                    ?.show ?? true,
+              })),
+              show:
+                currentField?.data?.previewLink?.previewImages?.show ?? true,
+            };
+          } else {
+            tempPreview[key] = {
+              value: res.data[key],
+              show: currentField?.data?.previewLink?.[key]?.show ?? true,
+            };
+          }
+        }
+      });
+
+      setPreview(tempPreview);
       setCurrentField({
         ...currentField,
         config: {
@@ -3009,9 +3925,23 @@ const Link = ({
     return "https://" + domain + src;
   };
 
+  const handlePreviewImageShow = (index) => {
+    setPreview((prev) => ({
+      ...prev,
+      previewImages: {
+        ...prev.previewImages,
+        value: prev.previewImages.value.map((image, i) => ({
+          ...image,
+          show: i === index ? !image.show : image.show,
+        })),
+      },
+    }));
+  };
+
   useEffect(() => {
+    if (!currentField?.config?.preview) return;
     handlePreview();
-  }, [link]);
+  }, [link, currentField?.config?.preview]);
 
   return (
     <form
@@ -3052,42 +3982,52 @@ const Link = ({
           <div className="w-full h-fit flex justify-center items-center flex-col p-1">
             {preview?.favicon && (
               <div className="w-full flex justify-start items-center gap-1 ">
-                {preview?.favicon && (
+                {preview?.favicon?.show && (
                   <img
-                    src={handleFaviconSrc(preview.favicon, link)}
+                    src={handleFaviconSrc(preview.favicon.value, link)}
                     alt="favicon"
                     className="w-5 h-5 rounded-full"
                   />
                 )}
-                {preview?.siteName && (
+                {preview?.siteName?.show && (
                   <span className="text-sm font-bold text-[var(--text-primary)]">
-                    {preview.siteName}
+                    {preview.siteName.value}
                   </span>
                 )}
               </div>
             )}
-            {preview?.title && (
-              <h1 className="w-full text-[var(--text-primary)]  text-sm font-bold">
-                {preview.title}
+            {preview?.title?.show && (
+              <h1 className="w-full text-[var(--text-primary)]  text-sm font-medium">
+                {preview.title.value}
               </h1>
             )}
-            {preview?.description && (
+            {preview?.description?.show && (
               <p className="w-full text-start text-[var(--text-primary)] text-xs">
-                {preview.description}
+                {preview.description.value}
               </p>
             )}
-            {preview?.previewImages?.length > 0 &&
-              preview.previewImages.map((image, i) => (
+            {preview?.previewImages?.show &&
+              preview?.previewImages?.value?.length > 0 &&
+              preview?.previewImages?.value?.map((image, i) => (
                 <div
-                  key={`preview-image-${i}-`}
+                  key={`preview-image-${currentField?.id}-${i}-`}
                   className="w-full h-fit relative flex justify-center items-center"
                 >
                   <img
-                    key={`preview-image-${i}`}
-                    src={image}
+                    src={image?.url}
                     alt="preview"
                     className="mt-2 rounded-md object-contain"
                   />
+                  <div className="absolute bottom-0 right-0 w-fit h-fit flex justify-center items-center">
+                    <button
+                      type="button"
+                      onClick={() => handlePreviewImageShow(i)}
+                      className="w-6 h-6 flex justify-center items-center bg-[var(--bg-tertiary)] p-1 rounded-tl-md transition-colors duration-300"
+                      title="Show This Image"
+                    >
+                      {image?.show ? <CheckedIcon /> : <UncheckedIcon />}
+                    </button>
+                  </div>
                 </div>
               ))}
           </div>
@@ -3106,6 +4046,9 @@ const Link = ({
         handleSave={handleSave}
         type={currentField.type}
         handleGetDefaultConfig={handleGetDefaultConfig}
+        linkPreviewLoading={loading}
+        linkPreview={preview}
+        setLinkPreview={setPreview}
       />
     </form>
   );
@@ -3113,7 +4056,7 @@ const Link = ({
 
 const LinkPreview = ({ link, previewLink }) => {
   const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const handlePreview = async () => {
     setPreview(null);
@@ -3130,7 +4073,28 @@ const LinkPreview = ({ link, previewLink }) => {
         setLoading(false);
         return;
       }
-      setPreview(res.data);
+
+      let tempPreview = {};
+      Object.keys(res.data).forEach((key) => {
+        if (res.data[key] !== "") {
+          if (key === "previewImages") {
+            tempPreview[key] = {
+              value: res.data[key].map((image, i) => ({
+                url: image,
+                show: previewLink[key]?.value?.[i]?.show ?? true,
+              })),
+              show: previewLink[key]?.show || true,
+            };
+          } else {
+            tempPreview[key] = {
+              value: res.data[key],
+              show: previewLink[key]?.show || true,
+            };
+          }
+        }
+      });
+      console.log(tempPreview);
+      setPreview(tempPreview);
       setLoading(false);
     } catch (e) {
       console.log(e);
@@ -3140,6 +4104,7 @@ const LinkPreview = ({ link, previewLink }) => {
   };
 
   const handleFaviconSrc = (src, link) => {
+    if (!src) return "";
     if (src === "") return "";
     if (src.startsWith("data:image")) return src;
     if (src.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
@@ -3149,94 +4114,100 @@ const LinkPreview = ({ link, previewLink }) => {
 
   useEffect(() => {
     handlePreview();
-  }, [link]);
+  }, [link, previewLink]);
 
   return (
-    <div className="w-full h-fit flex justify-center items-center flex-col p-1">
+    <div className="w-full h-fit flex justify-center items-center flex-col">
       {loading ? (
         <>
           {previewLink?.favicon && (
             <div className="w-full flex justify-start items-center gap-1 ">
-              {previewLink?.favicon && (
+              {previewLink?.favicon?.show && (
                 <img
-                  src={handleFaviconSrc(previewLink.favicon, link)}
+                  src={handleFaviconSrc(previewLink.favicon?.value, link)}
                   alt="favicon"
                   className="w-5 h-5 rounded-full"
                 />
               )}
-              {previewLink?.siteName && (
+              {previewLink?.siteName?.show && (
                 <span className="text-sm font-bold text-[var(--text-primary)]">
-                  {previewLink.siteName}
+                  {previewLink.siteName?.value}
                 </span>
               )}
             </div>
           )}
-          {previewLink?.title && (
+          {previewLink?.title?.show && (
             <h1 className="w-full text-[var(--text-primary)]  text-sm font-medium">
-              {previewLink.title}
+              {previewLink.title?.value}
             </h1>
           )}
-          {previewLink?.description && (
+          {previewLink?.description?.show && (
             <p className="w-full text-[var(--text-primary)] text-xs text-start">
-              {previewLink.description}
+              {previewLink.description?.value}
             </p>
           )}
-          {previewLink?.previewImages?.length > 0 &&
-            previewLink.previewImages.map((image, i) => (
-              <div
-                key={`preview-image-${i}-`}
-                className="w-full h-fit relative flex justify-center items-center overflow-hidden"
-              >
-                <img
-                  src={image}
-                  alt="preview"
-                  className="mt-2 rounded-md object-contain"
-                />
-              </div>
-            ))}
+          {previewLink?.previewImages?.show &&
+            previewLink?.previewImages?.value?.length > 0 &&
+            previewLink.previewImages?.value.map((image, i) =>
+              image?.show ? (
+                <div
+                  key={`preview-image-${i}-${image.url}`}
+                  className="w-full h-fit relative flex justify-center items-center overflow-hidden"
+                >
+                  <img
+                    src={image.url}
+                    alt="Preview Image"
+                    className="mt-2 rounded-md object-contain"
+                  />
+                </div>
+              ) : null
+            )}
         </>
       ) : (
         <>
-          {preview?.favicon && (
+          {(preview?.favicon || preview?.siteName) && (
             <div className="w-full flex justify-start items-center gap-1 ">
-              {preview?.favicon && (
+              {previewLink?.favicon?.show && (
                 <img
-                  src={handleFaviconSrc(preview.favicon, link)}
+                  src={handleFaviconSrc(preview?.favicon?.value, link)}
                   alt="favicon"
                   className="w-5 h-5 rounded-full"
                 />
               )}
-              {preview?.siteName && (
+              {previewLink?.siteName?.show && (
                 <span className="text-sm font-bold text-[var(--text-primary)]">
-                  {preview.siteName}
+                  {preview?.siteName?.value}
                 </span>
               )}
             </div>
           )}
-          {preview?.title && (
+          {previewLink?.title?.show && (
             <h1 className="w-full text-[var(--text-primary)]  text-sm font-medium">
-              {preview.title}
+              {preview?.title?.value}
             </h1>
           )}
-          {preview?.description && (
+          {previewLink?.description?.show && (
             <p className="w-full text-[var(--text-primary)] text-xs text-start">
-              {preview.description}
+              {preview?.description?.value}
             </p>
           )}
-          {preview?.previewImages?.length > 0 &&
-            preview.previewImages.map((image, i) => (
-              <div
-                key={`preview-image-${i}-`}
-                className="w-full h-fit relative flex justify-center items-center overflow-hidden"
-              >
-                <ImageWithPlaceholder
-                  key={`preview-image-${i}`}
-                  src={image}
-                  placeholderSrc={preview?.favicon}
-                  alt="preview"
-                />
-              </div>
-            ))}
+          {previewLink?.previewImages?.show &&
+            preview?.previewImages?.value?.length > 0 &&
+            preview?.previewImages?.value?.map((image, i) =>
+              image?.show ? (
+                <div
+                  key={`preview-image-${i}-${image?.url}`}
+                  className="w-full h-fit relative flex justify-center items-center overflow-hidden"
+                >
+                  <ImageWithPlaceholder
+                    key={`preview-image-${i}`}
+                    src={image?.url}
+                    placeholderSrc={preview?.favicon?.value}
+                    alt="preview"
+                  />
+                </div>
+              ) : null
+            )}
         </>
       )}
     </div>
@@ -3612,18 +4583,10 @@ const FileView = ({
     >
       <div className="w-full flex justify-center items-center overflow-x-hidden gap-1 pr-1">
         <span
-          style={{
-            color: `${field?.config?.color}`,
-          }}
-          className="w-4 h-4 ml-1 mr-1 block"
-        >
-          <FileIcon />
-        </span>
-        <span
           href={field?.data?.file?.url}
           target="_blank"
           rel="noreferrer"
-          className="w-full text-[var(--text-primary)] bg-transparent outline-none hover:underline break-all"
+          className="w-full flex gap-1 text-[var(--text-primary)] bg-transparent outline-none hover:underline break-all"
           style={{
             fontSize: `${field?.config?.fontSize}px`,
             textDecoration: `${
@@ -3636,13 +4599,21 @@ const FileView = ({
             textAlign: `${field?.config?.align}`,
           }}
         >
+          <span
+            style={{
+              color: `${field?.config?.color}`,
+            }}
+            className="w-4 h-4 shrink-0 ml-1 mr-1 block"
+          >
+            <FileIcon />
+          </span>
+          <span
+            className=" shrink-0 w-4 h-4 p-0 flex justify-center items-center bg-[var(--bg-secondary)] rounded-sm hover:bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+            onClick={handleDownload}
+          >
+            <DownloadIcon />
+          </span>
           {field?.data?.file?.name}
-        </span>
-        <span
-          className="w-6 h-6 p-1 flex justify-center items-center bg-[var(--bg-secondary)] rounded-sm hover:bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
-          onClick={handleDownload}
-        >
-          <DownloadIcon />
         </span>
       </div>
     </div>
@@ -4534,6 +5505,19 @@ const CodeBlock = ({
     });
   };
 
+  const handleHideTop = () => {
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        code: {
+          ...currentField.data.code,
+          hideTop: !currentField?.data?.code?.hideTop,
+        },
+      },
+    });
+  };
+
   const handleDelete = async (index) => {
     let root = currentFlowPlan.root;
     let node = root;
@@ -4590,24 +5574,28 @@ const CodeBlock = ({
 
   return (
     <div className="w-full h-fit flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md p-1">
-      <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
-        <span>{language ?? "javascript"}</span>
-        <button
-          onClick={() => copyToClipboard(currentField?.data?.code?.string)}
-          className="w-6 h-6 p-1 flex justify-center items-center hover:bg-[var(--bg-secondary)] rounded-md bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
-          title="Copy Code"
-        >
-          <span className="w-full h-full flex justify-center items-center">
-            <CopyIcon />
-          </span>
-        </button>
-      </div>
+      {!currentField?.data?.code?.hideTop && (
+        <div className="w-full h-fit text-xs text-[var(--text-primary)] flex justify-between items-center gap-2 flex-wrap py-1 px-2 bg-[var(--bg-tertiary)] rounded-t-md">
+          <span>{language ?? "javascript"}</span>
+          <button
+            onClick={() => copyToClipboard(currentField?.data?.code?.string)}
+            className="w-6 h-6 p-1 flex justify-center items-center hover:bg-[var(--bg-secondary)] rounded-md bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+            title="Copy Code"
+          >
+            <span className="w-full h-full flex justify-center items-center">
+              <CopyIcon />
+            </span>
+          </button>
+        </div>
+      )}
       <SyntaxHighlighter
         customStyle={{
           width: "100%",
           margin: "0px",
           padding: "3px",
-          borderRadius: "0px 0px 5px 5px",
+          borderRadius: currentField?.data?.code?.hideTop
+            ? "5px"
+            : "0px 0px 5px 5px",
         }}
         className="small-scroll-bar"
         showLineNumbers={currentField?.data?.code?.lineNumbers ?? false}
@@ -4689,6 +5677,19 @@ const CodeBlock = ({
             <span className="absolute w-8 h-[2px] rounded-full bg-[var(--logo-primary)] -rotate-45"></span>
           )}
         </button>
+        <button
+          title="Toggle Topbar"
+          className="w-8 h-8 px-1 relative text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={handleHideTop}
+        >
+          <span className="">
+            <TopbarIcon />
+          </span>
+          {currentField?.data?.code?.hideTop && (
+            <span className="absolute w-8 h-[2px] rounded-full bg-[var(--logo-primary)] -rotate-45"></span>
+          )}
+        </button>
+
         {currentField?.id && (
           <button
             className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"

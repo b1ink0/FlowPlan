@@ -283,8 +283,9 @@ const InputTitle = ({ node, setNode, inputRef, config }) => {
 };
 
 const InputTitleButtons = ({ config, node, setNode }) => {
-  const { defaultNodeConfig } = useStateContext();
+  const { defaultNodeConfig, settings } = useStateContext();
   const { handleGetRandomColor } = useFunctions();
+  const { rootConfig} = settings;
   const {
     ref: fontSizeRef,
     isActive: fontSizeActive,
@@ -310,21 +311,7 @@ const InputTitleButtons = ({ config, node, setNode }) => {
     "#ffc100",
     "#2a9d8f",
   ];
-  const fontFamilies = [
-    "Poppins",
-    "Monospace",
-    "Times",
-    "Courier New",
-    "Courier",
-    "Verdana",
-    "Georgia",
-    "Palatino",
-    "Garamond",
-    "Comic Sans MS",
-    "Trebuchet MS",
-    "Arial Black",
-    "Impact",
-  ];
+  const fontFamilies = rootConfig.fonts
   const handleFontSizeClick = () => {
     setFontSizeActive((prev) => !prev);
   };
@@ -627,14 +614,14 @@ const InputTitleButtons = ({ config, node, setNode }) => {
         {fontFamilyActive && (
           <div
             ref={fontFamilyRef}
-            className="hide z-10 absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
+            className="hide z-10 h-[200px] hide-scroll-bar overflow-y-auto absolute flex flex-col w-8 top-9 rounded-md  bg-[var(--btn-secondary)] border border-[var(--border-primary)]"
           >
             {fontFamilies.map((fontFamily) => (
               <label
-                key={`fontsize-id-${fontFamily}`}
+                key={`fontsize-id-${fontFamily.value}`}
                 className="shrink-0 w-8 h-8 flex justify-center items-center relative hover:bg-[var(--btn-edit)] transition-colors duration-300 text-[var(--text-primary)]"
                 style={{
-                  fontFamily: `${fontFamily}`,
+                  fontFamily: `${fontFamily.value}`,
                   backgroundColor: `${
                     config?.titleConfig?.fontFamily === fontFamily
                       ? "var(--btn-edit)"
@@ -643,11 +630,11 @@ const InputTitleButtons = ({ config, node, setNode }) => {
                 }}
               >
                 <input
-                  title={fontFamily}
+                  title={fontFamily.label}
                   className="w-full h-full bg-blue-500 absolute opacity-0"
                   type="radio"
-                  value={fontFamily}
-                  checked={config?.titleConfig?.fontFamily === fontFamily}
+                  value={fontFamily.value}
+                  checked={config?.titleConfig?.fontFamily === fontFamily.value}
                   onChange={handleFontFamilytChange}
                 />
                 Aa

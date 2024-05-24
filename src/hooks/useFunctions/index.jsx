@@ -88,13 +88,13 @@ export const useFunctions = () => {
         ? 0
         : // if the node is the middle child of its parent, then the location will be the location of the node + 1
         type === "middle"
-        ? location + 1
-        : // if the node is the last child of its parent, then the location will be the length of the children of the parent
-        type === "last"
-        ? parent.children.length
-        : 0,
+          ? location + 1
+          : // if the node is the last child of its parent, then the location will be the length of the children of the parent
+          type === "last"
+            ? parent.children.length
+            : 0,
       // last location of the node
-      move.location[move.location.length - 1]
+      move.location[move.location.length - 1],
     );
     // update current tree note
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
@@ -206,6 +206,9 @@ export const useFunctions = () => {
   const handleDeleteFlowPlan = async (refId) => {
     // find tree note by refId and delete it
     await db.flowPlans.where("refId").equals(refId).delete();
+    if (currentFlowPlan?.refId === refId) {
+      setCurrentFlowPlan(null);
+    }
   };
 
   // function to handle share tree note
@@ -436,6 +439,6 @@ export const useFunctions = () => {
     handleExpanded,
     handleGetValueFromProperty,
     handleGetRandomColor,
-    copyToClipboard
+    copyToClipboard,
   };
 };

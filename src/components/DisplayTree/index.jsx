@@ -19,16 +19,19 @@ const DisplayTree = ({ node }) => {
   } = useStateContext();
   const { treeConfig } = settings;
   // local state
+  const localTransformState =
+    JSON.parse(localStorage.getItem("currentTransformState")) ?? {};
   const transformState =
-    treeConfig.useSavedTransformState === "true"
-      ? JSON.parse(localStorage.getItem("currentTransformState"))
+    treeConfig.useSavedTransformState === "true" &&
+      localTransformState[currentFlowPlan?.refId]
+      ? localTransformState[currentFlowPlan?.refId]
       : treeConfig.renderType === "verticalTree"
-      ? {
+        ? {
           positionX: 0,
           positionY: 200,
           scale: 1,
         }
-      : {
+        : {
           positionX: 300,
           positionY: 0,
           scale: 1,
@@ -102,7 +105,7 @@ const ZoomHelper = ({
 }) => {
   // destructure tree configuration from settings
   const { treeConfig } = settings;
-  const { setCurrentTransformState } = useStateContext();
+  const { currentFlowPlan, setCurrentTransformState } = useStateContext();
 
   const handleResetTransform = () => {
     const x = treeConfig.renderType === "verticalTree" ? 0 : 300;
@@ -114,11 +117,14 @@ const ZoomHelper = ({
     if (treeConfig.useSavedTransformState === "false") return;
     let interval = setInterval(() => {
       setCurrentTransformState(() => {
-        localStorage.setItem(
-          "currentTransformState",
-          JSON.stringify(rest?.instance?.transformState)
-        );
-        return rest?.instance?.transformState;
+        const localState =
+          JSON.parse(localStorage.getItem("currentTransformState")) ?? {};
+        const state = {
+          ...localState,
+          [currentFlowPlan?.refId]: rest?.instance?.transformState ?? {},
+        };
+        localStorage.setItem("currentTransformState", JSON.stringify(state));
+        return state;
       });
     }, 5000);
     return () => clearInterval(interval);
@@ -182,13 +188,13 @@ const Svg = ({ settings, currentFlowPlan, update, move }) => {
       // currentFlowPlan?.root?.fp * nodeConfig.nodeWidthMargin gives width of half of tree so multiply by 2
       treeConfig.renderType === "verticalTree"
         ? // if tree is vertical then multiply by nodeConfig.nodeWidthMargin
-          currentFlowPlan?.root?.fp * nodeConfig.nodeWidthMargin * 2 -
-          // subtract nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth to get width of svg without margin
-          (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth)
+        currentFlowPlan?.root?.fp * nodeConfig.nodeWidthMargin * 2 -
+        // subtract nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth to get width of svg without margin
+        (nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth)
         : // if tree is horizontal then multiply by nodeConfig.nodeWidth
-          currentFlowPlan?.root?.fp * nodeConfig.nodeHeightMargin * 2 -
-          // subtract nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth to get width of svg without margin
-          (nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) * 1;
+        currentFlowPlan?.root?.fp * nodeConfig.nodeHeightMargin * 2 -
+        // subtract nodeConfig.nodeWidthMargin - nodeConfig.nodeWidth to get width of svg without margin
+        (nodeConfig.nodeHeightMargin - nodeConfig.nodeHeight) * 1;
     let h =
       // currentFlowPlan?.root?.numberOfLevels is number of levels in tree
       // nodeConfig.nodeHeightMargin is height with margin of node
@@ -197,16 +203,16 @@ const Svg = ({ settings, currentFlowPlan, update, move }) => {
 
       treeConfig.renderType === "verticalTree"
         ? // if tree is vertical then multiply by nodeConfig.nodeHeightMargin
-          currentFlowPlan?.root?.numberOfLevels *
-            nodeConfig.nodeHeightMargin *
-            2 -
-          nodeConfig.nodeHeightMargin
+        currentFlowPlan?.root?.numberOfLevels *
+        nodeConfig.nodeHeightMargin *
+        2 -
+        nodeConfig.nodeHeightMargin
         : // else multiply by nodeConfig.nodeWidth + nodeConfig.nodeHeight
-          currentFlowPlan?.root?.numberOfLevels *
-            (nodeConfig.nodeWidth + nodeConfig.nodeHeight) *
-            1 -
-          // subtract nodeConfig.nodeHeight to get height of svg without margin
-          nodeConfig.nodeHeight;
+        currentFlowPlan?.root?.numberOfLevels *
+        (nodeConfig.nodeWidth + nodeConfig.nodeHeight) *
+        1 -
+        // subtract nodeConfig.nodeHeight to get height of svg without margin
+        nodeConfig.nodeHeight;
     return {
       width: w,
       height: h,
@@ -238,15 +244,15 @@ const Svg = ({ settings, currentFlowPlan, update, move }) => {
         width:
           treeConfig.renderType === "verticalTree"
             ? // if tree is vertical then width is width of svg
-              svgSize?.width + "px"
+            svgSize?.width + "px"
             : // else width is height of svg
-              svgSize?.height + "px",
+            svgSize?.height + "px",
         height:
           treeConfig.renderType === "verticalTree"
             ? // if tree is vertical then height is height of svg
-              svgSize?.height + "px"
+            svgSize?.height + "px"
             : // else height is width of svg
-              svgSize?.width + "px",
+            svgSize?.width + "px",
         transition: "all 0.5s ease-in-out",
       }}
       className="absolute overflow-visible duration-500"
@@ -345,7 +351,7 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
               "opacity",
               // "0.5",
               `${node?.config?.nodeConfig?.opacity / 100}`,
-              "important"
+              "important",
             )
           }
           strokeWidth="4"
@@ -366,18 +372,18 @@ const Paths = ({ node, parentPosition = { x: 0, y: 0 }, level = 1 }) => {
                 x:
                   treeConfig.renderType === "verticalTree"
                     ? // if tree is vertical then x is node?.fp * nodeConfig.nodeWidthMargin
-                      node?.fp * nodeConfig.nodeWidthMargin
+                    node?.fp * nodeConfig.nodeWidthMargin
                     : // else x is node?.fp * nodeConfig.nodeHeightMargin
-                      node?.fp * nodeConfig.nodeHeightMargin,
+                    node?.fp * nodeConfig.nodeHeightMargin,
                 y:
                   treeConfig.renderType === "verticalTree"
                     ? // if tree is vertical then y is nodeConfig.nodeHeightMargin * 1 * level
-                      nodeConfig.nodeHeight * 2 * level - nodeConfig.nodeHeight
+                    nodeConfig.nodeHeight * 2 * level - nodeConfig.nodeHeight
                     : // else y is nodeConfig.nodeWidth + nodeConfig.nodeHeight * 1 * level
-                      (nodeConfig.nodeWidth + nodeConfig.nodeHeight) *
-                        1 *
-                        level -
-                      nodeConfig.nodeHeightMargin,
+                    (nodeConfig.nodeWidth + nodeConfig.nodeHeight) *
+                    1 *
+                    level -
+                    nodeConfig.nodeHeightMargin,
               }}
               level={level + 1}
             />
@@ -412,15 +418,13 @@ const LivePath = ({ move }) => {
 
         // when node is moved to upper node
         case y2 <= y1:
-          return `M${x1} ${y1} C ${x1} ${y2 + 30}, ${x2} ${
-            y2 + 70
-          }, ${x2} ${y2}`;
+          return `M${x1} ${y1} C ${x1} ${y2 + 30}, ${x2} ${y2 + 70
+            }, ${x2} ${y2}`;
 
         // when node is moved to lower node
         default:
-          return `M${x1} ${y1} C ${x1} ${y1 - 200}, ${x2} ${
-            y2 + 200
-          }, ${x2} ${y2}`;
+          return `M${x1} ${y1} C ${x1} ${y1 - 200}, ${x2} ${y2 + 200
+            }, ${x2} ${y2}`;
       }
     } else {
       let tempX1 = x1,
@@ -443,15 +447,13 @@ const LivePath = ({ move }) => {
 
         // when node is moved to upper node
         case x2 <= x1:
-          return `M${x1} ${y1} C ${x1 - 50} ${y2}, ${
-            x2 + 50
-          } ${y2}, ${x2} ${y2}`;
+          return `M${x1} ${y1} C ${x1 - 50} ${y2}, ${x2 + 50
+            } ${y2}, ${x2} ${y2}`;
 
         // when node is moved to lower node
         default:
-          return `M${x1} ${y1} C ${x1 - 200} ${y1}, ${
-            x2 + 200
-          } ${y2}, ${x2} ${y2}`;
+          return `M${x1} ${y1} C ${x1 - 200} ${y1}, ${x2 + 200
+            } ${y2}, ${x2} ${y2}`;
       }
     }
   };
