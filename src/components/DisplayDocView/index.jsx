@@ -60,6 +60,7 @@ import TopbarIcon from "../../assets/Icons/TopbarIcon.jsx";
 import CopyStyleIcon from "../../assets/Icons/CopyStyleIcon.jsx";
 import PasteStyleIcon from "../../assets/Icons/PasteStyleIcon.jsx";
 import DublicateIcon from "../../assets/Icons/DublicateIcon.jsx";
+import InheritIcon from "../../assets/Icons/InheritIcon.jsx";
 
 function DisplayDocView() {
   const {
@@ -87,6 +88,7 @@ function DisplayDocView() {
     parent: null,
     firstChild: null,
   });
+  const [showNodeNavigation, setShowNodeNavigation] = useState(false);
 
   const { docConfig } = settings;
 
@@ -113,6 +115,7 @@ function DisplayDocView() {
   };
 
   const handleEditField = (field, i) => {
+    handleResetShowAdd(false);
     setCurrentFieldType(field.type);
     setCurrentField({
       ...field,
@@ -139,11 +142,16 @@ function DisplayDocView() {
     );
   };
 
-  const handleResetShowAdd = () => {
-    setShowAdd({
-      show: false,
-      index: null,
-    });
+  const handleResetShowAdd = (delay = true) => {
+    setTimeout(
+      () => {
+        setShowAdd(() => ({
+          show: false,
+          index: null,
+        }));
+      },
+      delay ? 200 : 0
+    );
   };
 
   const handleNavigation = (node) => {
@@ -215,61 +223,17 @@ function DisplayDocView() {
       className={`${
         // if addEditNode.show is true then show component else hide component
         !node ? "translate-x-full" : ""
-      } z-10 transition-all duration-200 max-md:w-full max-w-[100vw] w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-center items-center gap-1 border-l-2 border-[var(--border-primary)]`}
+      } z-10 transition-all duration-200 max-md:w-full max-w-[100vw] w-[750px] bg-[var(--bg-secondary)]  px-1 grow-0 h-full absolute right-0 top-0 text-gray-200 flex flex-col justify-between items-center gap-1 border-l-2 border-[var(--border-primary)]`}
     >
-      <button
-        className="absolute top-0 left-0 w-8 h-8 rounded-full z-10"
-        onClick={handleCloseDocView}
-      >
-        <CloseBtnIcon />
-      </button>
-      <button
-        onClick={handleFullScreen}
-        className="absolute top-2 right-2 w-5 h-5 rounded-full z-10"
-      >
-        <FullScreenIcon />
-      </button>
       <button
         onMouseDown={handleMouseDown}
         className="w-[2px] hover:w-2 transition-all bg-[var(--border-primary)] z-[20] h-full absolute top-0 -left-1 cursor-ew-resize"
       ></button>
-      <div className="w-full w-full h-full flex flex-col justify-start items-center gap-1">
-        <h3
-          style={{
-            fontSize: `${node?.config?.titleConfig?.fontSize}px`,
-            textDecoration: `${
-              node?.config?.titleConfig?.strickthrough ? "line-through" : "none"
-            }`,
-            fontStyle: `${
-              node?.config?.titleConfig?.italic ? "italic" : "normal"
-            }`,
-            fontWeight: `${
-              node?.config?.titleConfig?.bold ? "bold" : "normal"
-            }`,
-            color: `${node?.config?.titleConfig?.color}`,
-            fontFamily: `${node?.config?.titleConfig?.fontFamily}`,
-            borderColor: `${node?.config?.nodeConfig?.borderColor}`,
-          }}
-          className="text-[var(--text-primary)] relative w-full text-center text-2xl truncate border-b border-[var(--border-primary)] py-2 pb-3 px-2  transition-colors duration-300"
-        >
-          {node?.title}
-
-          {node?.createdAt && (
-            <span className="block text-xs bottom-0 right-0 absolute text-[var(--text-secondary)]">
-              <span className="absolute right-24 -top-[18px]">Created:</span>
-              <TimeAndDate timeDate={new Date(node?.createdAt)} />
-            </span>
-          )}
-          {node?.updatedAt && (
-            <span className="block text-xs bottom-0 left-[150px] absolute text-[var(--text-secondary)]">
-              <span className="absolute -left-[150px] -top-[18px]">
-                Updated:
-              </span>
-              <TimeAndDate timeDate={new Date(node?.updatedAt)} />
-            </span>
-          )}
-        </h3>
-        <div className="flex justify-between items-center w-full gap-5 mt-1">
+      <div className="absolute flex justify-between items-center top-0 z-10 w-full h-[35px] bg-[var(--border-primary)] px-2">
+        <button className="w-8 h-8 rounded-full" onClick={handleCloseDocView}>
+          <CloseBtnIcon />
+        </button>
+        {showNodeNavigation && (
           <button
             style={{
               cursor: !nodeNavigation.parent ? "not-allowed" : "pointer",
@@ -284,6 +248,16 @@ function DisplayDocView() {
             </span>
             <span>Parent</span>
           </button>
+        )}
+
+        <button
+          className="w-8 h-8"
+          onClick={() => setShowNodeNavigation((prev) => !prev)}
+          title="Show Node Navigation"
+        >
+          <InheritIcon />
+        </button>
+        {showNodeNavigation && (
           <button
             style={{
               cursor: !nodeNavigation.firstChild ? "not-allowed" : "pointer",
@@ -298,9 +272,59 @@ function DisplayDocView() {
               <BackIcon />
             </span>
           </button>
-        </div>
-
-        <div className="w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-9 overflow-x-hidden">
+        )}
+        <button onClick={handleFullScreen} className="w-5 h-5 rounded-full">
+          <FullScreenIcon />
+        </button>
+      </div>
+      <div
+      style={{
+        height: `calc(100% - ${showNodeNavigation ? "78px" : "35px"})`
+      }}
+      className="mt-[35px] w-full flex flex-col justify-start items-center">
+        <div className=" w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-14 overflow-x-hidden">
+          <h3
+            style={{
+              fontSize: `${node?.config?.titleConfig?.fontSize}px`,
+              textDecoration: `${
+                node?.config?.titleConfig?.strickthrough
+                  ? "line-through"
+                  : "none"
+              }`,
+              fontStyle: `${
+                node?.config?.titleConfig?.italic ? "italic" : "normal"
+              }`,
+              fontWeight: `${
+                node?.config?.titleConfig?.bold ? "bold" : "normal"
+              }`,
+              color: `${node?.config?.titleConfig?.color}`,
+              fontFamily: `${node?.config?.titleConfig?.fontFamily}`,
+              // borderColor: `${node?.config?.nodeConfig?.borderColor}`,
+            }}
+            className="shrink-0 text-[var(--text-primary)] relative w-full text-left text-2xl border-b border-[var(--border-primary)] py-2 pb-3 px-2  transition-colors duration-300"
+          >
+            {node?.title}
+          </h3>
+          <div className="w-full h-fit flex justify-between px-2">
+            {node?.createdAt && (
+              <span className="block text-xs  text-[var(--text-secondary)]">
+                <span className="">Created: </span>
+                <TimeAndDate
+                  absolute={false}
+                  timeDate={new Date(node?.createdAt)}
+                />
+              </span>
+            )}
+            {node?.updatedAt && (
+              <span className="block text-xs text-[var(--text-secondary)]">
+                <span className="">Updated: </span>
+                <TimeAndDate
+                  absolute={false}
+                  timeDate={new Date(node?.updatedAt)}
+                />
+              </span>
+            )}
+          </div>
           {node?.data?.length ? (
             <DocRenderViewContainer
               node={node}
@@ -325,6 +349,7 @@ function DisplayDocView() {
           )}
           {!currentField?.id && !showAdd.show && (
             <AddEditField
+              setShowAdd={setShowAdd}
               setCurrentFieldType={setCurrentFieldType}
               node={node}
               setNode={setNode}
@@ -344,7 +369,9 @@ function DisplayDocView() {
             setShowAdd={setShowAdd}
           />
         </div>
-        <div className="flex justify-between items-center w-full gap-5 mb-1">
+      </div>
+      {showNodeNavigation && (
+        <div className="shrink-0 h-fit flex justify-between items-center w-full gap-5 mb-1">
           <button
             style={{
               cursor: !nodeNavigation.preSibling ? "not-allowed" : "pointer",
@@ -374,7 +401,7 @@ function DisplayDocView() {
             </span>
           </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -575,7 +602,7 @@ const DocRenderView = ({
 
   const handleSetAdd = () => {
     setShowAdd((prev) => {
-      console.log(prev, i);
+      setCurrentField(null);
       return { show: true, index: i };
     });
   };
@@ -728,7 +755,7 @@ const DocRenderView = ({
         setShowMenu(false);
         setShowSubMenu(false);
       }}
-      className="group w-full relative flex justify-center items-center flex-col gap-1"
+      className=" group w-full relative flex justify-center items-center flex-col gap-1"
       style={
         active?.id === field?.id
           ? {
@@ -1227,6 +1254,7 @@ const DocRenderView = ({
       )}
       {showAdd.show && showAdd.index === i && (
         <AddEditField
+          setShowAdd={setShowAdd}
           setCurrentFieldType={setCurrentFieldType}
           node={node}
           setNode={setNode}
@@ -1247,13 +1275,14 @@ const DocRenderView = ({
             showAdd={showAdd}
             hide={true}
             currentFieldIndex={i}
+            extrabuttons={[
+              {
+                handle: handleResetShowAdd,
+                icon: <CloseBtnIcon />,
+                toolTip: "Close",
+              },
+            ]}
           />
-          <button
-            onClick={handleResetShowAdd}
-            className="w-9 h-9 rounded-full bg-[var(--bg-tertiary)] p-1 ml-2 mt-2"
-          >
-            <CloseBtnIcon />
-          </button>
         </div>
       )}
       {currentField?.id === field?.id && (
@@ -1279,6 +1308,7 @@ const MenuButtons = ({
   setShowAdd,
   hide = false,
   currentFieldIndex = null,
+  extrabuttons = null,
 }) => {
   const {
     db,
@@ -1430,6 +1460,19 @@ const MenuButtons = ({
           <PasteIcon />
         </Button>
       )}
+      {extrabuttons &&
+        extrabuttons.map((button, i) => (
+          <Button
+            i={i + buttons.length}
+            key={"extra-button-id-" + i}
+            onClick={button.handle}
+            text={button.toolTip}
+            showToolTip={showToolTip}
+            setShowToolTip={setShowToolTip}
+          >
+            {button.icon}
+          </Button>
+        ))}
     </div>
   );
 };
@@ -1464,6 +1507,7 @@ const ToolTip = ({ text }) => {
 };
 
 const AddEditField = ({
+  setShowAdd,
   dataIndex,
   setCurrentFieldType,
   currentFieldType,
@@ -1642,6 +1686,8 @@ const AddEditField = ({
     case "paragraph":
       return (
         <Paragraph
+          setShowAdd={setShowAdd}
+          node={node}
           handleGetDefaultConfig={handleGetConfig}
           currentField={currentField}
           setCurrentField={setCurrentField}
@@ -2885,6 +2931,8 @@ const LinkPreviewConfig = ({ linkPreview, setLinkPreview }) => {
 };
 
 const Paragraph = ({
+  setShowAdd,
+  node,
   currentField,
   setCurrentField,
   currentFieldType,
@@ -5619,7 +5667,7 @@ const CodeBlock = ({
         className="mt-2 w-full h-fit bg-[var(--bg-secondary)] p-1 text-[var(--text-primary)] text-sm outline-none transition-colors duration-300 cursor-pointer resize-none border-2 border-[var(--border-primary)] rounded-md small-scroll-bar whitespace-nowrap"
         ref={textareaRef}
       />
-      <div className="w-full h-7 flex justify-center items-center gap-2 flex-wrap my-2">
+      <div className="w-full flex justify-center items-center gap-2 flex-wrap mt-2">
         <button
           className="w-14 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
           onClick={() => {

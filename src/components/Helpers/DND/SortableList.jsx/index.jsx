@@ -52,11 +52,13 @@ export function SortableList({ items, onChange, renderItem, className }) {
     >
       <SortableContext items={items}>
         <div
-          className={"SortableList list-none w-full " + className}
+          className={"SortableList list-none w-full transition-all" + className}
           role="application"
         >
           {items.map((item, index) => (
-            <React.Fragment key={item?.id}>
+            <React.Fragment
+              key={"field-fragment-id-" + item?.type + "-" + item?.id}
+            >
               {renderItem(item, active, index)}
             </React.Fragment>
           ))}
