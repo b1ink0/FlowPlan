@@ -130,7 +130,14 @@ export const useFunctions = () => {
     // create a download anchor node to download the json file
     const downloadAnchorNode = document.createElement("a");
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `FlowPlans.json`);
+    const date = new Date();
+    downloadAnchorNode.setAttribute(
+      "download",
+      `FlowPlans_${date.getDate()}-${
+
+        date.getMonth() + 1
+      }-${date.getFullYear()}_${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}.json`
+    );
     document.body.appendChild(downloadAnchorNode); // required for firefox
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -452,12 +459,12 @@ export const useFunctions = () => {
           }
           let obj = {
             id: v4(),
-          }
+          };
           if (field.type === "taskList") {
-            obj['text'] = item?.text || "";
-            obj['completed'] = item?.completed || false;
+            obj["text"] = item?.text || "";
+            obj["completed"] = item?.completed || false;
           } else {
-            obj['value'] = item || "";
+            obj["value"] = item || "";
           }
           return obj;
         });
@@ -512,6 +519,6 @@ export const useFunctions = () => {
     copyToClipboard,
     handleCopyNode,
     handlePasteNode,
-    handleDublicate
+    handleDublicate,
   };
 };
