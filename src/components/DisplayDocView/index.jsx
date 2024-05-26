@@ -37,6 +37,7 @@ import EditIcon from "../../assets/Icons/EditIcon";
 import DeleteIcon from "../../assets/Icons/DeleteIcon";
 import ArrowDot from "../../assets/Icons/ArrowDot";
 import DotIcon from "../../assets/Icons/DotIcon";
+import DateIcon from "../../assets/Icons/DateIcon.jsx";
 import BorderDot from "../../assets/Icons/BorderDot";
 import SquareDot from "../../assets/Icons/SquareDot";
 import DiamondDot from "../../assets/Icons/DiamondDot";
@@ -278,10 +279,11 @@ function DisplayDocView() {
         </button>
       </div>
       <div
-      style={{
-        height: `calc(100% - ${showNodeNavigation ? "78px" : "35px"})`
-      }}
-      className="mt-[35px] w-full flex flex-col justify-start items-center">
+        style={{
+          height: `calc(100% - ${showNodeNavigation ? "78px" : "35px"})`,
+        }}
+        className="mt-[35px] w-full flex flex-col justify-start items-center"
+      >
         <div className=" w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-14 overflow-x-hidden">
           <h3
             style={{
@@ -499,7 +501,7 @@ const DocRenderView = ({
   handleResetShowAdd,
   DragHandle,
   active,
-  setActive
+  setActive,
 }) => {
   const {
     db,
@@ -517,6 +519,7 @@ const DocRenderView = ({
 
   const [showMenu, setShowMenu] = useState(false);
   const [showSubMenu, setShowSubMenu] = useState(false);
+  const [progress, setProgress] = useState(0);
   const listStyles = [
     {
       type: "filledCircle",
@@ -880,10 +883,11 @@ const DocRenderView = ({
           }}
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
+          {field?.config?.progressBar && <ProgressBar progress={field?.config?.progress ?? 0} />}
           {field?.data?.list?.map((item, j) => (
             <div
               key={`shown-list-item-${item?.id || j}`}
-              className="w-full flex justify-center items-center text-sm"
+              className="w-full flex flex-col justify-center items-center text-sm"
               onDoubleClick={() => handleEditField(field, i)}
             >
               <span
@@ -910,6 +914,26 @@ const DocRenderView = ({
                 </span>
                 {item?.text}
               </span>
+              {field.config?.showDateInfo && (
+                <div className="w-full opacity-100 flex justify-between items-center flex-wrap">
+                  <TimeAndDate
+                    group={false}
+                    absolute={false}
+                    text={`Completed: ${item?.completed ? "" : "Not yet"}`}
+                    timeDate={
+                      item.completed ? new Date(item.completedAt) : undefined
+                    }
+                  />
+                  <TimeAndDate
+                    group={false}
+                    absolute={false}
+                    text="Created: "
+                    timeDate={
+                      item.createdAt ? new Date(item.createdAt) : undefined
+                    }
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -1150,7 +1174,11 @@ const DocRenderView = ({
           onMouseLeave={() => setShowSubMenu(false)}
           className="transition-opacity absolute flex justify-end items-start gap-1 w-fit h-6 right-1 top-1 z-10"
         >
-          <DragHandle ac setActive={setActive} className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+          <DragHandle
+            ac
+            setActive={setActive}
+            className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center"
+          />
 
           <button
             onClick={() => handleEditField(field, i)}
@@ -1547,6 +1575,8 @@ const AddEditField = ({
           align: "left",
           fontSize: 16,
           indentation: 0,
+          showDateInfo: false,
+          progressBar: false,
         };
       case "numberList":
         return {
@@ -2347,6 +2377,32 @@ const InputTitleButtons = ({
     }));
   };
 
+  const handleToggleDateInfoClick = () => {
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        showDateInfo:
+          currentField.config.showDateInfo === undefined
+            ? true
+            : !currentField.config.showDateInfo,
+      },
+    });
+  };
+
+  const handleToggleProgressBarClick = () => {
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        progressBar:
+          currentField.config.progressBar === undefined
+            ? true
+            : !currentField.config.progressBar,
+      },
+    });
+  };
+
   return (
     <div className="w-full mt-2 mb-1  flex flex-wrap justify-center items-center gap-2">
       <button
@@ -2465,6 +2521,47 @@ const InputTitleButtons = ({
             </div>
           )}
         </div>
+      )}
+
+      {currentField?.type === "taskList" && (
+        <>
+          <button
+            type="button"
+            title="Toggle Progress Bar"
+            onClick={handleToggleProgressBarClick}
+            className="w-8 h-8 group flex justify-center items-center relative text-xs text-[var(--text-primary)] bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+            onMouseEnter={() =>
+              setShowToolTip({ show: true, type: "Toggle Progress Bar" })
+            }
+            onMouseLeave={() => setShowToolTip({ show: false, type: null })}
+          >
+            <TopbarIcon />
+            {!currentField?.config?.progressBar && (
+              <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+            )}
+            {showToolTip.show && showToolTip.type === "Toggle Progress Bar" && (
+              <ToolTip text="Toggle Progress Bar" />
+            )}
+          </button>
+          <button
+            type="button"
+            title="Toggle Date Info"
+            onClick={handleToggleDateInfoClick}
+            className="w-8 h-8 group flex justify-center items-center relative text-xs text-[var(--text-primary)] bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-expand)] transition-colors duration-300"
+            onMouseEnter={() =>
+              setShowToolTip({ show: true, type: "Toggle Date Info" })
+            }
+            onMouseLeave={() => setShowToolTip({ show: false, type: null })}
+          >
+            <DateIcon />
+            {!currentField?.config?.showDateInfo && (
+              <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+            )}
+            {showToolTip.show && showToolTip.type === "Toggle Date Info" && (
+              <ToolTip text="Toggle Date Info" />
+            )}
+          </button>
+        </>
       )}
 
       {(currentField?.type === "unorderedList" ||
@@ -2831,42 +2928,42 @@ const InputTitleButtons = ({
           </button>
         </>
       )}
-      {currentField?.id && (
-        <>
-          <button
-            type="button"
-            onClick={() => handleCopyFieldStyles(currentField.index)}
-            title="Copy Field Style"
-            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
-          >
-            <CopyStyleIcon />
-          </button>
-          <button
-            type="button"
-            onClick={() => handlePasteFieldStyles(currentField.index)}
-            title="Paste Field Styles"
-            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
-          >
-            <PasteStyleIcon />
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDublicateField(currentField.index)}
-            title="Dublicate Field"
-            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
-          >
-            <DublicateIcon />
-          </button>
+      {/* {currentField?.id && (
+        <> */}
+      <button
+        type="button"
+        onClick={() => handleCopyFieldStyles(currentField.index)}
+        title="Copy Field Style"
+        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
+      >
+        <CopyStyleIcon />
+      </button>
+      <button
+        type="button"
+        onClick={() => handlePasteFieldStyles(currentField.index)}
+        title="Paste Field Styles"
+        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
+      >
+        <PasteStyleIcon />
+      </button>
+      <button
+        type="button"
+        onClick={() => handleDublicateField(currentField.index)}
+        title="Dublicate Field"
+        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
+      >
+        <DublicateIcon />
+      </button>
 
-          <button
-            type="button"
-            onClick={() => handleDelete(currentField.index)}
-            className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-          >
-            <DeleteIcon />
-          </button>
-        </>
-      )}
+      <button
+        type="button"
+        onClick={() => handleDelete(currentField.index)}
+        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+      >
+        <DeleteIcon />
+      </button>
+      {/* </>
+      )} */}
 
       <button
         type="submit"
@@ -3196,7 +3293,7 @@ const UnorderedList = ({
         items={list}
         onChange={handleMove}
         className="flex flex-col gap-1"
-        renderItem={(item, active, index) => (
+        renderItem={(item, active, setActive, index) => (
           <SortableList.Item id={item?.id}>
             <div
               key={`list-item-${item?.id}`}
@@ -3324,7 +3421,20 @@ const TaskList = ({
   const [item, setItem] = useState({
     text: "",
     completed: false,
+    createdAt: new Date(),
+    completedAt: null,
   });
+  const [showChangeDateInfo, setShowChangeDateInfo] = useState({
+    show: false,
+    index: null,
+  });
+  const [progress, setProgress] = useState(0);
+  const handleSetChangeDateInfo = (index) => {
+    setShowChangeDateInfo((prev) => ({
+      show: prev.index === index ? !prev.show : prev.show,
+      index: index,
+    }));
+  };
 
   const handleItemChange = (e, i = null) => {
     let newList = [...list];
@@ -3356,6 +3466,8 @@ const TaskList = ({
     setItem({
       text: "",
       completed: false,
+      createdAt: new Date(),
+      completedAt: null,
     });
   };
 
@@ -3414,16 +3526,20 @@ const TaskList = ({
   };
 
   const handleCompleteToggle = (e, index = null) => {
-    console.log(index);
     if (index !== null) {
       let newList = [...list];
       newList[index] = {
         ...newList[index],
         completed: !newList[index].completed,
+        completedAt: !newList[index].completed ? new Date() : null,
       };
       setList(newList);
     } else {
-      setItem((prev) => ({ ...prev, completed: !prev.completed }));
+      setItem((prev) => ({
+        ...prev,
+        completed: !prev.completed,
+        completedAt: !prev.completed ? new Date() : null,
+      }));
     }
   };
 
@@ -3436,6 +3552,62 @@ const TaskList = ({
   const handleMove = (items) => {
     setList(items);
   };
+
+  const handleGetDateTime = (iso) => {
+    if (!iso) {
+      iso = new Date().toISOString();
+    }
+    let utcDate = new Date(iso);
+    let finalIso = `${utcDate.getFullYear()}-${(utcDate.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${utcDate
+      .getDate()
+      .toString()
+      .padStart(2, "0")}T${utcDate
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${utcDate.getMinutes().toString().padStart(2, "0")}`;
+    return finalIso;
+  };
+
+  const handleDateInfoChange = (e, index, type) => {
+    let newList = [...list];
+    newList[index] = {
+      ...newList[index],
+      [type]: e.target.value,
+    };
+    setList(newList);
+  };
+
+  const handleCalculateProgress = () => {
+    if (!currentField?.config?.progressBar) return;
+    if (list.length === 0) return;
+    let total = 0;
+    list?.forEach((item) => {
+      if (item.completed) {
+        total++;
+      }
+    });
+
+    if (item.text !== "" && item.completed) {
+      total++;
+    }
+
+    let progress = (total / (list?.length + (item.text === "" ? 0 : 1))) * 100;
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        progress: progress,
+      },
+    });
+    setProgress(progress);
+  };
+
+  useEffect(() => {
+    handleCalculateProgress();
+  }, [list, item]);
+
   return (
     <div
       style={{
@@ -3443,58 +3615,114 @@ const TaskList = ({
       }}
       className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md"
     >
+      {currentField?.config?.progressBar && <ProgressBar progress={progress} />}
       <SortableList
         items={list}
         onChange={handleMove}
-        className="flex flex-col gap-1"
-        renderItem={(item, active, index) => (
+        className=" flex flex-col gap-1"
+        renderItem={(item, active, setActive, index) => (
           <SortableList.Item id={item?.id}>
             <div
               key={`tasklist-item-${item?.id}`}
-              className="group w-full flex justify-center items-center text-sm relative"
+              className="group w-full flex justify-center items-center flex-col text-sm relative"
             >
-              <span
-                style={{
-                  color: `${currentField?.config?.color}`,
-                }}
-                className="w-5 h-5 mr-1 block cursor-pointer"
-                onClick={(e) => handleCompleteToggle(e, index)}
-              >
-                {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
-              </span>
-              <input
-                required
-                type="text"
-                placeholder="Enter List Item..."
-                value={item?.text}
-                onChange={(e) => handleItemChange(e, index)}
-                className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
-                style={{
-                  fontSize: `${currentField?.config?.fontSize}px`,
-                  textDecoration: `${
-                    currentField?.config?.strickthrough
-                      ? "line-through"
-                      : "none"
-                  }`,
-                  fontStyle: `${
-                    currentField?.config?.italic ? "italic" : "normal"
-                  }`,
-                  fontWeight: `${
-                    currentField?.config?.bold ? "bold" : "normal"
-                  }`,
-                  fontFamily: `${currentField?.config?.fontFamily}`,
-                  color: `${currentField?.config?.color}`,
-                  textAlign: `${currentField?.config?.align}`,
-                }}
-              />
-              <SortableList.DragHandle className="opacity-0 group-hover:opacity-100 w-5 h-5 absolute right-9 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+              <div className="w-full flex">
+                <span
+                  style={{
+                    color: `${currentField?.config?.color}`,
+                  }}
+                  className="w-5 h-5 mr-1 block cursor-pointer"
+                  onClick={(e) => handleCompleteToggle(e, index)}
+                >
+                  {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
+                </span>
+                <input
+                  required
+                  type="text"
+                  placeholder="Enter List Item..."
+                  value={item?.text}
+                  onChange={(e) => handleItemChange(e, index)}
+                  className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                  style={{
+                    fontSize: `${currentField?.config?.fontSize}px`,
+                    textDecoration: `${
+                      currentField?.config?.strickthrough
+                        ? "line-through"
+                        : "none"
+                    }`,
+                    fontStyle: `${
+                      currentField?.config?.italic ? "italic" : "normal"
+                    }`,
+                    fontWeight: `${
+                      currentField?.config?.bold ? "bold" : "normal"
+                    }`,
+                    fontFamily: `${currentField?.config?.fontFamily}`,
+                    color: `${currentField?.config?.color}`,
+                    textAlign: `${currentField?.config?.align}`,
+                  }}
+                />
+              </div>
+              {currentField.config?.showDateInfo && (
+                <div className="w-full opacity-100 flex justify-between items-center flex-wrap">
+                  <TimeAndDate
+                    group={false}
+                    absolute={false}
+                    text={`Completed: ${item?.completed ? "" : "Not yet"}`}
+                    timeDate={
+                      item.completed ? new Date(item.completedAt) : undefined
+                    }
+                  />
+                  <TimeAndDate
+                    group={false}
+                    absolute={false}
+                    text="Created: "
+                    timeDate={
+                      item.createdAt ? new Date(item.createdAt) : undefined
+                    }
+                  />
+                </div>
+              )}
+              <SortableList.DragHandle className="opacity-0 group-hover:opacity-100 w-5 h-5 absolute right-[52px] bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
               <button
                 type="button"
                 onClick={() => handleDelete(index)}
-                className="opacity-0 group-hover:opacity-100 w-7 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+                className="opacity-0 group-hover:opacity-100 w-5 h-5 flex justify-center items-center absolute right-1 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
               >
                 <DeleteIcon />
               </button>
+              <button
+                type="button"
+                title="Change Dates"
+                onClick={() => handleSetChangeDateInfo(index)}
+                className="opacity-0 group-hover:opacity-100 w-5 h-5 flex justify-center items-center absolute right-7 text-xs bg-[var(--btn-secondary)] py-1 px-1 rounded-md hover:bg-[var(--btn-add)] transition-colors duration-300"
+              >
+                <TimeStampIcon />
+              </button>
+              {(currentField?.config?.showDateInfo === true ||
+                currentField?.config?.showDateInfo === undefined) &&
+                showChangeDateInfo.show &&
+                showChangeDateInfo.index === index && (
+                  <div className="w-full flex justify-between flex-wrap gap-1 bg-[var(--bg-secondary)] p-1 rounded-md">
+                    {item.completed && (
+                      <input
+                        className="w-[200px] h-8 cursor-pointer text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+                        onChange={(e) =>
+                          handleDateInfoChange(e, index, "completedAt")
+                        }
+                        value={handleGetDateTime(item.completedAt)}
+                        type="datetime-local"
+                      />
+                    )}
+                    <input
+                      className="w-[200px] h-8 cursor-pointer text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+                      onChange={(e) =>
+                        handleDateInfoChange(e, index, "createdAt")
+                      }
+                      value={handleGetDateTime(item.createdAt)}
+                      type="datetime-local"
+                    />
+                  </div>
+                )}
             </div>
           </SortableList.Item>
         )}
@@ -3543,6 +3771,43 @@ const TaskList = ({
         type={currentField.type}
         handleGetDefaultConfig={handleGetDefaultConfig}
       />
+    </div>
+  );
+};
+
+const ProgressBar = ({ progress }) => {
+  return (
+    <div className="w-full h-4 flex justify-center items-center bg-[var(--bg-secondary)] rounded-md relative">
+      <span
+        style={{
+          textShadow: "0 0 5px rgba(0,0,0,1)",
+        }}
+        className="absolute text-xs text-[var(--text-primary)] font-bold"
+      >
+        {Math.floor(progress)}%
+      </span>
+      <div className="w-full h-2 bg-[var(--btn-secondary)] rounded-md ">
+        <div
+          className="h-full rounded-md transition-all duration-200"
+          style={{
+            width: `${progress}%`,
+            background:
+              progress < 20
+                ? "red"
+                : progress < 40
+                ? "#9129d4"
+                : progress < 60
+                ? "orange"
+                : progress < 80
+                ? "yellow"
+                : progress < 100
+                ? "skyblue"
+                : progress === 100
+                ? "#199d19"
+                : "",
+          }}
+        ></div>
+      </div>
     </div>
   );
 };
@@ -3725,7 +3990,7 @@ const NumberList = ({
         items={list}
         onChange={handleMove}
         className="flex flex-col gap-1"
-        renderItem={(item, active, index) => (
+        renderItem={(item, active, setActive, index) => (
           <SortableList.Item id={item?.id}>
             <div
               key={`numberlist-item-${item?.id}`}
@@ -5437,7 +5702,7 @@ const TimeStamp = ({
           <div className="w-fit h-fit relative">
             <input
               type="datetime-local"
-              className="w-[170px] h-8 cursor-pointer text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+              className="w-[200px] h-8 cursor-pointer text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
               value={handleGetDateTime()}
               onChange={handleSetDateTime}
             />
