@@ -12,6 +12,7 @@ export const useFunctions = () => {
     setUpdate,
     move,
     setMove,
+    setCopyNode,
   } = useStateContext();
 
   // function to handle update tree note
@@ -88,13 +89,13 @@ export const useFunctions = () => {
         ? 0
         : // if the node is the middle child of its parent, then the location will be the location of the node + 1
         type === "middle"
-          ? location + 1
-          : // if the node is the last child of its parent, then the location will be the length of the children of the parent
-          type === "last"
-            ? parent.children.length
-            : 0,
+        ? location + 1
+        : // if the node is the last child of its parent, then the location will be the length of the children of the parent
+        type === "last"
+        ? parent.children.length
+        : 0,
       // last location of the node
-      move.location[move.location.length - 1],
+      move.location[move.location.length - 1]
     );
     // update current tree note
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
@@ -129,7 +130,14 @@ export const useFunctions = () => {
     // create a download anchor node to download the json file
     const downloadAnchorNode = document.createElement("a");
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `FlowPlans.json`);
+    const date = new Date();
+    downloadAnchorNode.setAttribute(
+      "download",
+      `FlowPlans_${date.getDate()}-${
+
+        date.getMonth() + 1
+      }-${date.getFullYear()}_${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}.json`
+    );
     document.body.appendChild(downloadAnchorNode); // required for firefox
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -425,6 +433,75 @@ export const useFunctions = () => {
     }
     return color;
   };
+
+  const handleCopyNode = (node, type) => {
+    let copyNode = structuredClone(node);
+    if (type === "all") {
+      setCopyNode(copyNode);
+      return;
+    }
+    copyNode.children = [];
+    setCopyNode(copyNode);
+  };
+
+  const handleChangeId = (node) => {
+    node.id = v4();
+    node.data.forEach((field) => {
+      if (
+        field.type === "unorderedList" ||
+        field.type === "numberList" ||
+        field.type === "taskList"
+      ) {
+        field.data.list = field.data.list.map((item) => {
+          if (item.id) {
+            item.id = v4();
+            return item;
+          }
+          let obj = {
+            id: v4(),
+          };
+          if (field.type === "taskList") {
+            obj["text"] = item?.text || "";
+            obj["completed"] = item?.completed || false;
+          } else {
+            obj["value"] = item || "";
+          }
+          return obj;
+        });
+      }
+      field.id = v4();
+    });
+
+    if (node.children.length > 0) {
+      node.children.forEach((child) => {
+        handleChangeId(child);
+      });
+    }
+  };
+
+  const handlePasteNode = async (node, location, cnode, type) => {
+    let root = currentFlowPlan.root;
+    let copyNode = structuredClone(cnode);
+    handleChangeId(copyNode);
+    if (type === "sibling") {
+      node.children.splice(location[location.length - 1], 0, copyNode);
+    } else {
+      node.children.push(copyNode);
+    }
+    // update current tree note
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    // update tree note in indexedDB
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    // handle position calculation
+    handlePositionCalculation(root);
+    // update state
+    setUpdate(update + 1);
+  };
+
+  const handleDublicate = (parent, node, location) => {
+    let copyNode = structuredClone(node);
+    handlePasteNode(parent, location, copyNode, "sibling");
+  };
   // return functions
   return {
     handleDeleteNodeWithoutItsChildren,
@@ -440,5 +517,8 @@ export const useFunctions = () => {
     handleGetValueFromProperty,
     handleGetRandomColor,
     copyToClipboard,
+    handleCopyNode,
+    handlePasteNode,
+    handleDublicate,
   };
 };
