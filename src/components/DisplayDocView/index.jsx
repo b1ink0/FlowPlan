@@ -62,6 +62,7 @@ import CopyStyleIcon from "../../assets/Icons/CopyStyleIcon.jsx";
 import PasteStyleIcon from "../../assets/Icons/PasteStyleIcon.jsx";
 import DublicateIcon from "../../assets/Icons/DublicateIcon.jsx";
 import InheritIcon from "../../assets/Icons/InheritIcon.jsx";
+import PInIcon from "../../assets/Icons/PInIcon.jsx";
 
 function DisplayDocView() {
   const {
@@ -160,6 +161,69 @@ function DisplayDocView() {
     setCurrentFlowPlanNode(node);
   };
 
+  const handleCalculateProgressCurrentDoc = () => {
+    let total = 0;
+    let completed = 0;
+    node?.data.forEach((item) => {
+      if (item.type === "taskList") {
+        console.log(item);
+        item.data.list.forEach((task) => {
+          total++;
+          if (task.completed) {
+            completed++;
+          }
+        });
+      }
+    });
+    console.log(total, completed);
+    return total === 0 ? 100 : (completed / total) * 100;
+  };
+
+  const handleCalculateProgress = (node) => {
+    let info = {
+      total: 0,
+      completed: 0,
+    };
+    node?.data.forEach((item) => {
+      if (item.type === "taskList") {
+        item.data.list.forEach((task) => {
+          info.total++;
+          if (task.completed) {
+            info.completed++;
+          }
+        });
+      }
+    });
+    if (node.children.length > 0) {
+      node.children.forEach((item) => {
+        const childInfo = handleCalculateProgress(item);
+        info.total += childInfo.total;
+        info.completed += childInfo.completed;
+      });
+    }
+    return info;
+  };
+
+  const handleCalculateProgressCurrentDocAndChild = (node) => {
+    let info = {
+      total: 0,
+      completed: 0,
+    };
+    info = handleCalculateProgress(node);
+    return info.total === 0 ? 100 : (info.completed / info.total) * 100;
+  };
+
+  const handleCalculateProgressField = (type) => {
+    if (type === "doc") {
+      return handleCalculateProgressCurrentDoc();
+    } else if (type === "docChild") {
+      return handleCalculateProgressCurrentDocAndChild(node);
+    } else if (type === "docAll") {
+      return handleCalculateProgressCurrentDocAndChild(currentFlowPlan.root);
+    }
+    return 0;
+  };
+
   useEffect(() => {
     if (!currentFlowPlanNode) {
       setNode(null);
@@ -230,58 +294,94 @@ function DisplayDocView() {
         onMouseDown={handleMouseDown}
         className="w-[2px] hover:w-2 transition-all bg-[var(--border-primary)] z-[20] h-full absolute top-0 -left-1 cursor-ew-resize"
       ></button>
-      <div className="absolute flex justify-between items-center top-0 z-10 w-full h-[35px] bg-[var(--border-primary)] px-2">
-        <button className="w-8 h-8 rounded-full" onClick={handleCloseDocView}>
-          <CloseBtnIcon />
-        </button>
-        {showNodeNavigation && (
-          <button
-            style={{
-              cursor: !nodeNavigation.parent ? "not-allowed" : "pointer",
-              opacity: !nodeNavigation.parent ? "0.5" : "1",
-            }}
-            onClick={() => handleNavigation(nodeNavigation.parent)}
-            className="w-24 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
-            disabled={!nodeNavigation.parent}
-          >
-            <span className="block w-3 h-3 rotate-180">
-              <BackIcon />
-            </span>
-            <span>Parent</span>
+      <div
+        style={
+          node?.pin?.show &&
+          node?.data[node?.pin?.index] &&
+          node?.pin?.id === node?.data[node?.pin?.index].id
+            ? {
+                height: "60px",
+                paddingBottom: "5px",
+              }
+            : { height: "35px" }
+        }
+        className="absolute flex flex-col justify-between items-center top-0 z-10 w-full h-[35px] bg-[var(--border-primary)] px-2"
+      >
+        <div className="flex justify-between items-center w-full h-fit">
+          <button className="w-8 h-8 rounded-full" onClick={handleCloseDocView}>
+            <CloseBtnIcon />
           </button>
-        )}
+          {showNodeNavigation && (
+            <button
+              style={{
+                cursor: !nodeNavigation.parent ? "not-allowed" : "pointer",
+                opacity: !nodeNavigation.parent ? "0.5" : "1",
+              }}
+              onClick={() => handleNavigation(nodeNavigation.parent)}
+              className="w-24 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
+              disabled={!nodeNavigation.parent}
+            >
+              <span className="block w-3 h-3 rotate-180">
+                <BackIcon />
+              </span>
+              <span>Parent</span>
+            </button>
+          )}
 
-        <button
-          className="w-8 h-8"
-          onClick={() => setShowNodeNavigation((prev) => !prev)}
-          title="Show Node Navigation"
-        >
-          <InheritIcon />
-        </button>
-        {showNodeNavigation && (
           <button
-            style={{
-              cursor: !nodeNavigation.firstChild ? "not-allowed" : "pointer",
-              opacity: !nodeNavigation.firstChild ? "0.5" : "1",
-            }}
-            onClick={() => handleNavigation(nodeNavigation.firstChild)}
-            className="w-28 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
-            disabled={!nodeNavigation.firstChild}
+            className="w-8 h-8"
+            onClick={() => setShowNodeNavigation((prev) => !prev)}
+            title="Show Node Navigation"
           >
-            <span>First Child</span>
-            <span className="block w-3 h-3">
-              <BackIcon />
-            </span>
+            <InheritIcon />
           </button>
-        )}
-        <button onClick={handleFullScreen} className="w-5 h-5 rounded-full">
-          <FullScreenIcon />
-        </button>
+          {showNodeNavigation && (
+            <button
+              style={{
+                cursor: !nodeNavigation.firstChild ? "not-allowed" : "pointer",
+                opacity: !nodeNavigation.firstChild ? "0.5" : "1",
+              }}
+              onClick={() => handleNavigation(nodeNavigation.firstChild)}
+              className="w-28 flex justify-center items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-md"
+              disabled={!nodeNavigation.firstChild}
+            >
+              <span>First Child</span>
+              <span className="block w-3 h-3">
+                <BackIcon />
+              </span>
+            </button>
+          )}
+          <button onClick={handleFullScreen} className="w-5 h-5 rounded-full">
+            <FullScreenIcon />
+          </button>
+        </div>
+        {node?.pin?.show &&
+          node?.data[node?.pin?.index] &&
+          node?.pin?.id === node?.data[node?.pin?.index].id && (
+            <ProgressBar
+              progress={handleCalculateProgressField(
+                node?.data[node?.pin?.index]?.data?.progress?.type
+              )}
+              border={true}
+              color={node?.data[node?.pin?.index]?.config?.color}
+              multiColor={node?.data[node?.pin?.index]?.config?.multiColor}
+              showPercentage={
+                node?.data[node?.pin?.index]?.config?.showPercentage
+              }
+            />
+          )}
       </div>
       <div
-        style={{
-          height: `calc(100% - ${showNodeNavigation ? "78px" : "35px"})`,
-        }}
+        style={
+          node?.pin?.show &&
+          node?.data[node?.pin?.index] &&
+          node?.pin?.id === node?.data[node?.pin?.index].id
+            ? {
+                height: "calc(100% - 60px)",
+                marginTop: "60px",
+              }
+            : { height: `calc(100% - ${showNodeNavigation ? "78px" : "35px"}` }
+        }
         className="mt-[35px] w-full flex flex-col justify-start items-center"
       >
         <div className=" w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-14 overflow-x-hidden">
@@ -752,6 +852,69 @@ const DocRenderView = ({
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
 
+  const handleCalculateProgressCurrentDoc = () => {
+    let total = 0;
+    let completed = 0;
+    node?.data.forEach((item) => {
+      if (item.type === "taskList") {
+        console.log(item);
+        item.data.list.forEach((task) => {
+          total++;
+          if (task.completed) {
+            completed++;
+          }
+        });
+      }
+    });
+    console.log(total, completed);
+    return total === 0 ? 100 : (completed / total) * 100;
+  };
+
+  const handleCalculateProgress = (node) => {
+    let info = {
+      total: 0,
+      completed: 0,
+    };
+    node?.data.forEach((item) => {
+      if (item.type === "taskList") {
+        item.data.list.forEach((task) => {
+          info.total++;
+          if (task.completed) {
+            info.completed++;
+          }
+        });
+      }
+    });
+    if (node.children.length > 0) {
+      node.children.forEach((item) => {
+        const childInfo = handleCalculateProgress(item);
+        info.total += childInfo.total;
+        info.completed += childInfo.completed;
+      });
+    }
+    return info;
+  };
+
+  const handleCalculateProgressCurrentDocAndChild = (node) => {
+    let info = {
+      total: 0,
+      completed: 0,
+    };
+    info = handleCalculateProgress(node);
+    return info.total === 0 ? 100 : (info.completed / info.total) * 100;
+  };
+
+  const handleCalculateProgressField = (type) => {
+    if (type === "doc") {
+      return handleCalculateProgressCurrentDoc();
+    } else if (type === "docChild") {
+      return handleCalculateProgressCurrentDocAndChild(node);
+    } else if (type === "docAll") {
+      return handleCalculateProgressCurrentDocAndChild(currentFlowPlan.root);
+    }
+    return 0;
+  };
+
   return (
     <div
       onClick={() => setShowMenu(true)}
@@ -883,7 +1046,9 @@ const DocRenderView = ({
           }}
           className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
         >
-          {field?.config?.progressBar && <ProgressBar progress={field?.config?.progress ?? 0} />}
+          {field?.config?.progressBar && (
+            <ProgressBar progress={field?.config?.progress ?? 0} />
+          )}
           {field?.data?.list?.map((item, j) => (
             <div
               key={`shown-list-item-${item?.id || j}`}
@@ -1162,6 +1327,24 @@ const DocRenderView = ({
           </SyntaxHighlighter>
         </div>
       )}
+
+      {field.type === "progress" && (
+        <div
+          style={{
+            display: field?.id === currentField?.id ? "none" : "flex",
+          }}
+          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col"
+          onDoubleClick={() => handleEditField(field, i)}
+        >
+          <ProgressBar
+            progress={handleCalculateProgressField(field?.data?.progress?.type)}
+            color={field?.config?.color}
+            multiColor={field?.config?.multiColor}
+            showPercentage={field?.config?.showPercentage}
+          />
+        </div>
+      )}
+
       {currentField?.id !== field?.id && showAdd.index !== i && !move.move && (
         <span
           style={{
@@ -1404,6 +1587,11 @@ const MenuButtons = ({
       icon: <SeparatorIcon />,
     },
     {
+      type: "progress",
+      text: "Progress",
+      icon: <TopbarIcon />,
+    },
+    {
       type: "timestamp",
       text: "Timestamp",
       icon: <TimeStampIcon />,
@@ -1634,7 +1822,13 @@ const AddEditField = ({
         return {
           fontSize: 14,
         };
-
+      case "progress":
+        return {
+          showPercentage: true,
+          multiColor: true,
+          color: "#199d19",
+          pin: false,
+        };
       default:
         break;
     }
@@ -1696,6 +1890,11 @@ const AddEditField = ({
           wrapLines: true,
           string: "",
           hideTop: false,
+        },
+        progress: {
+          progress: 0,
+          type: "doc",
+          list: [],
         },
       },
       config: handleGetConfig(type),
@@ -1841,6 +2040,19 @@ const AddEditField = ({
     case "codeBlock":
       return (
         <CodeBlock
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
+        />
+      );
+    case "progress":
+      return (
+        <Progress
+          node={node}
           handleGetDefaultConfig={handleGetConfig}
           currentField={currentField}
           setCurrentField={setCurrentField}
@@ -3030,6 +3242,340 @@ const LinkPreviewConfig = ({ linkPreview, setLinkPreview }) => {
   );
 };
 
+const Progress = ({
+  setShowAdd,
+  node,
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+  handleResetShowAdd,
+  dataIndex,
+}) => {
+  const {
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    defaultNodeConfig,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
+
+  const [progress, setProgress] = useState(currentField?.data?.progress ?? 0);
+  const [pin, setPin] = useState(currentField?.config?.pin);
+  const list = [
+    {
+      type: "doc",
+      des: "Current Document Progress",
+    },
+    {
+      type: "docChild",
+      des: "Current and All Child Document Progress",
+    },
+    {
+      type: "docAll",
+      des: "All Document Progress",
+    },
+  ];
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        progress: {
+          ...currentField.data.progress,
+          progress: progress,
+        },
+      },
+      config: {
+        ...currentField.config,
+        pin: pin,
+      },
+      id: v4(),
+    };
+
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+
+    if (pin) {
+      node.data = node.data.map((item) => {
+        if (item.type === "progress") {
+          item.config.pin = false;
+        }
+        return item;
+      });
+    }
+
+    if (index !== null) {
+      node.data[index] = finalField;
+      node.pin = {
+        show: pin,
+        index: index,
+        id: finalField.id,
+      };
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, finalField);
+      node.pin = {
+        show: pin,
+        index: dataIndex + 1,
+        id: finalField.id,
+      };
+      handleResetShowAdd();
+    } else {
+      node.data.push(finalField);
+      node.pin = {
+        show: pin,
+        index: node.data.length - 1,
+        id: finalField.id,
+      };
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  const handleCalculateProgressCurrentDoc = () => {
+    let total = 0;
+    let completed = 0;
+    node?.data.forEach((item) => {
+      if (item.type === "taskList") {
+        console.log(item);
+        item.data.list.forEach((task) => {
+          total++;
+          if (task.completed) {
+            completed++;
+          }
+        });
+      }
+    });
+    console.log(total, completed);
+    return total === 0 ? 100 : (completed / total) * 100;
+  };
+
+  const handleCalculateProgress = (node) => {
+    let info = {
+      total: 0,
+      completed: 0,
+    };
+    node?.data.forEach((item) => {
+      if (item.type === "taskList") {
+        item.data.list.forEach((task) => {
+          info.total++;
+          if (task.completed) {
+            info.completed++;
+          }
+        });
+      }
+    });
+    if (node.children.length > 0) {
+      node.children.forEach((item) => {
+        const childInfo = handleCalculateProgress(item);
+        info.total += childInfo.total;
+        info.completed += childInfo.completed;
+      });
+    }
+    return info;
+  };
+
+  const handleCalculateProgressCurrentDocAndChild = (node) => {
+    let info = {
+      total: 0,
+      completed: 0,
+    };
+    info = handleCalculateProgress(node);
+    return info.total === 0 ? 100 : (info.completed / info.total) * 100;
+  };
+
+  const handleDelete = async (index) => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data.splice(index, 1);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  useEffect(() => {
+    if (currentField?.data?.progress?.type === "doc") {
+      setProgress(handleCalculateProgressCurrentDoc());
+    } else if (currentField?.data?.progress?.type === "docChild") {
+      setProgress(handleCalculateProgressCurrentDocAndChild(node));
+    } else if (currentField?.data?.progress?.type === "docAll") {
+      setProgress(
+        handleCalculateProgressCurrentDocAndChild(currentFlowPlan.root)
+      );
+    }
+  }, [currentField?.data?.progress?.type]);
+  return (
+    <form
+      onSubmit={handleSave}
+      className="w-full flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md"
+    >
+      <ProgressBar
+        showPercentage={currentField?.config?.showPercentage}
+        progress={progress}
+        multiColor={currentField?.config?.multiColor}
+        color={currentField?.config?.color}
+      />
+      <div className="w-full flex justify-center items-center gap-2 flex-wrap mt-2">
+        <button
+          className="w-14 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          type="button"
+          onClick={() => {
+            setCurrentFieldType(null);
+            setCurrentField(null);
+          }}
+        >
+          Cancel
+        </button>
+        <select
+          title="Type of Progress"
+          className="w-[150px] group h-7 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+          value={currentField?.data?.progress?.type}
+          onChange={(e) => {
+            setCurrentField({
+              ...currentField,
+              data: {
+                ...currentField.data,
+                progress: {
+                  ...currentField.data.progress,
+                  type: e.target.value,
+                },
+              },
+            });
+          }}
+        >
+          {list.map((item) => (
+            <option key={item.type} value={item.type}>
+              {item.des}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          title="Toggle Percentage"
+          className="relative w-8 h-8 px-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => {
+            setCurrentField({
+              ...currentField,
+              config: {
+                ...currentField.config,
+                showPercentage: !currentField?.config?.showPercentage,
+              },
+            });
+          }}
+        >
+          {!currentField?.config?.showPercentage && (
+            <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+          )}
+          <span className="flex justify-center items-center text-lg font-bold">
+            %
+          </span>
+        </button>
+        <button
+          type="button"
+          title="Toggle Multi Color"
+          className="relative w-8 h-8 px-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => {
+            setCurrentField({
+              ...currentField,
+              config: {
+                ...currentField.config,
+                multiColor: !currentField?.config?.multiColor,
+              },
+            });
+          }}
+        >
+          {!currentField?.config?.multiColor && (
+            <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+          )}
+          <span className="flex justify-center items-center text-lg font-bold">
+            <ColorIcon />
+          </span>
+        </button>
+        <button
+          type="button"
+          title="Toggle Multi Color"
+          className="relative w-8 h-8 px-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => setPin((prev) => !prev)}
+        >
+          {!pin && (
+            <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+          )}
+          <span className="flex justify-center items-center text-lg font-bold">
+            <PInIcon />
+          </span>
+        </button>
+        <div className="w-8 h-8 bg-[var(--btn-secondary)] text-center text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center outline-none relative">
+          <input
+            className="w-full h-full opacity-0 bg-transparent outline-none cursor-pointer"
+            type="color"
+            title="Progress Bar Color"
+            value={currentField?.config?.color}
+            onChange={(e) => {
+              setCurrentField({
+                ...currentField,
+                config: {
+                  ...currentField.config,
+                  color: e.target.value,
+                },
+              });
+            }}
+          />
+          <span className="pointer-events-none absolute  top-0 left-0 w-full h-full p-[8px]">
+            <ColorIcon />
+          </span>
+          <span
+            style={{
+              backgroundColor: `${currentField?.config?.color}`,
+            }}
+            className="-top-1 -right-1 absolute w-3 h-3 rounded-full"
+          ></span>
+        </div>
+        {currentField?.id && (
+          <button
+            type="button"
+            className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+            onClick={() => handleDelete(currentField?.index)}
+          >
+            <span className="">
+              <DeleteIcon />
+            </span>
+          </button>
+        )}
+        <button
+          className="w-14 h-8 px-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={(e) => handleSave(e, currentField?.index)}
+        >
+          Save
+        </button>
+      </div>
+    </form>
+  );
+};
+
 const Paragraph = ({
   setShowAdd,
   node,
@@ -3775,24 +4321,38 @@ const TaskList = ({
   );
 };
 
-const ProgressBar = ({ progress }) => {
+const ProgressBar = ({
+  progress,
+  showPercentage = true,
+  multiColor = true,
+  color = null,
+  border = false,
+}) => {
   return (
-    <div className="w-full h-4 flex justify-center items-center bg-[var(--bg-secondary)] rounded-md relative">
-      <span
-        style={{
-          textShadow: "0 0 5px rgba(0,0,0,1)",
-        }}
-        className="absolute text-xs text-[var(--text-primary)] font-bold"
-      >
-        {Math.floor(progress)}%
-      </span>
-      <div className="w-full h-2 bg-[var(--btn-secondary)] rounded-md ">
+    <div
+      className="w-full overflow-hidden h-4 flex justify-center items-center rounded-md relative"
+    >
+      {showPercentage && (
+        <span
+          style={{
+            textShadow: "0 0 5px rgba(0,0,0,1)",
+          }}
+          className="absolute text-xs text-[var(--text-primary)] font-bold"
+        >
+          {Math.floor(progress)}%
+        </span>
+      )}
+      <div
+      style={{
+        background: border ? "var(--bg-quaternary)" : ""
+      }}
+      className="w-full h-2 bg-[var(--btn-secondary)] rounded-md ">
         <div
           className="h-full rounded-md transition-all duration-200"
           style={{
             width: `${progress}%`,
-            background:
-              progress < 20
+            background: multiColor
+              ? progress < 20
                 ? "red"
                 : progress < 40
                 ? "#9129d4"
@@ -3804,7 +4364,8 @@ const ProgressBar = ({ progress }) => {
                 ? "skyblue"
                 : progress === 100
                 ? "#199d19"
-                : "",
+                : ""
+              : color,
           }}
         ></div>
       </div>
