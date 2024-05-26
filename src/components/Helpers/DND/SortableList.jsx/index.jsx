@@ -1,9 +1,10 @@
 // @ts-check
-import React, { useMemo, useState } from "react";
+import React, { act, useMemo, useState } from "react";
 import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -28,13 +29,15 @@ export function SortableList({ items, onChange, renderItem, className }) {
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
+    useSensor(TouchSensor)
   );
 
   return (
     <DndContext
       sensors={sensors}
       onDragStart={({ active }) => {
+        console.log("onDragStart", active);
         setActive(active);
       }}
       onDragEnd={({ active, over }) => {
@@ -52,12 +55,14 @@ export function SortableList({ items, onChange, renderItem, className }) {
     >
       <SortableContext items={items}>
         <div
-          className={"SortableList list-none w-full " + className}
+          className={"SortableList list-none w-full transition-all" + className}
           role="application"
         >
           {items.map((item, index) => (
-            <React.Fragment key={item?.id}>
-              {renderItem(item, active, index)}
+            <React.Fragment
+              key={"field-fragment-id-" + item?.type + "-" + item?.id}
+            >
+              {renderItem(item, active, setActive, index)}
             </React.Fragment>
           ))}
         </div>
