@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useMemo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -19,6 +19,8 @@ export function SortableItem({ children, id }) {
     setActivatorNodeRef,
     transform,
     transition,
+    data,
+    active
   } = useSortable({ id });
   const context = useMemo(
     () => ({
@@ -33,20 +35,41 @@ export function SortableItem({ children, id }) {
     transform: CSS.Translate.toString(transform),
     transition,
   };
+  // const handleGetHeight = (transform) => {
+  //   if (!active) return
+  //   const id = "field_id_" + active?.id
+  //   const field = document.getElementById(id)
+  //   if (!field) return
+  //   console.log(transform)
+  //   console.log(field.clientHeight)
+  // }
+  // useEffect(() => {
+  //   handleGetHeight(transform)
+  // }, [transform])
   return (
     <SortableItemContext.Provider value={context}>
-      <div className="SortableItem list-none w-full" ref={setNodeRef} style={style}>
+      <div
+        className="SortableItem list-none w-full"
+        ref={setNodeRef}
+        style={style}
+      >
         {children}
       </div>
     </SortableItemContext.Provider>
   );
 }
 
-export function DragHandle({ className }) {
+export function DragHandle({ className, setActive }) {
   const { attributes, listeners, ref } = useContext(SortableItemContext);
-
   return (
-    <button title="Drag" className={className} {...attributes} {...listeners} ref={ref}>
+    <button
+    // onClick={()}
+      title="Drag"
+      className={className}
+      {...attributes}
+      {...listeners}
+      ref={ref}
+    >
       <svg viewBox="0 0 20 20" className="w-full h-full">
         <path
           className="fill-[var(--logo-primary)]"

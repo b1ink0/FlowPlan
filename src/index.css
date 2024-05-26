@@ -133,6 +133,10 @@ body {
   font-family: "Poppins", sans-serif;
 }
 
+body {
+  overscroll-behavior: contain;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
 }
