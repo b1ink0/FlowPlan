@@ -452,7 +452,7 @@ const DocRenderViewContainer = ({
     <SortableList
       items={node?.data}
       onChange={handleMove}
-      renderItem={(item, active, index) => (
+      renderItem={(item, active, setActive, index) => (
         <SortableList.Item id={item.id}>
           <DocRenderView
             key={"field-id-" + item.type + "-" + item.id}
@@ -473,6 +473,7 @@ const DocRenderViewContainer = ({
             handleResetShowAdd={handleResetShowAdd}
             DragHandle={SortableList.DragHandle}
             active={active}
+            setActive={setActive}
           />
         </SortableList.Item>
       )}
@@ -498,6 +499,7 @@ const DocRenderView = ({
   handleResetShowAdd,
   DragHandle,
   active,
+  setActive
 }) => {
   const {
     db,
@@ -755,6 +757,7 @@ const DocRenderView = ({
         setShowMenu(false);
         setShowSubMenu(false);
       }}
+      id={"field_id_" + field.id}
       className=" group w-full relative flex justify-center items-center flex-col gap-1"
       style={
         active?.id === field?.id
@@ -1147,7 +1150,7 @@ const DocRenderView = ({
           onMouseLeave={() => setShowSubMenu(false)}
           className="transition-opacity absolute flex justify-end items-start gap-1 w-fit h-6 right-1 top-1 z-10"
         >
-          <DragHandle className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
+          <DragHandle ac setActive={setActive} className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center" />
 
           <button
             onClick={() => handleEditField(field, i)}
