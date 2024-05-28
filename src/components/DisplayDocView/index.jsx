@@ -2866,7 +2866,8 @@ const InputTitleButtons = ({
             </button>
             {showPreviewConfig &&
               currentField?.config?.preview &&
-              !linkPreviewLoading && (
+              !linkPreviewLoading &&
+              linkPreview !== null && (
                 <LinkPreviewConfig
                   linkPreview={linkPreview}
                   setLinkPreview={setLinkPreview}
@@ -3222,7 +3223,7 @@ const LinkPreviewConfig = ({ linkPreview, setLinkPreview }) => {
   };
   return (
     <div className="absolute px-2 py-1 rounded-md left-0 top-9 w-fit flex flex-col gap-2 bg-[var(--btn-secondary)] z-10">
-      {previewFields.map((item) => (
+      {previewFields?.map((item) => (
         <div
           key={`preview-id-${item.type}`}
           className="w-full flex gap-1 justify-start items-center "
@@ -3231,7 +3232,11 @@ const LinkPreviewConfig = ({ linkPreview, setLinkPreview }) => {
             className="w-4 h-4 mr-1 block cursor-pointer"
             onClick={() => handleSetPreviewLink(item.type)}
           >
-            {linkPreview[item.type]?.show ? <CheckedIcon /> : <UncheckedIcon />}
+            {linkPreview[item.type] && linkPreview[item.type]?.show ? (
+              <CheckedIcon />
+            ) : (
+              <UncheckedIcon />
+            )}
           </span>
           <label className="text-xs text-[var(--text-primary)]">
             {item.text}
@@ -4750,6 +4755,7 @@ const Link = ({
         // mode: "no-cors",
       });
       let res = await data.json();
+      console.log(res);
       if (!res.success) {
         setPreview(null);
         setLoading(false);
@@ -4760,12 +4766,15 @@ const Link = ({
         if (res.data[key] !== "") {
           if (key === "previewImages") {
             tempPreview[key] = {
-              value: res.data[key].map((image, i) => ({
-                url: image,
-                show:
-                  currentField?.data?.previewLink?.previewImages?.value[i]
-                    ?.show ?? true,
-              })),
+              value: res.data[key].map((image, i) => {
+                return {
+                  url: image,
+                  show: currentField?.data?.previewLink?.previewImages?.value
+                    ? currentField?.data?.previewLink?.previewImages?.value[i]
+                        ?.show ?? true
+                    : true,
+                };
+              }),
               show:
                 currentField?.data?.previewLink?.previewImages?.show ?? true,
             };
