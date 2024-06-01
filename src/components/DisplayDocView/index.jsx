@@ -5234,9 +5234,10 @@ const Link = ({
   };
 
   const handleFaviconSrc = (src, link) => {
+    if (!src) return "";
     if (src === "") return "";
-    if (src.startsWith("data:image")) return src;
-    if (src.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
+    if (src?.startsWith("data:image")) return src;
+    if (src?.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
     let domain = link.split("/")[2];
     return "https://" + domain + src;
   };
@@ -5426,8 +5427,8 @@ const LinkPreview = ({ link, previewLink }) => {
   const handleFaviconSrc = (src, link) => {
     if (!src) return "";
     if (src === "") return "";
-    if (src.startsWith("data:image")) return src;
-    if (src.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
+    if (src?.startsWith("data:image")) return src;
+    if (src?.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
     let domain = link.split("/")[2];
     return "https://" + domain + src;
   };
