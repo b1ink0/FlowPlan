@@ -154,6 +154,10 @@ body {
   height: 10px;
 }
 
+.scroll-bar-inverse::-webkit-scrollbar-thumb {
+  background-color: var(--bg-primary);
+}
+
 .hide-scroll-bar {
   scrollbar-width: none;
 }
