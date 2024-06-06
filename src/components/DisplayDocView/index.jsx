@@ -534,6 +534,7 @@ function DisplayDocView() {
           )}
 
           <MenuButtons
+            node={node}
             setCurrentField={setCurrentField}
             setType={setCurrentFieldType}
             showAdd={showAdd}
@@ -611,6 +612,7 @@ const DocRenderViewContainer = ({
       node = node.children[i];
     });
     node.data = items;
+    console.log(items)
     node.updatedAt = new Date();
     handleResetShowAdd();
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
@@ -825,34 +827,85 @@ const DocRenderView = ({
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
-  const handleDublicateField = async () => {
+  const handleDublicateField = async (i, duplicateContainingFields = false) => {
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
       node = node.children[i];
     });
-    let temp = structuredClone(node.data[i]);
-    temp.id = v4();
-    if (
-      field.type === "unorderedList" ||
-      field.type === "numberList" ||
-      field.type === "taskList"
-    ) {
-      temp.data.list = temp.data.list.map((item) => {
-        item.id = v4();
-        return item;
-      });
+    let temp;
+    if (field.type === "durationEnd") return;
+    if (field.type === "duration") {
+      let tempDuration = structuredClone(node.data[i]);
+      tempDuration.id = v4();
+      let tempFields = [];
+      for (let j = i + 1; j < node.data.length; j++) {
+        if (node?.data[j]?.type === "durationEnd") {
+          if (node?.data[j]?.data?.durationId === node?.data[i]?.id) {
+            let tempDurationEnd = structuredClone(node.data[j]);
+            tempDurationEnd.id = v4();
+            tempDurationEnd.data.durationId = tempDuration.id;
+            node.data.splice(j + 1, 0, tempDuration);
+            node.data.splice(j + 2, 0, tempDurationEnd);
+            node.data.splice(j + 2, 0, ...tempFields);
+            break;
+          }
+        } else {
+          if (!duplicateContainingFields) continue;
+          temp = structuredClone(node.data[j]);
+          temp.id = v4();
+          if (
+            field.type === "unorderedList" ||
+            field.type === "numberList" ||
+            field.type === "taskList"
+          ) {
+            temp.data.list = temp.data.list.map((item) => {
+              item.id = v4();
+              return item;
+            });
+          }
+          tempFields.push(temp);
+        }
+      }
+    } else {
+      temp = structuredClone(node.data[i]);
+      temp.id = v4();
+      if (
+        field.type === "unorderedList" ||
+        field.type === "numberList" ||
+        field.type === "taskList"
+      ) {
+        temp.data.list = temp.data.list.map((item) => {
+          item.id = v4();
+          return item;
+        });
+      }
+      node.data.splice(i + 1, 0, temp);
     }
-    node.data.splice(i + 1, 0, temp);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
-  const handleDeleteField = async () => {
+  const handleDeleteField = async (deleteContainingFields = false) => {
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
       node = node.children[i];
     });
+    const fieldType = node?.data[i]?.type;
+    if (fieldType === "durationEnd") return;
+    if (fieldType === "duration") {
+      for (let j = i + 1; j < node.data.length; j++) {
+        if (node?.data[j]?.type === "durationEnd") {
+          if (node?.data[j]?.data?.durationId === node?.data[i]?.id) {
+            if (!deleteContainingFields) {
+              node.data.splice(j, 1);
+              break;
+            }
+            node.data.splice(i + 1, j - i);
+          }
+        }
+      }
+    }
     node.data.splice(i, 1);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
@@ -890,33 +943,97 @@ const DocRenderView = ({
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
 
-  const handleCopyField = () => {
+  const handleCopyField = (i, copyContainingFields = false) => {
+    const fieldType = node?.data[i]?.type;
+    if (fieldType === "durationEnd") return;
+    if (fieldType === "duration") {
+      let tempDuration = structuredClone(node.data[i]);
+      let tempFields = [];
+      for (let j = i + 1; j < node.data.length; j++) {
+        if (node?.data[j]?.type === "durationEnd") {
+          if (node?.data[j]?.data?.durationId === node?.data[i]?.id) {
+            let tempDurationEnd = structuredClone(node.data[j]);
+            tempDurationEnd.id = v4();
+            tempDuration.id = v4();
+            tempDurationEnd.data.durationId = tempDuration.id;
+            tempDuration.containingFields = tempFields;
+            tempDuration.durationEnd = tempDurationEnd;
+            setCopyField(tempDuration);
+            return;
+          }
+        } else {
+          if (!copyContainingFields) continue;
+          let temp = structuredClone(node.data[j]);
+          temp.id = v4();
+          if (
+            field.type === "unorderedList" ||
+            field.type === "numberList" ||
+            field.type === "taskList"
+          ) {
+            temp.data.list = temp.data.list.map((item) => {
+              item.id = v4();
+              return item;
+            });
+          }
+          tempFields.push(temp);
+        }
+      }
+    }
     let newField = structuredClone(field);
     setCopyField(newField);
   };
 
   const handlePasteField = async () => {
     if (!copyField) return;
-    console.log(copyField);
-    let newField = structuredClone(copyField);
-    if (
-      newField.type === "unorderedList" ||
-      newField.type === "numberList" ||
-      newField.type === "taskList"
-    ) {
-      newField.data.list = newField.data.list.map((item) => {
-        item.id = v4();
-        return item;
-      });
-    }
-    newField.id = v4();
-    console.log(newField);
+    const fieldType = copyField?.type;
+    if (fieldType === "durationEnd") return;
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
       node = node.children[i];
     });
-    node.data.splice(i + 1, 0, newField);
+    const currentFieldType = node?.data[i]?.type;
+    if (currentFieldType === "duration" && fieldType === "duration") return;
+    let durationEnd = false;
+    for (let j = i; j < node.data.length; j++) {
+      if (node?.data[j]?.type === "durationEnd") {
+        durationEnd = true;
+        break;
+      } else if (node?.data[j]?.type === "duration") {
+        durationEnd = false;
+        break;
+      }
+    }
+    console.log(fieldType, durationEnd);
+    if (fieldType === "duration" && durationEnd) return;
+
+    if (fieldType === "duration") {
+      console.log(copyField);
+      let tempDuration = structuredClone(copyField);
+      let tempFields = structuredClone(tempDuration?.containingFields);
+      let tempDurationEnd = structuredClone(tempDuration?.durationEnd);
+      delete tempDuration.containingFields;
+      delete tempDuration.durationEnd;
+      node.data.splice(i + 1, 0, tempDuration);
+      node.data.splice(i + 2, 0, tempDurationEnd);
+      node.data.splice(i + 2, 0, ...tempFields);
+    } else {
+      let newField = structuredClone(copyField);
+      if (
+        newField.type === "unorderedList" ||
+        newField.type === "numberList" ||
+        newField.type === "taskList"
+      ) {
+        newField.data.list = newField.data.list.map((item) => {
+          item.id = v4();
+          return item;
+        });
+      }
+      newField.id = v4();
+
+      node.data.splice(i + 1, 0, newField);
+    }
+
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
@@ -1491,7 +1608,11 @@ const DocRenderView = ({
             pointerEvents: showMenu ? "all" : "none",
             top: field.type === "codeBlock" ? "40px" : "4px",
             height: showSubMenu ? "55px" : "",
-            width: showSubMenu ? "165px" : "",
+            width: showSubMenu
+              ? field.type === "duration"
+                ? "230px"
+                : "165px"
+              : "",
           }}
           onMouseLeave={() => setShowSubMenu(false)}
           className="transition-opacity absolute flex justify-end items-start gap-1 w-fit h-6 right-1 top-1 z-10"
@@ -1527,14 +1648,28 @@ const DocRenderView = ({
           >
             <EditIcon />
             {showSubMenu && (
-              <div className="w-full h-full gap-1 absolute right-[140px] top-7 flex">
+              <div
+                style={{
+                  right: field.type === "duration" ? "225px" : "140px",
+                }}
+                className="w-full h-full gap-1 absolute right-[140px] top-7 flex"
+              >
                 <button
-                  onClick={handleCopyField}
+                  onClick={() => handleCopyField(i)}
                   className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Copy Field"
                 >
                   <CopyIcon />
                 </button>
+                {field.type === "duration" && (
+                  <button
+                    onClick={() => handleCopyField(i, true)}
+                    className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                    title="Copy Duration and its containing fields"
+                  >
+                    <CopyIcon />
+                  </button>
+                )}
 
                 <button
                   onClick={handlePasteField}
@@ -1544,12 +1679,21 @@ const DocRenderView = ({
                   <PasteIcon />
                 </button>
                 <button
-                  onClick={handleDublicateField}
+                  onClick={() => handleDublicateField(i)}
                   className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Duplicate Field"
                 >
                   <DublicateIcon />
                 </button>
+                {field.type === "duration" && (
+                  <button
+                    onClick={() => handleDublicateField(i, true)}
+                    className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                    title="Duplicate Duration and its containing fields"
+                  >
+                    <DublicateIcon />
+                  </button>
+                )}
 
                 <button
                   onClick={handleCopyFieldStyles}
@@ -1567,12 +1711,22 @@ const DocRenderView = ({
                 </button>
 
                 <button
-                  onClick={handleDeleteField}
+                  onClick={() => handleDeleteField()}
                   className="w-6 h-6 hover:bg-[var(--btn-delete)]  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Delete Field"
                 >
                   <DeleteIcon />
                 </button>
+
+                {field.type === "duration" && (
+                  <button
+                    onClick={() => handleDeleteField(true)}
+                    className="w-6 h-6 hover:bg-[var(--btn-delete)]  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                    title="Delete Field and its containing fields"
+                  >
+                    <DeleteIcon />
+                  </button>
+                )}
               </div>
             )}
           </span>
@@ -1622,6 +1776,7 @@ const DocRenderView = ({
       {showAdd.show && showAdd.index === i && (
         <div className="flex justify-center items-center">
           <MenuButtons
+            node={node}
             setCurrentField={setCurrentField}
             setType={setCurrentFieldType}
             setShowAdd={setShowAdd}
@@ -1655,6 +1810,7 @@ const DocRenderView = ({
 };
 
 const MenuButtons = ({
+  node,
   setType,
   setCurrentField,
   showAdd,
@@ -1771,30 +1927,66 @@ const MenuButtons = ({
 
   const handlePasteField = async () => {
     if (!copyField) return;
-    console.log(copyField);
-    let newField = structuredClone(copyField);
-    if (
-      newField.type === "unorderedList" ||
-      newField.type === "numberList" ||
-      newField.type === "taskList"
-    ) {
-      newField.data.list = newField.data.list.map((item) => {
-        item.id = v4();
-        return item;
-      });
-    }
-    newField.id = v4();
-    console.log(newField);
+    let i = currentFieldIndex;
+    const fieldType = copyField?.type;
+    if (fieldType === "durationEnd") return;
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
       node = node.children[i];
     });
-    if (currentFieldIndex !== null) {
-      node.data.splice(currentFieldIndex + 1, 0, newField);
-    } else {
-      node.data.push(newField);
+    if (i !== null) {
+      const currentFieldType = node?.data[i]?.type;
+      if (currentFieldType === "duration" && fieldType === "duration") return;
+      let durationEnd = false;
+      for (let j = i; j < node.data.length; j++) {
+        if (node?.data[j]?.type === "durationEnd") {
+          durationEnd = true;
+          break;
+        } else if (node?.data[j]?.type === "duration") {
+          durationEnd = false;
+          break;
+        }
+      }
+      if (fieldType === "duration" && durationEnd) return;
     }
+
+    if (fieldType === "duration") {
+      console.log(copyField);
+      let tempDuration = structuredClone(copyField);
+      let tempFields = structuredClone(tempDuration?.containingFields);
+      let tempDurationEnd = structuredClone(tempDuration?.durationEnd);
+      delete tempDuration.containingFields;
+      delete tempDuration.durationEnd;
+      if (i === null) {
+        node.data.push(tempDuration);
+        node.data.push(...tempFields);
+        node.data.push(tempDurationEnd);
+      } else {
+        node.data.splice(i + 1, 0, tempDuration);
+        node.data.splice(i + 2, 0, tempDurationEnd);
+        node.data.splice(i + 2, 0, ...tempFields);
+      }
+    } else {
+      let newField = structuredClone(copyField);
+      if (
+        newField.type === "unorderedList" ||
+        newField.type === "numberList" ||
+        newField.type === "taskList"
+      ) {
+        newField.data.list = newField.data.list.map((item) => {
+          item.id = v4();
+          return item;
+        });
+      }
+      newField.id = v4();
+      if (i === null) {
+        node.data.push(newField);
+      } else {
+        node.data.splice(i + 1, 0, newField);
+      }
+    }
+
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
@@ -1976,6 +2168,7 @@ const AddEditField = ({
       case "duration":
         return {
           color: "#334155",
+          showFromTo: true,
         };
       case "durationEnd":
         return {};
@@ -3865,6 +4058,31 @@ const Duration = ({
     setCurrentField(null);
   };
 
+  const handleDelete = async (i, deleteContainingFields = false) => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    const fieldType = node?.data[i]?.type;
+    if (fieldType === "durationEnd") return;
+    if (fieldType === "duration") {
+      for (let j = i + 1; j < node.data.length; j++) {
+        if (node?.data[j]?.type === "durationEnd") {
+          if (node?.data[j]?.data?.durationId === node?.data[i]?.id) {
+            if (!deleteContainingFields) {
+              node.data.splice(j, 1);
+              break;
+            }
+            node.data.splice(i + 1, j - i);
+          }
+        }
+      }
+    }
+    node.data.splice(i, 1);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
   const [formated, setFormated] = useState({
     start: handleGetFormatedDateTime(currentField?.data?.duration?.start),
     end: handleGetFormatedDateTime(currentField?.data?.duration?.end),
@@ -3900,19 +4118,21 @@ const Duration = ({
         }}
         className="flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-t-md"
       >
-        <div className="flex justify-center items-center gap-2 flex-wrap">
-          <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap">
-            <span className="w-full">
+        {!(currentField?.config?.showFromTo ?? true) && (
+          <div className="text-xs">
+            {/* <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap"> */}
+            <span className="w-fit">
               From: {formated.start || "Select Start DateTime"}
             </span>
-          </div>
-          <span>{" - to: "}</span>
-          <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap">
-            <span className="w-full">
+            {/* </div> */}
+            <span>{" - To: "}</span>
+            {/* <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap"> */}
+            <span className="w-fit">
               {formated.end || "Select End DateTime"}
             </span>
+            {/* </div> */}
           </div>
-        </div>
+        )}
         <div className="flex justify-center items-center">
           <span className="text-xs text-[var(--text-primary)]">
             Duration: {formated.duration || "Not Yet"}
@@ -4033,7 +4253,27 @@ const Duration = ({
             ))}
           </select>
         </div>
-
+        <button
+          type="button"
+          title="Toggle Show From To"
+          className="relative w-8 h-8 px-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => {
+            setCurrentField({
+              ...currentField,
+              config: {
+                ...currentField.config,
+                showFromTo: !currentField?.config?.showFromTo ?? false,
+              },
+            });
+          }}
+        >
+          {(currentField?.config?.showFromTo ?? true) && (
+            <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+          )}
+          <span className="flex justify-center items-center text-lg font-bold">
+            <PreviewIcon />
+          </span>
+        </button>
         <div className="w-8 h-8 bg-[var(--btn-secondary)] text-center text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center outline-none relative">
           <input
             className="w-full h-full opacity-0 bg-transparent outline-none cursor-pointer"
@@ -4061,15 +4301,28 @@ const Duration = ({
           ></span>
         </div>
         {currentField?.id && (
-          <button
-            type="button"
-            className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
-            onClick={() => handleDelete(currentField?.index)}
-          >
-            <span className="">
-              <DeleteIcon />
-            </span>
-          </button>
+          <>
+            <button
+              type="button"
+              className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
+              onClick={() => handleDelete(currentField?.index)}
+              title="Delete Field"
+            >
+              <span className="">
+                <DeleteIcon />
+              </span>
+            </button>
+            <button
+              type="button"
+              className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
+              onClick={() => handleDelete(currentField?.index, true)}
+              title="Delete Duration and containing Fields"
+            >
+              <span className="">
+                <DeleteIcon />
+              </span>
+            </button>
+          </>
         )}
         <button
           className="w-14 h-8 px-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
@@ -4205,19 +4458,19 @@ const DurationDisplay = ({ field, currentField, onDoubleClick }) => {
       onDoubleClick={onDoubleClick}
       className="flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-tr-md rounded-tl-md"
     >
-      <div className="flex justify-center items-center gap-2 flex-wrap">
-        <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap">
-          <span className="w-full">
+      {!(field?.config?.showFromTo ?? true) && (
+        <div className="text-xs">
+          {/* <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap"> */}
+          <span className="w-fit">
             From: {formated.start || "Select Start DateTime"}
           </span>
+          {/* </div> */}
+          <span>{" - To: "}</span>
+          {/* <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap"> */}
+          <span className="w-fit">{formated.end || "Select End DateTime"}</span>
+          {/* </div> */}
         </div>
-        <span>{" - to: "}</span>
-        <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap">
-          <span className="w-full">
-            {formated.end || "Select End DateTime"}
-          </span>
-        </div>
-      </div>
+      )}
       <div className="flex justify-center items-center">
         <span className="text-xs text-[var(--text-primary)]">
           Duration: {formated.duration || "Not Yet"}
@@ -4234,7 +4487,7 @@ const DurationEndDisplay = ({ node, field, currentField }) => {
         backgroundColor: `${field?.config?.color}`,
         display: field?.id === currentField?.id ? "none" : "flex",
       }}
-      className="flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-br-md rounded-bl-md"
+      className="flex mb-2 flex-wrap justify-between items-center text-xs w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-br-md rounded-bl-md"
     >
       <div className="w-full flex justify-center items-center gap-2 flex-wrap">
         <span className="w-full text-center">End of Duration</span>
