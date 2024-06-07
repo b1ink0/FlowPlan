@@ -18,8 +18,10 @@ import {
 
 import { DragHandle, SortableItem } from "../Sortable";
 import { SortableOverlay } from "../Overlay";
+import { useStateContext } from "../../../../context/StateContext";
 
 export function SortableList({ items, onChange, renderItem, className }) {
+  const { dragDurationAll, setDragDurationAll } = useStateContext();
   const [active, setActive] = useState(null);
   const activeItem = useMemo(
     () => items.find((item) => item?.id === active?.id),
@@ -37,14 +39,143 @@ export function SortableList({ items, onChange, renderItem, className }) {
     <DndContext
       sensors={sensors}
       onDragStart={({ active }) => {
-        console.log("onDragStart", active);
         setActive(active);
       }}
       onDragEnd={({ active, over }) => {
         if (over && active?.id !== over?.id) {
           const activeIndex = items.findIndex(({ id }) => id === active.id);
           const overIndex = items.findIndex(({ id }) => id === over.id);
-
+          if (!dragDurationAll) {
+            if (items[activeIndex].type === "duration") {
+              if (activeIndex < overIndex) {
+                for (let i = activeIndex; i < overIndex + 1; i++) {
+                  if (items[i].type === "durationEnd") {
+                    setActive(null);
+                    return;
+                  }
+                }
+              } else {
+                for (let i = overIndex; i < activeIndex + 1; i++) {
+                  if (items[i].type === "durationEnd") {
+                    setActive(null);
+                    return;
+                  }
+                }
+              }
+            } else if (items[activeIndex].type === "durationEnd") {
+              if (activeIndex < overIndex) {
+                for (let i = activeIndex; i < overIndex + 1; i++) {
+                  if (items[i].type === "duration") {
+                    setActive(null);
+                    return;
+                  }
+                }
+              } else {
+                for (let i = overIndex; i < activeIndex + 1; i++) {
+                  if (items[i].type === "duration") {
+                    setActive(null);
+                    return;
+                  }
+                }
+              }
+            }
+          } else {
+            if (items[activeIndex].type === "duration") {
+              if (activeIndex < overIndex) {
+                let flag = true;
+                let insideDuration = true;
+                let durationEndIndex = null;
+                for (let i = activeIndex + 1; i < overIndex + 1; i++) {
+                  if (items[i].type === "durationEnd") {
+                    if (items[i].data?.durationId === items[activeIndex].id) {
+                      flag = false;
+                      durationEndIndex = i;
+                    } else {
+                      flag = true;
+                    }
+                    insideDuration = false;
+                  } else if (items[i].type === "duration") {
+                    flag = false;
+                    insideDuration = true;
+                  } else {
+                    if (insideDuration) {
+                      flag = false;
+                    } else {
+                      flag = true;
+                    }
+                  }
+                }
+                if (!flag) {
+                  setActive(null);
+                  setDragDurationAll(false);
+                  return;
+                }
+                let deleteCount = durationEndIndex - activeIndex + 1;
+                let elementsToMove = items.splice(activeIndex, deleteCount);
+                let newOverIndex = overIndex + 1;
+                if (activeIndex < overIndex) {
+                  newOverIndex -= deleteCount;
+                }
+                onChange(items.splice(newOverIndex, 0, ...elementsToMove));
+                setDragDurationAll(false);
+                setActive(null);
+                return;
+              } else {
+                let flag = true;
+                let insideDuration = false;
+                console.log("activeIndex", activeIndex, "overIndex", overIndex);
+                for (let i = activeIndex - 1; i > overIndex - 1; i--) {
+                  console.log("flag", i, items[i].type);
+                  if (items[i].type === "durationEnd") {
+                    flag = false;
+                    insideDuration = true;
+                  } else if (items[i].type === "duration") {
+                    flag = true;
+                    insideDuration = false;
+                  } else {
+                    console.log("insideDuration", insideDuration);
+                    if (insideDuration) {
+                      flag = false;
+                    } else {
+                      flag = true;
+                    }
+                  }
+                }
+                console.log("flag", flag);
+                if (!flag) {
+                  setActive(null);
+                  setDragDurationAll(false);
+                  return;
+                }
+                let durationEndIndex = null;
+                for (let i = activeIndex; i < items.length; i++) {
+                  if (items[i].type === "durationEnd") {
+                    if (items[i].data?.durationId === items[activeIndex].id) {
+                      durationEndIndex = i;
+                      break;
+                    }
+                  }
+                }
+                let deleteCount = durationEndIndex - activeIndex + 1;
+                let elementsToMove = items.splice(activeIndex, deleteCount);
+    
+                console.log(
+                  deleteCount,
+                  activeIndex,
+                  durationEndIndex,
+                  overIndex,
+                  elementsToMove,
+                  items
+                );
+                // console.log(items.splice(overIndex, 0, ...elementsToMove));
+                onChange(items.splice(overIndex, 0, ...elementsToMove));
+                setDragDurationAll(false);
+                setActive(null);
+                return;
+              }
+            }
+          }
+          setDragDurationAll(false);
           onChange(arrayMove(items, activeIndex, overIndex));
         }
         setActive(null);

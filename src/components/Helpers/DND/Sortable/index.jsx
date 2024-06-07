@@ -20,7 +20,7 @@ export function SortableItem({ children, id }) {
     transform,
     transition,
     data,
-    active
+    active,
   } = useSortable({ id });
   const context = useMemo(
     () => ({
@@ -59,12 +59,11 @@ export function SortableItem({ children, id }) {
   );
 }
 
-export function DragHandle({ className, setActive }) {
+export function DragHandle({ className, setActive,title }) {
   const { attributes, listeners, ref } = useContext(SortableItemContext);
   return (
     <button
-    // onClick={()}
-      title="Drag"
+      title={title}
       className={className}
       {...attributes}
       {...listeners}
