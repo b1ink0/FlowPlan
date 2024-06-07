@@ -612,7 +612,6 @@ const DocRenderViewContainer = ({
       node = node.children[i];
     });
     node.data = items;
-    console.log(items)
     node.updatedAt = new Date();
     handleResetShowAdd();
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
@@ -685,6 +684,8 @@ const DocRenderView = ({
     setFieldStyles,
     copyField,
     setCopyField,
+    dragDurationAll,
+    setDragDurationAll,
   } = useStateContext();
   const { copyToClipboard } = useFunctions();
 
@@ -1617,12 +1618,24 @@ const DocRenderView = ({
           onMouseLeave={() => setShowSubMenu(false)}
           className="transition-opacity absolute flex justify-end items-start gap-1 w-fit h-6 right-1 top-1 z-10"
         >
+          {field.type === "duration" && (
+            <div
+              onMouseDown={() => {
+                setDragDurationAll(true);
+              }}
+            >
+              <DragHandle
+                setActive={setActive}
+                title="Drag Duration and its containing fields"
+                className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center"
+              />
+            </div>
+          )}
           <DragHandle
-            ac
+            title="Drag"
             setActive={setActive}
             className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center"
           />
-
           <button
             onClick={() => handleEditField(field, i)}
             className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md"
@@ -4118,19 +4131,15 @@ const Duration = ({
         }}
         className="flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-t-md"
       >
-        {!(currentField?.config?.showFromTo ?? true) && (
+        {currentField?.config?.showFromTo && (
           <div className="text-xs">
-            {/* <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap"> */}
             <span className="w-fit">
               From: {formated.start || "Select Start DateTime"}
             </span>
-            {/* </div> */}
             <span>{" - To: "}</span>
-            {/* <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap"> */}
             <span className="w-fit">
               {formated.end || "Select End DateTime"}
             </span>
-            {/* </div> */}
           </div>
         )}
         <div className="flex justify-center items-center">
@@ -4267,7 +4276,7 @@ const Duration = ({
             });
           }}
         >
-          {(currentField?.config?.showFromTo ?? true) && (
+          {!currentField?.config?.showFromTo && (
             <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
           )}
           <span className="flex justify-center items-center text-lg font-bold">
@@ -4456,9 +4465,9 @@ const DurationDisplay = ({ field, currentField, onDoubleClick }) => {
         display: field?.id === currentField?.id ? "none" : "flex",
       }}
       onDoubleClick={onDoubleClick}
-      className="flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-tr-md rounded-tl-md"
+      className="flex mb-1 flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-tr-md rounded-tl-md"
     >
-      {!(field?.config?.showFromTo ?? true) && (
+      {field?.config?.showFromTo && (
         <div className="text-xs">
           {/* <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap"> */}
           <span className="w-fit">
@@ -4487,7 +4496,7 @@ const DurationEndDisplay = ({ node, field, currentField }) => {
         backgroundColor: `${field?.config?.color}`,
         display: field?.id === currentField?.id ? "none" : "flex",
       }}
-      className="flex mb-2 flex-wrap justify-between items-center text-xs w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-br-md rounded-bl-md"
+      className="flex mb-2 mt-1 flex-wrap justify-between items-center text-xs w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-br-md rounded-bl-md"
     >
       <div className="w-full flex justify-center items-center gap-2 flex-wrap">
         <span className="w-full text-center">End of Duration</span>
