@@ -45,6 +45,7 @@ export function SortableList({ items, onChange, renderItem, className }) {
         if (over && active?.id !== over?.id) {
           const activeIndex = items.findIndex(({ id }) => id === active.id);
           const overIndex = items.findIndex(({ id }) => id === over.id);
+          // when dragging duration field with containing fields
           if (!dragDurationAll) {
             if (items[activeIndex].type === "duration") {
               if (activeIndex < overIndex) {
@@ -123,9 +124,7 @@ export function SortableList({ items, onChange, renderItem, className }) {
               } else {
                 let flag = true;
                 let insideDuration = false;
-                console.log("activeIndex", activeIndex, "overIndex", overIndex);
                 for (let i = activeIndex - 1; i > overIndex - 1; i--) {
-                  console.log("flag", i, items[i].type);
                   if (items[i].type === "durationEnd") {
                     flag = false;
                     insideDuration = true;
@@ -133,7 +132,6 @@ export function SortableList({ items, onChange, renderItem, className }) {
                     flag = true;
                     insideDuration = false;
                   } else {
-                    console.log("insideDuration", insideDuration);
                     if (insideDuration) {
                       flag = false;
                     } else {
@@ -141,7 +139,6 @@ export function SortableList({ items, onChange, renderItem, className }) {
                     }
                   }
                 }
-                console.log("flag", flag);
                 if (!flag) {
                   setActive(null);
                   setDragDurationAll(false);
@@ -158,16 +155,7 @@ export function SortableList({ items, onChange, renderItem, className }) {
                 }
                 let deleteCount = durationEndIndex - activeIndex + 1;
                 let elementsToMove = items.splice(activeIndex, deleteCount);
-    
-                console.log(
-                  deleteCount,
-                  activeIndex,
-                  durationEndIndex,
-                  overIndex,
-                  elementsToMove,
-                  items
-                );
-                // console.log(items.splice(overIndex, 0, ...elementsToMove));
+
                 onChange(items.splice(overIndex, 0, ...elementsToMove));
                 setDragDurationAll(false);
                 setActive(null);
@@ -182,6 +170,7 @@ export function SortableList({ items, onChange, renderItem, className }) {
       }}
       onDragCancel={() => {
         setActive(null);
+        setDragDurationAll(false);
       }}
     >
       <SortableContext items={items}>
