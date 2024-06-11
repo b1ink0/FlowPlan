@@ -66,6 +66,7 @@ import PInIcon from "../../assets/Icons/PInIcon.jsx";
 import DurationIcon from "../../assets/Icons/DurationIcon.jsx";
 import DurationTimelineIcon from "../../assets/Icons/DurationTimelineIcon.jsx";
 import OverlapIcon from "../../assets/Icons/OverlapIcon.jsx";
+import GraphIcon from "../../assets/Icons/GraphIcon.jsx";
 
 function DisplayDocView() {
   const {
@@ -1603,6 +1604,16 @@ const DocRenderView = ({
           currentField={currentField}
         />
       )}
+      {field.type === "durationTimeline" && (
+        <DurationTimelineDisplay
+        i={i}
+          node={node}
+          field={field}
+          currentFlowPlan={currentFlowPlan}
+          currentField={currentField}
+          onDoubleClick={() => handleEditField(field, i)}
+        />
+      )}
 
       {currentField?.id !== field?.id && showAdd.index !== i && !move.move && (
         <span
@@ -2198,6 +2209,7 @@ const AddEditField = ({
         return {
           color: "#334155",
           showFromTo: true,
+          showGraph: true,
           overlap: false,
           type: "day",
           current: null,
@@ -4771,6 +4783,7 @@ const DurationTimeline = ({
   const handleCalculateDuration = (type, overlap = false) => {
     if (!type) return null;
     // Parse the ISO date strings into Date objects
+    console.log(type)
     let start = null;
     let end = null;
     let duration = 0;
@@ -4789,7 +4802,6 @@ const DurationTimeline = ({
       default:
         break;
     }
-
     if (durations.length === 0) return null;
 
     durations.sort((a, b) => a.start - b.start);
@@ -4804,7 +4816,6 @@ const DurationTimeline = ({
         end = duration.end;
       }
     });
-
     if (!overlap) {
       durations.forEach((d) => {
         duration += d.end - d.start;
@@ -4844,6 +4855,7 @@ const DurationTimeline = ({
     const diffMinutes = diffSeconds / 60;
     const diffHours = diffMinutes / 60;
     const diffDays = diffHours / 24;
+    console.log(diffHours);
     return {
       milliseconds: diffMilliseconds,
       seconds: diffSeconds,
@@ -4887,7 +4899,7 @@ const DurationTimeline = ({
       currentField?.config?.overlap
     );
     if (!duration) return;
-    console.log(duration);
+    console.log(handleFormatDuration(duration));
     setFormated((prev) => ({
       ...prev,
       start: handleGetFormatedDateTime(duration.start.toISOString()),
@@ -5064,11 +5076,72 @@ const DurationTimeline = ({
       default:
         break;
     }
-    console.log(type, durations);
-    setFormated({
-      ...formated,
+    setFormated((prev) => ({
+      ...prev,
       displayType: type,
       displayDuration: durations,
+    }));
+  };
+
+  const getNextWeek = (date) => {
+    const nextWeek = new Date(date);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return nextWeek;
+  };
+
+  const getPreviousWeek = (date) => {
+    const previousWeek = new Date(date);
+    previousWeek.setDate(previousWeek.getDate() - 7);
+    return previousWeek;
+  };
+
+  const getNextMonth = (date) => {
+    const nextMonth = new Date(date);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    return nextMonth;
+  };
+
+  const getPreviousMonth = (date) => {
+    const previousMonth = new Date(date);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    return previousMonth;
+  };
+
+  const getNextYear = (date) => {
+    const nextYear = new Date(date);
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    return nextYear;
+  };
+
+  const getPreviousYear = (date) => {
+    const previousYear = new Date(date);
+    previousYear.setFullYear(previousYear.getFullYear() - 1);
+    return previousYear;
+  };
+
+  const handleGetDateNavigationFunction = (iso, durationType, direction) => {
+    const navigationFunctions = {
+      week: {
+        next: getNextWeek,
+        prev: getPreviousWeek,
+      },
+      month: {
+        next: getNextMonth,
+        prev: getPreviousMonth,
+      },
+      year: {
+        next: getNextYear,
+        prev: getPreviousYear,
+      },
+    };
+
+    let newDate = navigationFunctions[durationType]?.[direction](iso);
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        current: newDate.toISOString(),
+      },
     });
   };
 
@@ -5125,19 +5198,10 @@ const DurationTimeline = ({
       ...currentField,
       data: {
         ...currentField.data,
-        duration: {
-          ...currentField.data.duration,
+        durationTimeline: {
+          ...currentField.data.durationTimeline,
         },
       },
-    };
-
-    let durationEndField = {
-      id: v4(),
-      type: "durationEnd",
-      data: {
-        durationId: finalFieldId,
-      },
-      config: {},
     };
 
     if (index !== null) {
@@ -5147,11 +5211,9 @@ const DurationTimeline = ({
         ...finalField,
         id: finalFieldId,
       });
-      node.data.splice(dataIndex + 2, 0, durationEndField);
       handleResetShowAdd();
     } else {
       node.data.push({ ...finalField, id: finalFieldId });
-      node.data.push(durationEndField);
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
@@ -5159,27 +5221,12 @@ const DurationTimeline = ({
     setCurrentField(null);
   };
 
-  const handleDelete = async (i, deleteContainingFields = false) => {
+  const handleDelete = async (i) => {
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
       node = node.children[i];
     });
-    const fieldType = node?.data[i]?.type;
-    if (fieldType === "durationEnd") return;
-    if (fieldType === "duration") {
-      for (let j = i + 1; j < node.data.length; j++) {
-        if (node?.data[j]?.type === "durationEnd") {
-          if (node?.data[j]?.data?.durationId === node?.data[i]?.id) {
-            if (!deleteContainingFields) {
-              node.data.splice(j, 1);
-              break;
-            }
-            node.data.splice(i + 1, j - i);
-          }
-        }
-      }
-    }
     node.data.splice(i, 1);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
@@ -5208,6 +5255,13 @@ const DurationTimeline = ({
     currentField?.config?.current,
     currentField?.data?.durationTimeline?.displayFormat?.type,
   ]);
+
+  useEffect(() => {
+    handleCalculateRange(
+      currentField?.data?.durationTimeline?.displayFormat?.type,
+      currentField?.config?.current
+    );
+  }, [formated.durations]);
 
   return (
     <form
@@ -5238,24 +5292,70 @@ const DurationTimeline = ({
             </span>
           </div>
         </div>
-        <div
-          style={{
-            backgroundColor: `${currentField?.config?.color}`,
-          }}
-          className="w-full flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-b-md"
-        ></div>
+        {currentField?.config?.showGraph && (
+          <div
+            style={{
+              backgroundColor: `${currentField?.config?.color}`,
+            }}
+            className="w-full flex flex-wrap justify-between items-center text-s px-2 pb-2 bg-[var(--btn-secondary)] rounded-b-md"
+          >
+            {formated.displayDuration.length > 0 && (
+              <DisplayDurationGraph
+                durations={formated.displayDuration}
+                type={currentField?.data?.durationTimeline?.displayFormat?.type}
+                color={currentField?.config?.color}
+              />
+            )}
+          </div>
+        )}
       </div>
-      <div className="w-full flex justify-center items-center gap-2 flex-wrap p-2">
-        <span>Select A Week:</span>
-        <input
-          type="datetime-local"
-          className="w-[200px] h-8 cursor-pointer text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
-          value={handleGetDateTime(
-            currentField?.config?.current ?? formated?.startISO
-          )}
-          onChange={handleSetDateTime}
-        />
-      </div>
+      {currentField?.config?.showGraph && (
+        <div className="w-full flex flex-col justify-center items-center gap-2 flex-wrap p-2">
+          <span>
+            Select A {currentField?.data?.durationTimeline?.displayFormat?.des}:
+          </span>
+          <div className="w-full flex justify-center items-center gap-2 flex-wrap">
+            <button
+              className=" relative w-8 h-8 p-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
+              type="button"
+              onClick={() =>
+                handleGetDateNavigationFunction(
+                  currentField?.config?.current ?? formated?.startISO,
+                  currentField?.data?.durationTimeline?.displayFormat?.type,
+                  "prev"
+                )
+              }
+            >
+              <span className="rotate-180 flex justify-center items-center text-lg font-bold">
+                <BackIcon />
+              </span>
+            </button>
+            <input
+              type="datetime-local"
+              className="w-[200px] h-8 cursor-pointer text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+              value={handleGetDateTime(
+                currentField?.config?.current ?? formated?.startISO
+              )}
+              onChange={handleSetDateTime}
+            />
+            <button
+              className=" relative w-8 h-8 p-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
+              type="button"
+              onClick={() =>
+                handleGetDateNavigationFunction(
+                  currentField?.config?.current ?? formated?.startISO,
+                  currentField?.data?.durationTimeline?.displayFormat?.type,
+                  "next"
+                )
+              }
+            >
+              <span className="flex justify-center items-center text-lg font-bold">
+                <BackIcon />
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
       <div className="w-full flex justify-center items-center gap-2 flex-wrap">
         <button
           className="w-14 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
@@ -5339,6 +5439,27 @@ const DurationTimeline = ({
         </button>
         <button
           type="button"
+          title="Toggle Show Graph"
+          className="relative w-8 h-8 px-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => {
+            setCurrentField({
+              ...currentField,
+              config: {
+                ...currentField.config,
+                showGraph: !currentField?.config?.showGraph ?? false,
+              },
+            });
+          }}
+        >
+          {!currentField?.config?.showGraph && (
+            <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+          )}
+          <span className="flex justify-center items-center text-lg font-bold">
+            <GraphIcon />
+          </span>
+        </button>
+        <button
+          type="button"
           title="Toggle Overlap Duration"
           className="relative w-8 h-8 px-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
           onClick={() => {
@@ -5404,6 +5525,518 @@ const DurationTimeline = ({
         </button>
       </div>
     </form>
+  );
+};
+
+const DurationTimelineDisplay = ({
+  i,
+  node,
+  field,
+  currentField,
+  onDoubleClick,
+  currentFlowPlan,
+}) => {
+  const [formated, setFormated] = useState({
+    start: null,
+    end: null,
+    startISO: null,
+    endISO: null,
+    duration: null,
+    durations: [],
+    displayType: null,
+    displayDuration: [],
+  });
+
+  const handleGetDurations = (node, stop = false) => {
+    let durations = [];
+    node?.data?.forEach((field, index) => {
+      if (!field) return;
+      if (field?.type === "duration") {
+        let duration = field?.data?.duration;
+        if (!duration) return;
+        if (!duration?.end) return;
+        if (duration?.end === null) return;
+        durations.push({
+          id: field.id,
+          index: index,
+          start: new Date(duration.start),
+          end: new Date(duration.end),
+        });
+      }
+    });
+
+    if (stop) return durations;
+    if (node?.children?.length > 0) {
+      node.children.forEach((child) => {
+        durations = [...durations, ...handleGetDurations(child)];
+      });
+    }
+
+    return durations;
+  };
+  const handleCalculateDuration = (type, overlap = false) => {
+    if (!type) return null;
+    // Parse the ISO date strings into Date objects
+    let start = null;
+    let end = null;
+    let duration = 0;
+    let durations = [];
+
+    switch (type) {
+      case "doc":
+        durations = handleGetDurations(node, true);
+        break;
+      case "docChild":
+        durations = handleGetDurations(node);
+        break;
+      case "docAll":
+        durations = handleGetDurations(currentFlowPlan.root);
+        break;
+      default:
+        break;
+    }
+console.log(type, durations)
+    if (durations.length === 0) return null;
+
+    durations.sort((a, b) => a.start - b.start);
+    start = durations[0]?.start;
+    end = durations[durations.length - 1]?.end;
+
+    durations.forEach((duration) => {
+      if (duration.start < start) {
+        start = duration.start;
+      }
+      if (duration.end > end) {
+        end = duration.end;
+      }
+    });
+    console.log(overlap);
+    if (!overlap) {
+      durations.forEach((d) => {
+        duration += d.end - d.start;
+      });
+    } else {
+      let mergedIntervals = [];
+      let currentInterval = durations[0];
+      for (let i = 1; i < durations.length; i++) {
+        let currentStart = currentInterval.start;
+        let currentEnd = currentInterval.end;
+        let nextStart = durations[i].start;
+        let nextEnd = durations[i].end;
+
+        // Check if intervals overlap
+        if (nextStart <= currentEnd) {
+          // Merge intervals
+          currentInterval.end = new Date(Math.max(currentEnd, nextEnd));
+        } else {
+          // Push the current interval and move to the next
+          mergedIntervals.push(currentInterval);
+          currentInterval = durations[i];
+        }
+      }
+      mergedIntervals.push(currentInterval);
+      mergedIntervals.forEach((d) => {
+        duration += d.end - d.start;
+        console.log(duration / 1000 / 60);
+      });
+      durations = mergedIntervals;
+    }
+
+    // Calculate the difference in milliseconds
+    let diffMilliseconds = duration;
+
+    // Convert the difference to various units
+    const diffSeconds = diffMilliseconds / 1000;
+    const diffMinutes = diffSeconds / 60;
+    const diffHours = diffMinutes / 60;
+    const diffDays = diffHours / 24;
+    console.log(diffHours);
+    return {
+      milliseconds: diffMilliseconds,
+      seconds: diffSeconds,
+      minutes: diffMinutes,
+      hours: diffHours,
+      days: diffDays,
+      start: start,
+      end: end,
+      durations: durations,
+    };
+  };
+
+  const handleFormatDuration = (duration) => {
+    if (!duration) return "";
+    let days = Math.floor(duration.days);
+    let hours = Math.floor(duration.hours) % 24;
+    let minutes = Math.floor(duration.minutes) % 60;
+    let seconds = Math.floor(duration.seconds) % 60;
+
+    const all = [days, hours, minutes];
+
+    let string = "";
+    all.forEach((item, index) => {
+      if (item > 0) {
+        if (index === 0) {
+          string += `${item}d `;
+        } else if (index === 1) {
+          string += `${item}h `;
+        } else if (index === 2) {
+          string += `${item}m `;
+        } else if (index === 3) {
+          string += `${item}s `;
+        }
+      }
+    });
+    return string;
+  };
+
+  const handleGetFormatedDateTime = (iso) => {
+    if (iso === null) return "";
+    let date = new Date(iso);
+    console.log(iso);
+    if (!field?.data?.duration?.format?.input) return date.toLocaleString();
+    const string = new Intl.DateTimeFormat(
+      "en-IN",
+      field?.data?.duration?.format?.input
+    ).format(date);
+    return string;
+  };
+
+  const handleSetFormated = () => {
+    let duration = handleCalculateDuration(
+      field?.data?.durationTimeline?.type,
+      field?.config?.overlap
+    );
+    if (!duration) return;
+    console.log(handleFormatDuration(duration));
+    setFormated((prev) => ({
+      ...prev,
+      start: handleGetFormatedDateTime(duration.start.toISOString()),
+      end: handleGetFormatedDateTime(duration.end.toISOString()),
+      startISO: duration.start.toISOString(),
+      endISO: duration.end.toISOString(),
+      duration: handleFormatDuration(duration),
+      durations: duration.durations,
+    }));
+  };
+
+  const splitEventByDay = (event) => {
+    const segments = [];
+    let currentStart = new Date(event.start);
+    const end = new Date(event.end);
+
+    while (currentStart < end) {
+      const currentEnd = new Date(currentStart);
+      currentEnd.setHours(23, 59, 59, 999); // End of the current day
+      if (currentEnd > end) currentEnd.setTime(end.getTime());
+
+      segments.push({
+        id: event.id,
+        index: event.index,
+        start: new Date(currentStart),
+        end: new Date(currentEnd),
+      });
+
+      currentStart = new Date(currentEnd);
+      currentStart.setHours(24, 0, 0, 0); // Start of the next day
+    }
+
+    return segments;
+  };
+  const calculateDurations = (events, rangeStart, rangeEnd, unit) => {
+    const dayDurations = {};
+
+    events.forEach((event) => {
+      const segments = splitEventByDay(event);
+
+      segments.forEach((segment) => {
+        const start = new Date(segment.start);
+        const end = new Date(segment.end);
+
+        if (start >= rangeStart && start <= rangeEnd) {
+          const dayKey = start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+          if (!dayDurations[dayKey]) {
+            dayDurations[dayKey] = 0;
+          }
+          dayDurations[dayKey] += end - start; // Duration in milliseconds
+        }
+      });
+    });
+
+    const durations = [];
+
+    if (unit === "week") {
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(rangeStart);
+        day.setDate(day.getDate() + i);
+        const dayKey = day.toISOString().split("T")[0];
+        const dayName = day.toLocaleDateString("en-US", { weekday: "long" });
+        durations.push({
+          label: dayName,
+          duration: dayDurations[dayKey] || 0,
+        });
+      }
+    } else if (unit === "month") {
+      const weeks = {};
+      const current = new Date(rangeStart);
+      while (current <= rangeEnd) {
+        const weekKey = `${current.getFullYear()}-W${Math.ceil(
+          (current.getDate() + 6 - current.getDay()) / 7
+        )}`;
+        if (!weeks[weekKey]) {
+          weeks[weekKey] = 0;
+        }
+        const dayKey = current.toISOString().split("T")[0];
+        weeks[weekKey] += dayDurations[dayKey] || 0;
+        current.setDate(current.getDate() + 1);
+      }
+      Object.entries(weeks).forEach(([weekKey, duration]) => {
+        durations.push({
+          label: "w-" + weekKey.split("-W")[1],
+          duration,
+        });
+      });
+    } else if (unit === "year") {
+      for (let i = 0; i < 12; i++) {
+        const monthStart = new Date(rangeStart.getFullYear(), i, 1);
+        const monthEnd = new Date(rangeStart.getFullYear(), i + 1, 0);
+        let monthDuration = 0;
+        for (
+          let day = new Date(monthStart);
+          day <= monthEnd;
+          day.setDate(day.getDate() + 1)
+        ) {
+          const dayKey = day.toISOString().split("T")[0];
+          monthDuration += dayDurations[dayKey] || 0;
+        }
+        const monthName = monthStart.toLocaleDateString("en-US", {
+          month: "long",
+        });
+        durations.push({
+          label: monthName,
+          duration: monthDuration,
+        });
+      }
+      let jan = durations[durations.length - 1];
+      durations.unshift(jan);
+      durations.pop();
+    }
+
+    return durations.map((item) => ({
+      ...item,
+      milliseconds: item.duration,
+      seconds: item.duration / 1000,
+      minutes: item.duration / 60000,
+      hours: item.duration / 3600000,
+    }));
+  };
+  const getWeekRange = (date) => {
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+    return [startOfWeek, endOfWeek];
+  };
+
+  const getMonthRange = (date) => {
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    return [startOfMonth, endOfMonth];
+  };
+
+  const getYearRange = (date) => {
+    const startOfYear = new Date(date.getFullYear(), 0, 1);
+    const endOfYear = new Date(date.getFullYear(), 11, 31);
+    return [startOfYear, endOfYear];
+  };
+  const getWeeklyDuration = (events, selectedDate) => {
+    const [weekStart, weekEnd] = getWeekRange(selectedDate);
+    return calculateDurations(events, weekStart, weekEnd, "week");
+  };
+
+  const getMonthlyDuration = (events, selectedDate) => {
+    const [monthStart, monthEnd] = getMonthRange(selectedDate);
+    return calculateDurations(events, monthStart, monthEnd, "month");
+  };
+
+  const getYearlyDuration = (events, selectedDate) => {
+    const [yearStart, yearEnd] = getYearRange(selectedDate);
+    return calculateDurations(events, yearStart, yearEnd, "year");
+  };
+
+  const handleCalculateRange = (type, selectedDate) => {
+    if (formated.durations.length === 0) return;
+    if (!formated.start) return;
+    console.log(type, selectedDate);
+    selectedDate = new Date(selectedDate || formated.startISO);
+    let durations = [];
+    switch (type) {
+      case "week":
+        durations = getWeeklyDuration(formated.durations, selectedDate);
+        break;
+      case "month":
+        durations = getMonthlyDuration(formated.durations, selectedDate);
+        break;
+      case "year":
+        durations = getYearlyDuration(formated.durations, selectedDate);
+        break;
+      default:
+        break;
+    }
+    console.log(type, durations);
+    setFormated((prev) => ({
+      ...prev,
+      displayType: type,
+      displayDuration: durations,
+    }));
+  };
+
+  useEffect(() => {
+    handleSetFormated();
+    handleCalculateRange(
+      field?.data?.durationTimeline?.displayFormat?.type,
+      field?.config?.current
+    );
+  }, [
+    field?.data?.durationTimeline?.type,
+    field?.config?.overlap,
+    field?.config?.current,
+    field?.data?.durationTimeline?.displayFormat?.type,
+  ]);
+
+  useEffect(() => {
+    handleCalculateRange(
+      field?.data?.durationTimeline?.displayFormat?.type,
+      field?.config?.current
+    );
+  }, [formated.durations]);
+  return (
+    <div
+      style={{
+        backgroundColor: `${field?.config?.color}`,
+        display: field?.id === currentField?.id ? "none" : "flex",
+      }}
+      onDoubleClick={onDoubleClick}
+      className="w-full flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md gap-2"
+    >
+      <div className="w-full flex flex-col justify-start items-center">
+        <div
+          style={{
+            backgroundColor: `${currentField?.config?.color}`,
+          }}
+          className="flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-t-md"
+        >
+          {field?.config?.showFromTo && (
+            <div className="text-xs">
+              <span className="w-fit">
+                From: {formated.start || "Select Start DateTime"}
+              </span>
+              <span>{" - To: "}</span>
+              <span className="w-fit">
+                {formated.end || "Select End DateTime"}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-center items-center">
+            <span className="text-xs text-[var(--text-primary)]">
+              Duration: {formated.duration || "Not Yet"}
+            </span>
+          </div>
+        </div>
+        {field?.config?.showGraph && (
+          <div
+            style={{
+              backgroundColor: `${currentField?.config?.color}`,
+            }}
+            className="w-full flex flex-wrap justify-between items-center text-s px-2 pb-2 bg-[var(--btn-secondary)] rounded-b-md"
+          >
+            {formated.displayDuration.length > 0 && (
+              <DisplayDurationGraph
+                durations={formated.displayDuration}
+                type={field?.data?.durationTimeline?.displayFormat?.type}
+                color={field?.config?.color}
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const DisplayDurationGraph = ({ durations, type, color }) => {
+  const hours = {
+    week: [24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0],
+    month: [168, 153, 137, 122, 107, 92, 76, 61, 46, 31, 15, 0],
+    year: [744, 672, 620, 558, 496, 434, 372, 310, 248, 186, 124, 62, 0],
+  };
+
+  useEffect(() => {
+    console.log(durations);
+  }, []);
+  return (
+    <div className="w-full h-[300px] bg-[var(--bg-secondary)] rounded-md flex justify-center items-center">
+      <div className="w-[20px] h-full flex justify-between py-2 items-end">
+        <div className="h-full flex flex-col justify-end items-center gap-2">
+          <div className="h-full flex flex-col justify-between">
+            {hours[type].map((hour, index) => {
+              return (
+                <div
+                  key={"duration-graph-hours-" + index}
+                  className="w-[30px] h-full flex flex-col justify-end items-center"
+                >
+                  <span className="w-full h-fit text-[10px] text-center text-[var(--text-primary)]">
+                    {hour}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <span className="text-xs text-[var(--text-primary)]">H</span>
+        </div>
+      </div>
+      <div className="w-full h-full flex justify-between items-end p-2 gap-1">
+        {durations.map((duration, index) => (
+          <div
+            key={"duration-graph-data" + index}
+            className="w-full h-full flex flex-col justify-end items-center"
+          >
+            <div className="w-full h-full flex flex-col justify-end items-center gap-2">
+              {duration.duration !== 0 && (
+                <div
+                  className="w-full h-0 transition-all rounded-md text-center items-center relative"
+                  style={{
+                    height: `${
+                      (duration.duration /
+                        1000 /
+                        60 /
+                        60 /
+                        (type === "week" ? 24 : type === "month" ? 168 : 744)) *
+                      100
+                    }%`,
+                    backgroundColor: color,
+                  }}
+                >
+                  <span className="w-full h-fit text-[10px] text-center text-[var(--text-primary)] #rotate-45 absolute top-0.5 left-0">
+                    {duration.duration / 1000 / 60 / 60 > 1
+                      ? `${Math.floor(
+                          duration.duration / 1000 / 60 / 60
+                        )}h${Math.round(
+                          (duration.duration / 1000 / 60 / 60 -
+                            Math.floor(duration.duration / 1000 / 60 / 60)) *
+                            60
+                        )}m`
+                      : `${Math.round(duration.duration / 1000 / 60)}m`}
+                  </span>
+                </div>
+              )}
+              <span className="text-xs text-[var(--text-primary)]">
+                {duration?.label?.slice(0, 3)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 
