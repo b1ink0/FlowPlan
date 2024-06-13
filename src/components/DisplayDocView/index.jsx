@@ -1606,7 +1606,7 @@ const DocRenderView = ({
       )}
       {field.type === "durationTimeline" && (
         <DurationTimelineDisplay
-        i={i}
+          i={i}
           node={node}
           field={field}
           currentFlowPlan={currentFlowPlan}
@@ -4181,7 +4181,11 @@ const Duration = ({
         )
       ),
     });
-  }, [currentField?.data?.duration?.start, currentField?.data?.duration?.end]);
+  }, [
+    currentField?.data?.duration?.start,
+    currentField?.data?.duration?.end,
+    currentField?.data?.duration?.format,
+  ]);
 
   return (
     <form
@@ -4713,12 +4717,11 @@ const DurationTimeline = ({
   const handleGetFormatedDateTime = (iso) => {
     if (iso === null) return "";
     let date = new Date(iso);
-    console.log(iso);
-    if (!currentField?.data?.duration?.format?.input)
+    if (!currentField?.data?.durationTimeline?.format?.input)
       return date.toLocaleString();
     const string = new Intl.DateTimeFormat(
       "en-IN",
-      currentField?.data?.duration?.format?.input
+      currentField?.data?.durationTimeline?.format?.input
     ).format(date);
     return string;
   };
@@ -4783,7 +4786,7 @@ const DurationTimeline = ({
   const handleCalculateDuration = (type, overlap = false) => {
     if (!type) return null;
     // Parse the ISO date strings into Date objects
-    console.log(type)
+    console.log(type);
     let start = null;
     let end = null;
     let duration = 0;
@@ -5254,6 +5257,7 @@ const DurationTimeline = ({
     currentField?.config?.overlap,
     currentField?.config?.current,
     currentField?.data?.durationTimeline?.displayFormat?.type,
+    currentField?.data?.durationTimeline?.format,
   ]);
 
   useEffect(() => {
@@ -5539,6 +5543,8 @@ const DurationTimelineDisplay = ({
   const [formated, setFormated] = useState({
     start: null,
     end: null,
+    current: null,
+    currentISO: null,
     startISO: null,
     endISO: null,
     duration: null,
@@ -5595,7 +5601,7 @@ const DurationTimelineDisplay = ({
       default:
         break;
     }
-console.log(type, durations)
+    console.log(type, durations);
     if (durations.length === 0) return null;
 
     durations.sort((a, b) => a.start - b.start);
@@ -5692,11 +5698,11 @@ console.log(type, durations)
   const handleGetFormatedDateTime = (iso) => {
     if (iso === null) return "";
     let date = new Date(iso);
-    console.log(iso);
-    if (!field?.data?.duration?.format?.input) return date.toLocaleString();
+    if (!field?.data?.durationTimeline?.format?.input)
+      return date.toLocaleString();
     const string = new Intl.DateTimeFormat(
       "en-IN",
-      field?.data?.duration?.format?.input
+      field?.data?.durationTimeline?.format?.input
     ).format(date);
     return string;
   };
@@ -5707,11 +5713,16 @@ console.log(type, durations)
       field?.config?.overlap
     );
     if (!duration) return;
-    console.log(handleFormatDuration(duration));
     setFormated((prev) => ({
       ...prev,
       start: handleGetFormatedDateTime(duration.start.toISOString()),
       end: handleGetFormatedDateTime(duration.end.toISOString()),
+      currentISO: field?.config?.current,
+      current:
+        handleGetCurrent(
+          field?.config?.current,
+          field?.data?.durationTimeline?.displayFormat?.type
+        ) + handleGetFormatedDateTime(field?.config?.current),
       startISO: duration.start.toISOString(),
       endISO: duration.end.toISOString(),
       duration: handleFormatDuration(duration),
@@ -5862,11 +5873,44 @@ console.log(type, durations)
     const [yearStart, yearEnd] = getYearRange(selectedDate);
     return calculateDurations(events, yearStart, yearEnd, "year");
   };
+  const getWeekNumber = (date) => {
+    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const dayOfMonth = date.getDate();
+    const dayOfWeek = firstDayOfMonth.getDay();
+
+    // Calculate the week number in the month
+    return "Week " + Math.ceil((dayOfMonth + dayOfWeek) / 7) + " - ";
+  };
+
+  // Function to get the month from a date
+  const getMonth = (date) => {
+    return date.toLocaleDateString("en-US", { month: "long" }) + " - ";
+  };
+
+  // Function to get the year from a date
+  const getYear = (date) => {
+    return date.getFullYear() + " - ";
+  };
+
+  const handleGetCurrent = (iso, type) => {
+    if (iso === null) return "";
+    let date = new Date(iso);
+    console.log(iso, type);
+    switch (type) {
+      case "week":
+        return getWeekNumber(date);
+      case "month":
+        return getMonth(date);
+      case "year":
+        return getYear(date);
+      default:
+        return "";
+    }
+  };
 
   const handleCalculateRange = (type, selectedDate) => {
     if (formated.durations.length === 0) return;
     if (!formated.start) return;
-    console.log(type, selectedDate);
     selectedDate = new Date(selectedDate || formated.startISO);
     let durations = [];
     switch (type) {
@@ -5882,7 +5926,6 @@ console.log(type, durations)
       default:
         break;
     }
-    console.log(type, durations);
     setFormated((prev) => ({
       ...prev,
       displayType: type,
@@ -5921,7 +5964,7 @@ console.log(type, durations)
       <div className="w-full flex flex-col justify-start items-center">
         <div
           style={{
-            backgroundColor: `${currentField?.config?.color}`,
+            backgroundColor: `${field?.config?.color}`,
           }}
           className="flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-t-md"
         >
@@ -5945,9 +5988,9 @@ console.log(type, durations)
         {field?.config?.showGraph && (
           <div
             style={{
-              backgroundColor: `${currentField?.config?.color}`,
+              backgroundColor: `${field?.config?.color}`,
             }}
-            className="w-full flex flex-wrap justify-between items-center text-s px-2 pb-2 bg-[var(--btn-secondary)] rounded-b-md"
+            className="w-full flex flex-wrap justify-between items-center text-s px-2 bg-[var(--btn-secondary)] rounded-b-md"
           >
             {formated.displayDuration.length > 0 && (
               <DisplayDurationGraph
@@ -5956,6 +5999,9 @@ console.log(type, durations)
                 color={field?.config?.color}
               />
             )}
+            <span className="w-full text-center text-[10px]">
+              {formated.current}
+            </span>
           </div>
         )}
       </div>
