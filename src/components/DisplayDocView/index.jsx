@@ -1286,69 +1286,17 @@ const DocRenderView = ({
         </div>
       )}
       {field.type === "taskList" && (
-        <div
-          style={{
-            display: field?.id === currentField?.id ? "none" : "flex",
-            paddingLeft: `${field?.config?.indentation * 10 || 4}px`,
-          }}
-          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
-        >
-          {field?.config?.progressBar && (
-            <ProgressBar progress={field?.config?.progress ?? 0} />
-          )}
-          {field?.data?.list?.map((item, j) => (
-            <div
-              key={`shown-list-item-${item?.id || j}`}
-              className="w-full flex flex-col justify-center items-center text-sm"
-              onDoubleClick={() => handleEditField(field, i)}
-            >
-              <span
-                className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
-                style={{
-                  fontSize: `${field?.config?.fontSize}px`,
-                  textDecoration: `${
-                    field?.config?.strickthrough ? "line-through" : "none"
-                  }`,
-                  fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
-                  fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
-                  fontFamily: `${field?.config?.fontFamily}`,
-                  color: `${field?.config?.color}`,
-                  textAlign: `${field?.config?.align}`,
-                }}
-              >
-                <span
-                  style={{
-                    color: `${field?.config?.color}`,
-                  }}
-                  className="w-5 h-5 mr-1 block shrink-0 cursor-pointer group"
-                >
-                  {item?.completed ? <CheckedIcon /> : <UncheckedIcon />}
-                </span>
-                {item?.text}
-              </span>
-              {field.config?.showDateInfo && (
-                <div className="w-full opacity-100 flex justify-between items-center flex-wrap">
-                  <TimeAndDate
-                    group={false}
-                    absolute={false}
-                    text={`Completed: ${item?.completed ? "" : "Not yet"}`}
-                    timeDate={
-                      item.completed ? new Date(item.completedAt) : undefined
-                    }
-                  />
-                  <TimeAndDate
-                    group={false}
-                    absolute={false}
-                    text="Created: "
-                    timeDate={
-                      item.createdAt ? new Date(item.createdAt) : undefined
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <TaskListDisplay
+          field={field}
+          i={i}
+          node={node}
+          setNode={setNode}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+          handleEditField={handleEditField}
+        />
       )}
       {field.type === "numberList" && (
         <div
@@ -4303,7 +4251,7 @@ const Duration = ({
           {addOrSub === "add" ? "+" : "-"}
         </button>
       </div>
-      <div className="w-full flex justify-center items-center gap-2 flex-wrap mt-2">
+      <div className="w-full flex justify-center items-center gap-2 flex-wrap my-2">
         <button
           className="w-14 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
           type="button"
@@ -5696,8 +5644,10 @@ const DurationTimelineDisplay = ({
   };
 
   const handleGetFormatedDateTime = (iso) => {
+    if (!iso) return "";
     if (iso === null) return "";
     let date = new Date(iso);
+    console.log(iso, field?.data?.durationTimeline?.format?.input)
     if (!field?.data?.durationTimeline?.format?.input)
       return date.toLocaleString();
     const string = new Intl.DateTimeFormat(
@@ -7120,6 +7070,7 @@ const TaskList = ({
     createdAt: new Date(),
     completedAt: null,
   });
+  const inputRefs = useRef([]);
   const [showChangeDateInfo, setShowChangeDateInfo] = useState({
     show: false,
     index: null,
@@ -7147,6 +7098,29 @@ const TaskList = ({
         ...item,
         text: e.target.value,
       });
+    }
+  };
+
+  const handleKeyDown = (event, i) => {
+    if (event?.key === "Enter") {
+      console.log("Enter key pressed", event);
+      let newItem = {
+        text: "",
+        completed: false,
+        createdAt: new Date(),
+        completedAt: null,
+        id: v4(),
+      };
+      setList((prev) => {
+        let newList = [...prev];
+        newList.splice(i + 1, 0, newItem);
+        return newList;
+      });
+      setTimeout(() => {
+        if (inputRefs.current[i + 1]) {
+          inputRefs.current[i + 1].focus();
+        }
+      }, 100);
     }
   };
 
@@ -7323,7 +7297,8 @@ const TaskList = ({
               className="group w-full flex justify-center items-center flex-col text-sm relative"
             >
               <div className="w-full flex">
-                <span
+                <button
+                  type="button"
                   style={{
                     color: `${currentField?.config?.color}`,
                   }}
@@ -7331,14 +7306,16 @@ const TaskList = ({
                   onClick={(e) => handleCompleteToggle(e, index)}
                 >
                   {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
-                </span>
+                </button>
                 <input
                   required
+                  ref={(el) => (inputRefs.current[index] = el)}
                   type="text"
                   placeholder="Enter List Item..."
                   value={item?.text}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
                   onChange={(e) => handleItemChange(e, index)}
-                  className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                  className="w-full pr-[80px] text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
                   style={{
                     fontSize: `${currentField?.config?.fontSize}px`,
                     textDecoration: `${
@@ -7428,7 +7405,8 @@ const TaskList = ({
         onSubmit={handleAdd}
         className="w-full flex justify-center items-center text-sm"
       >
-        <span
+        <button
+          type="button"
           style={{
             color: `${currentField?.config?.color}`,
           }}
@@ -7436,7 +7414,7 @@ const TaskList = ({
           onClick={handleCompleteToggle}
         >
           {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
-        </span>
+        </button>
         <input
           required
           autoFocus
@@ -7467,6 +7445,138 @@ const TaskList = ({
         type={currentField.type}
         handleGetDefaultConfig={handleGetDefaultConfig}
       />
+    </div>
+  );
+};
+
+const TaskListDisplay = ({
+  field,
+  currentField,
+  setCurrentField,
+  i,
+  handleEditField,
+}) => {
+  const { db, currentFlowPlan, currentFlowPlanNode, setCurrentFlowPlan } =
+    useStateContext();
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleCalculateProgress = (list) => {
+    if (!field?.config?.progressBar) return;
+    if (list.length === 0) return;
+    let total = 0;
+    list?.forEach((item) => {
+      if (item.completed) {
+        total++;
+      }
+    });
+
+    let progress = (total / list?.length) * 100;
+    return progress;
+  };
+
+  const handleCompleteToggle = (e, index) => {
+    let newList = [...field?.data?.list];
+    newList[index] = {
+      ...newList[index],
+      completed: !newList[index].completed,
+      completedAt: !newList[index].completed ? new Date() : null,
+    };
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+
+    const progress = handleCalculateProgress(newList);
+
+    console.log(progress);
+
+    node.data[i] = {
+      ...field,
+      data: {
+        ...field.data,
+        list: newList,
+      },
+      config: {
+        ...field.config,
+        progress: progress,
+      },
+    };
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
+  return (
+    <div
+      style={{
+        display: field?.id === currentField?.id ? "none" : "flex",
+        paddingLeft: `${field?.config?.indentation * 10 || 4}px`,
+      }}
+      className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+    >
+      {field?.config?.progressBar && (
+        <ProgressBar progress={field?.config?.progress ?? 0} />
+      )}
+      {field?.data?.list?.map((item, j) => (
+        <div
+          key={`shown-list-item-${item?.id || j}`}
+          className="w-full flex flex-col justify-center items-center text-sm"
+          onDoubleClick={() => handleEditField(field, i)}
+        >
+          <span
+            className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
+            style={{
+              fontSize: `${field?.config?.fontSize}px`,
+              textDecoration: `${
+                field?.config?.strickthrough ? "line-through" : "none"
+              }`,
+              fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+              fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+              fontFamily: `${field?.config?.fontFamily}`,
+              color: `${field?.config?.color}`,
+              textAlign: `${field?.config?.align}`,
+            }}
+          >
+            <button
+              type="button"
+              style={{
+                color: `${field?.config?.color}`,
+              }}
+              className="w-5 h-5 mr-1 block cursor-pointer"
+              onClick={(e) => handleCompleteToggle(e, j)}
+            >
+              {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
+            </button>
+            {item?.text}
+          </span>
+          {field.config?.showDateInfo && (
+            <div className="w-full opacity-100 flex justify-between items-center flex-wrap">
+              <TimeAndDate
+                group={false}
+                absolute={false}
+                text={`Completed: ${item?.completed ? "" : "Not yet"}`}
+                timeDate={
+                  item.completed ? new Date(item.completedAt) : undefined
+                }
+              />
+              <TimeAndDate
+                group={false}
+                absolute={false}
+                text="Created: "
+                timeDate={item.createdAt ? new Date(item.createdAt) : undefined}
+              />
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 };
