@@ -67,6 +67,7 @@ import DurationIcon from "../../assets/Icons/DurationIcon.jsx";
 import DurationTimelineIcon from "../../assets/Icons/DurationTimelineIcon.jsx";
 import OverlapIcon from "../../assets/Icons/OverlapIcon.jsx";
 import GraphIcon from "../../assets/Icons/GraphIcon.jsx";
+import RepeatIcon from "../../assets/Icons/RepeatIcon.jsx";
 
 function DisplayDocView() {
   const {
@@ -2080,6 +2081,7 @@ const AddEditField = ({
           indentation: 0,
           showDateInfo: false,
           progressBar: false,
+          repeat: false,
         };
       case "numberList":
         return {
@@ -2174,6 +2176,58 @@ const AddEditField = ({
       data: {
         text: "",
         list: [],
+        taskList: {
+          repeat: {
+            format: {
+              type: "daily",
+              des: "Daily",
+            },
+            custom: [
+              {
+                type: "monday",
+                des: "Monday",
+                shortDes: "Mon",
+                checked: true,
+              },
+              {
+                type: "tuesday",
+                des: "Tuesday",
+                shortDes: "Tue",
+                checked: true,
+              },
+              {
+                type: "wednesday",
+                des: "Wednesday",
+                shortDes: "Wed",
+                checked: true,
+              },
+              {
+                type: "thursday",
+                des: "Thursday",
+                shortDes: "Thu",
+                checked: true,
+              },
+              {
+                type: "friday",
+                des: "Friday",
+                shortDes: "Fri",
+                checked: true,
+              },
+              {
+                type: "saturday",
+                des: "Saturday",
+                shortDes: "Sat",
+                checked: true,
+              },
+              {
+                type: "sunday",
+                des: "Sunday",
+                shortDes: "Sun",
+                checked: true,
+              },
+            ],
+          },
+        },
         link: "",
         image: {
           name: "",
@@ -2591,6 +2645,7 @@ const InputTitleButtons = ({
   linkPreviewLoading,
   linkPreview,
   setLinkPreview,
+  defaultTaskList = null,
 }) => {
   const {
     db,
@@ -3011,6 +3066,26 @@ const InputTitleButtons = ({
     });
   };
 
+  const handleToggleRepeatClick = () => {
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        repeat:
+          currentField.config.repeat === undefined
+            ? true
+            : !currentField.config.repeat,
+      },
+      data: {
+        ...currentField.data,
+        taskList:
+          currentField.data?.taskList === undefined
+            ? defaultTaskList
+            : currentField.data?.taskList,
+      },
+    });
+  };
+
   const handleToggleProgressBarClick = () => {
     setCurrentField({
       ...currentField,
@@ -3180,6 +3255,24 @@ const InputTitleButtons = ({
             )}
             {showToolTip.show && showToolTip.type === "Toggle Date Info" && (
               <ToolTip text="Toggle Date Info" />
+            )}
+          </button>
+          <button
+            type="button"
+            title="Toggle Repeat"
+            onClick={handleToggleRepeatClick}
+            className="w-8 h-8 group flex justify-center items-center relative text-xs text-[var(--text-primary)] bg-[var(--btn-secondary)] py-1 px-[6px] rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+            onMouseEnter={() =>
+              setShowToolTip({ show: true, type: "Toggle Repeat" })
+            }
+            onMouseLeave={() => setShowToolTip({ show: false, type: null })}
+          >
+            <RepeatIcon />
+            {!currentField?.config?.repeat && (
+              <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+            )}
+            {showToolTip.show && showToolTip.type === "Toggle Repeat" && (
+              <ToolTip text="Toggle Repeat" />
             )}
           </button>
         </>
@@ -5647,7 +5740,7 @@ const DurationTimelineDisplay = ({
     if (!iso) return "";
     if (iso === null) return "";
     let date = new Date(iso);
-    console.log(iso, field?.data?.durationTimeline?.format?.input)
+    console.log(iso, field?.data?.durationTimeline?.format?.input);
     if (!field?.data?.durationTimeline?.format?.input)
       return date.toLocaleString();
     const string = new Intl.DateTimeFormat(
@@ -7076,11 +7169,347 @@ const TaskList = ({
     index: null,
   });
   const [progress, setProgress] = useState(0);
+  const repeatFormats = [
+    {
+      type: "daily",
+      des: "Daily",
+    },
+    {
+      type: "weekdays",
+      des: "Weekdays (Mon to Fri)",
+    },
+    {
+      type: "weekends",
+      des: "Weekends (Sat and Sun)",
+    },
+    {
+      type: "customDays",
+      des: "Custom Days",
+    },
+    {
+      type: "weekly",
+      des: "Weekly",
+    },
+    {
+      type: "monthly",
+      des: "Monthly",
+    },
+    {
+      type: "customMonths",
+      des: "Custom Months",
+    },
+    {
+      type: "yearly",
+      des: "Yearly",
+    },
+  ];
+  const defaultCustomDays = [
+    {
+      type: "monday",
+      des: "Monday",
+      shortDes: "Mon",
+      checked: true,
+    },
+    {
+      type: "tuesday",
+      des: "Tuesday",
+      shortDes: "Tue",
+      checked: true,
+    },
+    {
+      type: "wednesday",
+      des: "Wednesday",
+      shortDes: "Wed",
+      checked: true,
+    },
+    {
+      type: "thursday",
+      des: "Thursday",
+      shortDes: "Thu",
+      checked: true,
+    },
+    {
+      type: "friday",
+      des: "Friday",
+      shortDes: "Fri",
+      checked: true,
+    },
+    {
+      type: "saturday",
+      des: "Saturday",
+      shortDes: "Sat",
+      checked: true,
+    },
+    {
+      type: "sunday",
+      des: "Sunday",
+      shortDes: "Sun",
+      checked: true,
+    },
+  ];
+  const defaultCustomMonths = [
+    {
+      type: "january",
+      des: "January",
+      shortDes: "Jan",
+      checked: true,
+    },
+    {
+      type: "february",
+      des: "February",
+      shortDes: "Feb",
+      checked: true,
+    },
+    {
+      type: "march",
+      des: "March",
+      shortDes: "Mar",
+      checked: true,
+    },
+    {
+      type: "april",
+      des: "April",
+      shortDes: "Apr",
+      checked: true,
+    },
+    {
+      type: "may",
+      des: "May",
+      shortDes: "May",
+      checked: true,
+    },
+    {
+      type: "june",
+      des: "June",
+      shortDes: "Jun",
+      checked: true,
+    },
+    {
+      type: "july",
+      des: "July",
+      shortDes: "Jul",
+      checked: true,
+    },
+    {
+      type: "august",
+      des: "August",
+      shortDes: "Aug",
+      checked: true,
+    },
+    {
+      type: "september",
+      des: "September",
+      shortDes: "Sep",
+      checked: true,
+    },
+    {
+      type: "october",
+      des: "October",
+      shortDes: "Oct",
+      checked: true,
+    },
+    {
+      type: "november",
+      des: "November",
+      shortDes: "Nov",
+      checked: true,
+    },
+    {
+      type: "december",
+      des: "December",
+      shortDes: "Dec",
+      checked: true,
+    },
+  ];
+  const defaultTaskList = {
+    repeat: {
+      format: {
+        type: "daily",
+        des: "Daily",
+      },
+      custom: defaultCustomDays,
+    },
+  };
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   const handleSetChangeDateInfo = (index) => {
     setShowChangeDateInfo((prev) => ({
       show: prev.index === index ? !prev.show : prev.show,
       index: index,
     }));
+  };
+
+  const handleSelectChange = (e) => {
+    let type = e.target.value;
+    let format = repeatFormats.find((format) => format.type === type);
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        taskList:
+          currentField.data.taskList === undefined
+            ? {
+                ...defaultTaskList,
+                repeat: {
+                  ...defaultTaskList.repeat,
+                  format: format,
+                  custom:
+                    format?.type === "monthly" ||
+                    format?.type === "customMonths"
+                      ? defaultCustomMonths
+                      : defaultCustomDays,
+                },
+              }
+            : {
+                ...currentField.data.taskList,
+                repeat: {
+                  ...currentField.data.taskList.repeat,
+                  format: format,
+                  custom:
+                    format?.type === "monthly" ||
+                    format?.type === "customMonths"
+                      ? defaultCustomMonths
+                      : defaultCustomDays,
+                },
+              },
+      },
+    });
+  };
+
+  const areAllDaysUnchecked = (days) => {
+    return days.every((day) => !day.checked);
+  };
+
+  const getDayStringFromDate = (date) => {
+    const dayOfWeek = date.getDay(); // 0 (Sunday) to 6 (Saturday)
+    const dayMap = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    return dayMap[dayOfWeek];
+  };
+
+  const getNextCheckedDay = (date) => {
+    date = new Date(date);
+    const currentDay = getDayStringFromDate(date);
+    const days = currentField?.data?.taskList?.repeat?.custom;
+    if (areAllDaysUnchecked(days)) return;
+    const currentIndex = days.findIndex((day) => day.type === currentDay);
+    const totalDays = days.length;
+    let nextIndex = currentIndex;
+    const nextDate = new Date(currentDate);
+
+    do {
+      nextIndex = (nextIndex + 1) % totalDays;
+      nextDate.setDate(nextDate.getDate() + 1);
+    } while (!days[nextIndex].checked && nextIndex !== currentIndex);
+
+    return nextDate;
+  };
+
+  const getPreviousCheckedDay = (date) => {
+    date = new Date(date);
+    const currentDay = getDayStringFromDate(date);
+    const days = currentField?.data?.taskList?.repeat?.custom;
+    if (areAllDaysUnchecked(days)) return;
+    const currentIndex = days.findIndex((day) => day.type === currentDay);
+    const totalDays = days.length;
+    let previousIndex = currentIndex;
+    const previousDate = new Date(currentDate);
+
+    do {
+      previousIndex = (previousIndex - 1 + totalDays) % totalDays;
+      previousDate.setDate(previousDate.getDate() - 1);
+    } while (!days[previousIndex].checked && previousIndex !== currentIndex);
+
+    return previousDate;
+  };
+
+  const getNextWeek = (date) => {
+    const nextWeek = new Date(date);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return nextWeek;
+  };
+
+  const getPreviousWeek = (date) => {
+    const previousWeek = new Date(date);
+    previousWeek.setDate(previousWeek.getDate() - 7);
+    return previousWeek;
+  };
+
+  const getNextMonth = (date) => {
+    const nextMonth = new Date(date);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    return nextMonth;
+  };
+
+  const getPreviousMonth = (date) => {
+    const previousMonth = new Date(date);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    return previousMonth;
+  };
+
+  const getNextYear = (date) => {
+    const nextYear = new Date(date);
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    return nextYear;
+  };
+
+  const getPreviousYear = (date) => {
+    const previousYear = new Date(date);
+    previousYear.setFullYear(previousYear.getFullYear() - 1);
+    return previousYear;
+  };
+
+  const handleGetDateNavigationFunction = (iso, repeatType, direction) => {
+    const navigationFunctions = {
+      daily: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      weekdays: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      weekends: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      customDays: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      weekly: {
+        next: getNextWeek,
+        prev: getPreviousWeek,
+      },
+      monthly: {
+        next: getNextMonth,
+        prev: getPreviousMonth,
+      },
+      customMonths: {
+        // next: getNextCustomMonth,
+        // prev: getPreviousCustomMonth,
+      },
+      yearly: {
+        next: getNextYear,
+        prev: getPreviousYear,
+      },
+    };
+
+    let newDate = navigationFunctions[repeatType]?.[direction](iso);
+    setCurrentDate(newDate);
+  };
+
+  const handleSetDateTime = (e) => {
+    let time = e.target.value;
+    let newDate = new Date(time);
+    setCurrentDate(newDate);
   };
 
   const handleItemChange = (e, i = null) => {
@@ -7175,6 +7604,10 @@ const TaskList = ({
       data: {
         ...currentField.data,
         list: finalList,
+        taskList:
+          currentField?.data?.taskList === undefined
+            ? defaultTaskList
+            : currentField?.data?.taskList,
       },
     };
 
@@ -7276,6 +7709,7 @@ const TaskList = ({
 
   useEffect(() => {
     handleCalculateProgress();
+    console.log(currentField);
   }, [list, item]);
 
   return (
@@ -7285,6 +7719,46 @@ const TaskList = ({
       }}
       className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md"
     >
+      {currentField?.config?.repeat && (
+        <div className="flex h-7 mb-1 flex-wrap justify-between items-center text-sm w-full px-2 bg-[var(--btn-secondary)] rounded-tr-md rounded-tl-md">
+          <button
+            className=" relative w-6 h-6 p-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
+            type="button"
+            onClick={() =>
+              handleGetDateNavigationFunction(
+                currentDate,
+                currentField?.data?.taskList?.repeat?.format?.type,
+                "prev"
+              )
+            }
+          >
+            <span className="rotate-180 flex justify-center items-center text-lg font-bold">
+              <BackIcon />
+            </span>
+          </button>
+          <input
+            type="datetime-local"
+            className="w-[170px] h-7 cursor-pointer  text-[10px] font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+            value={handleGetDateTime(currentDate)}
+            onChange={handleSetDateTime}
+          />
+          <button
+            className=" relative w-6 h-6 p-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
+            type="button"
+            onClick={() =>
+              handleGetDateNavigationFunction(
+                currentDate,
+                currentField?.data?.taskList?.repeat?.format?.type,
+                "next"
+              )
+            }
+          >
+            <span className="flex justify-center items-center text-lg font-bold">
+              <BackIcon />
+            </span>
+          </button>
+        </div>
+      )}
       {currentField?.config?.progressBar && <ProgressBar progress={progress} />}
       <SortableList
         items={list}
@@ -7436,6 +7910,25 @@ const TaskList = ({
           }}
         />
       </form>
+      {currentField?.config?.repeat && (
+        <div className="w-full flex justify-center items-center gap-2 flex-wrap mt-2">
+          <div className="w-fit h-fit flex justify-center items-center gap-2 flex-wrap">
+            <select
+              title="Repeat Type"
+              className="w-[130px] group h-8 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+              value={currentField?.data?.taskList?.repeat?.format?.type}
+              onChange={handleSelectChange}
+            >
+              {repeatFormats.map((format) => (
+                <option key={format.type} value={format.type}>
+                  {format.des}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       <InputTitleButtons
         handleSave={handleSave}
         config={currentField?.config}
@@ -7444,6 +7937,7 @@ const TaskList = ({
         setCurrentFieldType={setCurrentFieldType}
         type={currentField.type}
         handleGetDefaultConfig={handleGetDefaultConfig}
+        defaultTaskList={defaultTaskList}
       />
     </div>
   );
