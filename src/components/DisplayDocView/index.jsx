@@ -2178,6 +2178,7 @@ const AddEditField = ({
         list: [],
         taskList: {
           repeat: {
+            data: [],
             format: {
               type: "daily",
               des: "Daily",
@@ -7330,13 +7331,38 @@ const TaskList = ({
       custom: defaultCustomDays,
     },
   };
-  const [currentDate, setCurrentDate] = useState(new Date());
 
   const handleSetChangeDateInfo = (index) => {
     setShowChangeDateInfo((prev) => ({
       show: prev.index === index ? !prev.show : prev.show,
       index: index,
     }));
+  };
+
+  const handleGetCustom = (type) => {
+    return type === "monthly" || type === "customMonths"
+      ? defaultCustomMonths
+      : type === "daily" || type === "customDays"
+      ? defaultCustomDays
+      : type === "weekdays"
+      ? defaultCustomDays.map((day) =>
+          day.type === "saturday" || day.type === "sunday"
+            ? { ...day, checked: false }
+            : {
+                ...day,
+                checked: true,
+              }
+        )
+      : type === "weekends"
+      ? defaultCustomDays.map((day) =>
+          day.type === "saturday" || day.type === "sunday"
+            ? { ...day, checked: true }
+            : {
+                ...day,
+                checked: false,
+              }
+        )
+      : defaultCustomDays;
   };
 
   const handleSelectChange = (e) => {
@@ -7346,38 +7372,60 @@ const TaskList = ({
       ...currentField,
       data: {
         ...currentField.data,
-        taskList:
-          currentField.data.taskList === undefined
-            ? {
-                ...defaultTaskList,
-                repeat: {
-                  ...defaultTaskList.repeat,
-                  format: format,
-                  custom:
-                    format?.type === "monthly" ||
-                    format?.type === "customMonths"
-                      ? defaultCustomMonths
-                      : defaultCustomDays,
-                },
-              }
-            : {
-                ...currentField.data.taskList,
-                repeat: {
-                  ...currentField.data.taskList.repeat,
-                  format: format,
-                  custom:
-                    format?.type === "monthly" ||
-                    format?.type === "customMonths"
-                      ? defaultCustomMonths
-                      : defaultCustomDays,
-                },
-              },
+        taskList: {
+          ...(currentField.data.taskList === undefined
+            ? defaultTaskList
+            : currentField.data.taskList),
+          repeat: {
+            ...(currentField.data.taskList === undefined
+              ? defaultTaskList.repeat
+              : currentField.data.taskList.repeat),
+            format: format,
+            custom: handleGetCustom(format?.type),
+          },
+        },
       },
     });
   };
 
-  const areAllDaysUnchecked = (days) => {
-    return days.every((day) => !day.checked);
+  const getRelativeDayString = (date) => {
+    const inputDate = new Date(date);
+    const today = new Date();
+
+    // Clear the time part for accurate date comparison
+    today.setHours(0, 0, 0, 0);
+    inputDate.setHours(0, 0, 0, 0);
+
+    const timeDifference = inputDate.getTime() - today.getTime();
+    const dayDifference = timeDifference / (1000 * 3600 * 24);
+
+    if (dayDifference === 0) {
+      return "Today";
+    } else if (dayDifference === 1) {
+      return "Tomorrow";
+    } else if (dayDifference === -1) {
+      return "Yesterday";
+    } else {
+      const type = currentField?.data?.taskList?.repeat?.format?.type;
+      const dayTypes = ["daily", "weekdays", "weekends", "customDays"];
+      const monthTypes = ["monthly", "customMonths"];
+      const isTypeDay = dayTypes.includes(type);
+      const isTypeMonth = monthTypes.includes(type);
+      return isTypeDay
+        ? inputDate.toLocaleDateString("en-US", { weekday: "short" })
+        : isTypeMonth
+        ? inputDate.toLocaleDateString("en-US", { month: "short" })
+        : inputDate.toLocaleDateString("en-US", { year: "numeric" });
+    }
+  };
+
+  const [currentDate, setCurrentDate] = useState({
+    current: new Date(),
+    formated: getRelativeDayString(new Date()),
+  });
+
+  const areAllCustomUnchecked = (customs) => {
+    return customs.every((custom) => !custom.checked);
   };
 
   const getDayStringFromDate = (date) => {
@@ -7398,11 +7446,11 @@ const TaskList = ({
     date = new Date(date);
     const currentDay = getDayStringFromDate(date);
     const days = currentField?.data?.taskList?.repeat?.custom;
-    if (areAllDaysUnchecked(days)) return;
+    if (areAllCustomUnchecked(days)) return;
     const currentIndex = days.findIndex((day) => day.type === currentDay);
     const totalDays = days.length;
     let nextIndex = currentIndex;
-    const nextDate = new Date(currentDate);
+    const nextDate = new Date(date);
 
     do {
       nextIndex = (nextIndex + 1) % totalDays;
@@ -7416,11 +7464,11 @@ const TaskList = ({
     date = new Date(date);
     const currentDay = getDayStringFromDate(date);
     const days = currentField?.data?.taskList?.repeat?.custom;
-    if (areAllDaysUnchecked(days)) return;
+    if (areAllCustomUnchecked(days)) return;
     const currentIndex = days.findIndex((day) => day.type === currentDay);
     const totalDays = days.length;
     let previousIndex = currentIndex;
-    const previousDate = new Date(currentDate);
+    const previousDate = new Date(date);
 
     do {
       previousIndex = (previousIndex - 1 + totalDays) % totalDays;
@@ -7452,6 +7500,40 @@ const TaskList = ({
     const previousMonth = new Date(date);
     previousMonth.setMonth(previousMonth.getMonth() - 1);
     return previousMonth;
+  };
+
+  const getNextCheckedMonth = (date) => {
+    let currentDate = new Date(date);
+    const months = currentField?.data?.taskList?.repeat?.custom;
+    if (areAllCustomUnchecked(months)) return;
+    const currentIndex = currentDate.getMonth(); // 0 (January) to 11 (December)
+    const totalMonths = months?.length;
+    let nextIndex = currentIndex;
+    const nextDate = new Date(currentDate);
+
+    do {
+      nextIndex = (nextIndex + 1) % totalMonths;
+      nextDate.setMonth(nextDate.getMonth() + 1);
+    } while (!months[nextIndex].checked && nextIndex !== currentIndex);
+
+    return nextDate;
+  };
+
+  const getPreviousCheckedMonth = (date) => {
+    let currentDate = new Date(date);
+    const months = currentField?.data?.taskList?.repeat?.custom;
+    if (areAllCustomUnchecked(months)) return;
+    const currentIndex = currentDate.getMonth(); // 0 (January) to 11 (December)
+    const totalMonths = months?.length;
+    let previousIndex = currentIndex;
+    const previousDate = new Date(currentDate);
+
+    do {
+      previousIndex = (previousIndex - 1 + totalMonths) % totalMonths;
+      previousDate.setMonth(previousDate.getMonth() - 1);
+    } while (!months[previousIndex].checked && previousIndex !== currentIndex);
+
+    return previousDate;
   };
 
   const getNextYear = (date) => {
@@ -7493,8 +7575,8 @@ const TaskList = ({
         prev: getPreviousMonth,
       },
       customMonths: {
-        // next: getNextCustomMonth,
-        // prev: getPreviousCustomMonth,
+        next: getNextCheckedMonth,
+        prev: getPreviousCheckedMonth,
       },
       yearly: {
         next: getNextYear,
@@ -7503,7 +7585,32 @@ const TaskList = ({
     };
 
     let newDate = navigationFunctions[repeatType]?.[direction](iso);
-    setCurrentDate(newDate);
+    setCurrentDate({
+      current: newDate,
+      formated: getRelativeDayString(newDate),
+    });
+  };
+
+  const handleCheck = (index) => {
+    let newDays = [...currentField?.data?.taskList?.repeat?.custom];
+    newDays[index] = {
+      ...newDays[index],
+      checked: !newDays[index].checked,
+    };
+    if (areAllCustomUnchecked(newDays)) return;
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        taskList: {
+          ...currentField.data.taskList,
+          repeat: {
+            ...currentField.data.taskList.repeat,
+            custom: newDays,
+          },
+        },
+      },
+    });
   };
 
   const handleSetDateTime = (e) => {
@@ -7726,7 +7833,7 @@ const TaskList = ({
             type="button"
             onClick={() =>
               handleGetDateNavigationFunction(
-                currentDate,
+                currentDate.current,
                 currentField?.data?.taskList?.repeat?.format?.type,
                 "prev"
               )
@@ -7736,18 +7843,24 @@ const TaskList = ({
               <BackIcon />
             </span>
           </button>
-          <input
-            type="datetime-local"
-            className="w-[170px] h-7 cursor-pointer  text-[10px] font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
-            value={handleGetDateTime(currentDate)}
-            onChange={handleSetDateTime}
-          />
+          <div className="flex justify-center items-center">
+            <span className="text-[10px] font-bold text-[var(--text-primary)]">
+              {currentDate.formated}
+              {" : "}
+            </span>
+            <input
+              type="datetime-local"
+              className="w-[170px] h-7 cursor-pointer  text-[10px] font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+              value={handleGetDateTime(currentDate.current)}
+              onChange={handleSetDateTime}
+            />
+          </div>
           <button
             className=" relative w-6 h-6 p-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
             type="button"
             onClick={() =>
               handleGetDateNavigationFunction(
-                currentDate,
+                currentDate.current,
                 currentField?.data?.taskList?.repeat?.format?.type,
                 "next"
               )
@@ -7911,7 +8024,7 @@ const TaskList = ({
         />
       </form>
       {currentField?.config?.repeat && (
-        <div className="w-full flex justify-center items-center gap-2 flex-wrap mt-2">
+        <div className="w-full flex flex-col justify-center items-center gap-2 flex-wrap mt-2">
           <div className="w-fit h-fit flex justify-center items-center gap-2 flex-wrap">
             <select
               title="Repeat Type"
@@ -7925,6 +8038,31 @@ const TaskList = ({
                 </option>
               ))}
             </select>
+          </div>
+          <div className="w-fit h-fit flex justify-center items-center gap-2 flex-wrap">
+            {(currentField?.data?.taskList?.repeat?.format?.type ===
+              "customDays" ||
+              currentField?.data?.taskList?.repeat?.format?.type ===
+                "customMonths") &&
+              currentField?.data?.taskList?.repeat?.custom?.map(
+                (custom, index) => (
+                  <button
+                    key={custom.type}
+                    type="button"
+                    onClick={() => handleCheck(index)}
+                    className={`w-fit px-2 h-8 flex justify-center items-center rounded-md ${
+                      custom.checked
+                        ? "bg-[var(--btn-secondary)]"
+                        : "bg-[var(--btn-primary)]"
+                    } text-[var(--text-primary)] text-xs font-bold`}
+                  >
+                    <span className="w-4 h-4 mr-1 block cursor-pointer">
+                      {custom.checked ? <CheckedIcon /> : <UncheckedIcon />}
+                    </span>
+                    {custom.shortDes}
+                  </button>
+                )
+              )}
           </div>
         </div>
       )}
