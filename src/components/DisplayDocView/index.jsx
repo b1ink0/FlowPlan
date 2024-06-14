@@ -7158,6 +7158,10 @@ const TaskList = ({
     setCurrentFlowPlanNode,
   } = useStateContext();
   const [list, setList] = useState(currentField?.data?.list ?? []);
+  const [repeatData, setRepeatData] = useState(
+    currentField?.data?.taskList?.repeat?.data ?? []
+  );
+
   const [item, setItem] = useState({
     text: "",
     completed: false,
@@ -7386,6 +7390,8 @@ const TaskList = ({
         },
       },
     });
+    setRepeatData([]);
+    setCurrentRepeatList(handleGetCurrentRepeatList(currentDate.current, []));
   };
 
   const getRelativeDayString = (date) => {
@@ -7616,7 +7622,10 @@ const TaskList = ({
   const handleSetDateTime = (e) => {
     let time = e.target.value;
     let newDate = new Date(time);
-    setCurrentDate(newDate);
+    setCurrentDate({
+      current: newDate,
+      formated: getRelativeDayString(newDate),
+    });
   };
 
   const handleItemChange = (e, i = null) => {
@@ -7735,14 +7744,146 @@ const TaskList = ({
     setCurrentField(null);
   };
 
+  const isSameDate = (date1, date2) => {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  };
+
+  const isSameWeek = (date1, date2) => {
+    const firstDate = new Date(date1);
+    const secondDate = new Date(date2);
+
+    // Set both dates to the start of their respective weeks
+    firstDate.setHours(0, 0, 0, 0);
+    secondDate.setHours(0, 0, 0, 0);
+
+    const dayOfWeek = (date) => (date.getDay() + 6) % 7; // 0 (Monday) to 6 (Sunday)
+
+    const firstDayOfWeek = dayOfWeek(firstDate);
+    const secondDayOfWeek = dayOfWeek(secondDate);
+
+    // Move to the start of the week (Monday)
+    firstDate.setDate(firstDate.getDate() - firstDayOfWeek);
+    secondDate.setDate(secondDate.getDate() - secondDayOfWeek);
+
+    // Compare the adjusted dates
+    return firstDate.getTime() === secondDate.getTime();
+  };
+
+  const isSameMonth = (date1, date2) => {
+    return date1.getMonth() === date2.getMonth();
+  };
+
+  const isSameYear = (date1, date2) => {
+    return date1.getFullYear() === date2.getFullYear();
+  };
+
+  const findObjectByDate = (array, targetDate, type) => {
+    const index = array.findIndex((item) => {
+      switch (type) {
+        case "daily":
+        case "weekdays":
+        case "weekends":
+        case "customDays":
+          return isSameDate(new Date(item.date), new Date(targetDate));
+        case "weekly":
+          return isSameWeek(new Date(item.date), new Date(targetDate));
+        case "monthly":
+        case "customMonths":
+          return isSameMonth(new Date(item.date), new Date(targetDate));
+        case "yearly":
+          return isSameYear(new Date(item.date), new Date(targetDate));
+        default:
+          return;
+      }
+    });
+    return index !== -1 ? { index, object: array[index] } : null;
+  };
+
+  const handleSetRepeatData = (date, newList, index) => {
+    date = date.toISOString();
+    let dateObject = findObjectByDate(
+      repeatData,
+      date,
+      currentField?.data?.taskList?.repeat?.format?.type
+    );
+
+    if (dateObject) {
+      let data = dateObject.object.data;
+      let itemIndex = data.findIndex((item) => item.id === newList[index].id);
+      if (itemIndex !== -1) {
+        data[itemIndex] = {
+          id: newList[index].id,
+          completed: newList[index].completed,
+        };
+      } else {
+        data.push({
+          id: newList[index].id,
+          completed: newList[index].completed,
+        });
+      }
+
+      setRepeatData((prev) => {
+        let newRepeatData = [...prev];
+        newRepeatData[dateObject.index] = {
+          date: date,
+          data: data,
+        };
+        return newRepeatData;
+      });
+
+      setCurrentRepeatList((prev) => {
+        let newCurrentRepeatList = [...prev];
+        newCurrentRepeatList[index] = {
+          ...newCurrentRepeatList[index],
+          completed: newList[index].completed,
+        };
+        return newCurrentRepeatList;
+      });
+    } else {
+      let newRepeatData = [
+        ...repeatData,
+        {
+          date: date,
+          data: [
+            {
+              id: newList[index].id,
+              completed: newList[index].completed,
+            },
+          ],
+        },
+      ];
+
+      setRepeatData(newRepeatData);
+      setCurrentRepeatList((prev) => {
+        let newCurrentRepeatList = [...prev];
+        newCurrentRepeatList[index] = {
+          ...newCurrentRepeatList[index],
+          completed: newList[index].completed,
+        };
+        return newCurrentRepeatList;
+      });
+    }
+  };
+
   const handleCompleteToggle = (e, index = null) => {
     if (index !== null) {
-      let newList = [...list];
+      let newList = [
+        ...(currentField?.config?.repeat ? currentRepeatList : list),
+      ];
       newList[index] = {
         ...newList[index],
         completed: !newList[index].completed,
         completedAt: !newList[index].completed ? new Date() : null,
       };
+
+      if (currentField?.config?.repeat) {
+        handleSetRepeatData(currentDate.current, newList, index);
+      }
+
       setList(newList);
     } else {
       setItem((prev) => ({
@@ -7752,6 +7893,44 @@ const TaskList = ({
       }));
     }
   };
+
+  const handleGetCurrentRepeatList = (date, repeatData) => {
+    let repeatList = structuredClone(list);
+    let currentDate = date;
+    if (!currentDate) {
+      currentDate = new Date();
+    }
+    console.log(repeatData);
+    let repeatObject = findObjectByDate(
+      repeatData,
+      currentDate.toISOString(),
+      currentField?.data?.taskList?.repeat?.format?.type
+    );
+    if (repeatObject) {
+      let repeatObjectData = repeatObject.object.data;
+      repeatList = list.map((item) => {
+        let repeatItem = repeatObjectData.find((data) => data.id === item.id);
+        return repeatItem
+          ? {
+              ...item,
+              completed: repeatItem.completed,
+            }
+          : {
+              ...item,
+              completed: false,
+            };
+      });
+
+      return repeatList;
+    } else {
+      return repeatList.map((item) => ({
+        ...item,
+        completed: false,
+      }));
+    }
+  };
+
+  const [currentRepeatList, setCurrentRepeatList] = useState(list);
 
   const handleDelete = async (index) => {
     let newList = [...list];
@@ -7789,7 +7968,7 @@ const TaskList = ({
     setList(newList);
   };
 
-  const handleCalculateProgress = () => {
+  const handleCalculateProgress = (list) => {
     if (!currentField?.config?.progressBar) return;
     if (list.length === 0) return;
     let total = 0;
@@ -7815,9 +7994,20 @@ const TaskList = ({
   };
 
   useEffect(() => {
-    handleCalculateProgress();
-    console.log(currentField);
-  }, [list, item]);
+    if (currentField?.config?.repeat) {
+      handleCalculateProgress(currentRepeatList);
+    } else {
+      handleCalculateProgress(list);
+    }
+  }, [list, item, currentRepeatList]);
+
+  useEffect(() => {
+    if (!currentField?.config?.repeat) return;
+    console.log(currentDate.current);
+    setCurrentRepeatList(
+      handleGetCurrentRepeatList(currentDate.current, repeatData)
+    );
+  }, [currentDate, currentField?.config?.repeat]);
 
   return (
     <div
@@ -7892,7 +8082,17 @@ const TaskList = ({
                   className="w-5 h-5 mr-1 block cursor-pointer"
                   onClick={(e) => handleCompleteToggle(e, index)}
                 >
-                  {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
+                  {currentField?.config?.repeat ? (
+                    currentRepeatList[index]?.completed ? (
+                      <CheckedIcon />
+                    ) : (
+                      <UncheckedIcon />
+                    )
+                  ) : item.completed ? (
+                    <CheckedIcon />
+                  ) : (
+                    <UncheckedIcon />
+                  )}
                 </button>
                 <input
                   required
