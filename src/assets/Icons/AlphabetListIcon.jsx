@@ -4,7 +4,7 @@ function AlphabetListIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className="h-full w-full group-hover:scale-110 transition-transform duration-300 shrink-0 fill-current"
+      className="h-full w-full  shrink-0 fill-current"
       version="1.1"
       viewBox="0 0 32 32"
       xmlSpace="preserve"

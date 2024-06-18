@@ -5,7 +5,7 @@ function TopBarIcon() {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 47.582 47.582"
-      className="h-full w-full group-hover:scale-110 transition-transform duration-300 shrink-0"
+      className="h-full w-full  shrink-0"
     >
       <path
         d="M0 18.791v10h47.582v-10H0zm45.582 8H2v-6h43.582v6z"
