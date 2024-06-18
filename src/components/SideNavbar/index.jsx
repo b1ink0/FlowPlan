@@ -12,6 +12,8 @@ import ShareIcon from "../../assets/Icons/ShareIcon";
 import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 import CloseBtnIcon from "../../assets/Icons/CloseBtnIcon";
 import { TimeAndDate } from "../Helpers/TimeAndDate";
+import ExportIcon from "../../assets/Icons/ExportIcon";
+import ImportIcon from "../../assets/Icons/ImportIcon";
 
 function SideNavbar() {
   // destructure state from context
@@ -351,7 +353,7 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
   const { handleEditNote, handleAddNewNote } = handles;
   return (
     <form
-      className="w-full flex flex-col mt-1 gap-2"
+      className="w-full flex mt-1 gap-2"
       onSubmit={editNote ? handleEditNote : handleAddNewNote}
     >
       <input
@@ -364,9 +366,11 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
       />
       <button
         type="submit"
-        className="text-[var(--text-primary)] flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+        title={editNote ? "Save Edit" : "Add New"}
+        className="w-8 h-8 group flex justify-center items-center relative text-xs bg-[var(--btn-primary)] hover:bg-[var(--btn-secondary)] py-1 px-2 rounded-md transition-colors duration-300"
       >
-        {editNote ? "Save" : "Add"}
+        <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-[3px] rounded-md h-4 bg-[var(--logo-primary)]"></span>
+        <span className="absolute group-hover:rotate-90 transition-all duration-300 block w-4 rounded-md h-[3px] bg-[var(--logo-primary)]"></span>
       </button>
     </form>
   );
@@ -375,9 +379,11 @@ const Form = ({ handles, editNote, noteTitle, setNoteTitle }) => {
 const ImportExport = ({ handleImportFlowPlan, setExportSelect }) => {
   return (
     <div className="w-full p-3 px-2 h-fit flex gap-2">
-      <div className="relative w-full flex justify-center items-center cursor-pointer flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300">
-        <span className="text-[var(--text-primary)] cursor-pointer">
-          Import
+      <div
+      title="Import"
+      className="relative w-full flex justify-center items-center cursor-pointer flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300">
+        <span className="w-6 h-6">
+          <ImportIcon />
         </span>
         <input
           type="file"
@@ -386,10 +392,13 @@ const ImportExport = ({ handleImportFlowPlan, setExportSelect }) => {
         />
       </div>
       <button
-        className="text-[var(--text-primary)] w-full flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+        className="text-[var(--text-primary)] w-full flex-1 flex justify-center items-center bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+        title="Export"
         onClick={() => setExportSelect((prev) => !prev)}
       >
-        Export
+        <span className="w-6 h-6">
+          <ExportIcon />
+        </span>
       </button>
     </div>
   );
@@ -463,7 +472,7 @@ const SubMenu = ({
       </button>
     </span>
   );
-}
+};
 
 const Checkbox = ({ selected, flowPlan }) => {
   return (
