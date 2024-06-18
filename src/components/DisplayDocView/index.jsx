@@ -123,6 +123,7 @@ function DisplayDocView() {
   };
 
   const handleEditField = (field, i) => {
+    if (field?.type === "durationEnd") return;
     handleResetShowAdd(false);
     setCurrentFieldType(field.type);
     setCurrentField({
@@ -790,6 +791,7 @@ const DocRenderView = ({
   };
 
   const handleSetMove = () => {
+    if (field?.type === "durationEnd" || field?.type === "duration") return;
     setMove((prev) => ({
       move: !prev.move,
       id: field.id,
@@ -4164,6 +4166,14 @@ const Duration = ({
 
     if (index !== null) {
       node.data[index] = finalField;
+      for (let i = index + 1; i < node.data.length; i++) {
+        if (node.data[i].type === "durationEnd") {
+          if (node.data[i].data.durationId === finalField.id) {
+            node.data[i].config = finalField.config;
+            break;
+          }
+        }
+      }
     } else if (dataIndex !== null) {
       node.data.splice(dataIndex + 1, 0, {
         ...finalField,
@@ -5252,6 +5262,10 @@ const DurationTimeline = ({
           ...currentField.data.durationTimeline,
         },
       },
+      config: {
+        ...currentField.config,
+        current: currentField.config.current || new Date().toISOString(),
+      }
     };
 
     if (index !== null) {
@@ -5766,12 +5780,22 @@ const DurationTimelineDisplay = ({
       ...prev,
       start: handleGetFormatedDateTime(duration.start.toISOString()),
       end: handleGetFormatedDateTime(duration.end.toISOString()),
-      currentISO: field?.config?.current,
+      currentISO:
+        field?.config?.current ??
+        duration.start.toISOString() ??
+        new Date().toISOString(),
       current:
         handleGetCurrent(
-          field?.config?.current,
+          field?.config?.current ??
+            duration.start.toISOString() ??
+            new Date().toISOString(),
           field?.data?.durationTimeline?.displayFormat?.type
-        ) + handleGetFormatedDateTime(field?.config?.current),
+        ) +
+        handleGetFormatedDateTime(
+          field?.config?.current ??
+            duration.start.toISOString() ??
+            new Date().toISOString()
+        ),
       startISO: duration.start.toISOString(),
       endISO: duration.end.toISOString(),
       duration: handleFormatDuration(duration),
@@ -5942,8 +5966,11 @@ const DurationTimelineDisplay = ({
   };
 
   const handleGetCurrent = (iso, type) => {
-    if (iso === null) return "";
-    let date = new Date(iso);
+    let date;
+    if (iso === null) {
+      date = new Date();
+    }
+    date = new Date(iso);
     console.log(iso, type);
     switch (type) {
       case "week":
@@ -5960,7 +5987,13 @@ const DurationTimelineDisplay = ({
   const handleCalculateRange = (type, selectedDate) => {
     if (formated.durations.length === 0) return;
     if (!formated.start) return;
-    selectedDate = new Date(selectedDate || formated.startISO);
+    if (!selectedDate) {
+      if (formated.startISO) {
+        selectedDate = new Date(formated.startISO);
+      } else {
+        selectedDate = new Date();
+      }
+    }
     let durations = [];
     switch (type) {
       case "week":
@@ -6000,6 +6033,7 @@ const DurationTimelineDisplay = ({
       field?.data?.durationTimeline?.displayFormat?.type,
       field?.config?.current
     );
+    console.log(formated, field?.config);
   }, [formated.durations]);
   return (
     <div
@@ -6058,7 +6092,7 @@ const DurationTimelineDisplay = ({
   );
 };
 
-const DisplayDurationGraph = ({ durations, type, color }) => {
+const DisplayDurationGraph = ({ durations, type, color}) => {
   const hours = {
     week: [24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0],
     month: [168, 153, 137, 122, 107, 92, 76, 61, 46, 31, 15, 0],
@@ -8020,7 +8054,7 @@ const TaskList = ({
     setCurrentRepeatList(
       handleGetCurrentRepeatList(currentDate.current, repeatData)
     );
-  }, [currentDate, currentField?.config?.repeat]);
+  }, [currentDate, list, currentField?.config?.repeat]);
 
   return (
     <div
