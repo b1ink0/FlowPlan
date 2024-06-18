@@ -59,13 +59,13 @@ function Navbar() {
           className="text-[var(--text-primary)] bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
           value="verticalTree"
         >
-          Vertical Tree
+          Vertical Tree ∨
         </option>
         <option
           className="text-[var(--text-primary)] bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
           value="horizontalTree"
         >
-          Horizontal Tree
+          Horizontal Tree &gt;
         </option>
       </select>
       <input
