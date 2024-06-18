@@ -91,6 +91,7 @@ function DisplayDocView() {
     firstChild: null,
   });
   const [showNodeNavigation, setShowNodeNavigation] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const { docConfig } = settings;
 
@@ -213,16 +214,85 @@ function DisplayDocView() {
     return info.total === 0 ? 100 : (info.completed / info.total) * 100;
   };
 
-  const handleCalculateProgressField = (type) => {
-    if (type === "doc") {
-      return handleCalculateProgressCurrentDoc();
-    } else if (type === "docChild") {
-      return handleCalculateProgressCurrentDocAndChild(node);
-    } else if (type === "docAll") {
-      return handleCalculateProgressCurrentDocAndChild(currentFlowPlan.root);
+  const handleCalculateCustomProgress = (node, selected = undefined) => {
+    let info = {
+      total: 0,
+      completed: 0,
+    };
+
+    let filtered = selected?.filter((i) => i?.id === node?.id);
+    if (filtered.length > 0) {
+      node?.data.forEach((item) => {
+        if (item.type === "taskList") {
+          let filteredList = filtered[0]?.tasks?.filter(
+            (i) => i?.id === item?.id
+          );
+          if (filteredList.length === 0) return;
+          if (filteredList[0]?.id !== item?.id) return;
+          if (!filteredList[0]?.selected) return;
+          item.data.list.forEach((task) => {
+            info.total++;
+            if (task.completed) {
+              info.completed++;
+            }
+          });
+        }
+      });
     }
-    return 0;
+    if (node.children.length > 0) {
+      node.children.forEach((item) => {
+        const childInfo = handleCalculateCustomProgress(item, selected);
+        info.total += childInfo.total;
+        info.completed += childInfo.completed;
+      });
+    }
+    return info;
   };
+
+  const handleCalculateProgressCustom = (node, selected) => {
+    let info = {
+      total: 0,
+      completed: 0,
+    };
+    info = handleCalculateCustomProgress(node, selected);
+    return info.total === 0 ? 100 : (info.completed / info.total) * 100;
+  };
+
+  const handleCalculateProgressField = (type) => {
+    try {
+      if (type === "doc") {
+        return handleCalculateProgressCurrentDoc();
+      } else if (type === "docChild") {
+        return handleCalculateProgressCurrentDocAndChild(node);
+      } else if (type === "docAll") {
+        return handleCalculateProgressCurrentDocAndChild(currentFlowPlan.root);
+      } else if (type === "custom") {
+        return handleCalculateProgressCustom(
+          currentFlowPlan.root,
+          node?.data[node?.pin?.index]?.data?.progress?.selected
+        );
+      }
+    } catch (error) {
+      console.log(error);
+      return 0;
+    }
+  };
+
+  useEffect(() => {
+    if (
+      !(
+        node?.pin?.show &&
+        node?.data[node?.pin?.index] &&
+        node?.pin?.id === node?.data[node?.pin?.index].id
+      )
+    )
+      return;
+    setProgress(
+      handleCalculateProgressField(
+        node?.data[node?.pin?.index]?.data?.progress?.type
+      )
+    );
+  }, [node]);
 
   useEffect(() => {
     if (!currentFlowPlanNode) {
@@ -359,9 +429,7 @@ function DisplayDocView() {
           node?.data[node?.pin?.index] &&
           node?.pin?.id === node?.data[node?.pin?.index].id && (
             <ProgressBar
-              progress={handleCalculateProgressField(
-                node?.data[node?.pin?.index]?.data?.progress?.type
-              )}
+              progress={progress}
               border={true}
               color={node?.data[node?.pin?.index]?.config?.color}
               multiColor={node?.data[node?.pin?.index]?.config?.multiColor}
@@ -875,6 +943,7 @@ const DocRenderView = ({
       total: 0,
       completed: 0,
     };
+
     node?.data.forEach((item) => {
       if (item.type === "taskList") {
         item.data.list.forEach((task) => {
@@ -895,6 +964,41 @@ const DocRenderView = ({
     return info;
   };
 
+  const handleCalculateCustomProgress = (node, selected = undefined) => {
+    let info = {
+      total: 0,
+      completed: 0,
+    };
+
+    let filtered = selected?.filter((i) => i?.id === node?.id);
+    if (filtered.length > 0) {
+      node?.data.forEach((item) => {
+        if (item.type === "taskList") {
+          let filteredList = filtered[0]?.tasks?.filter(
+            (i) => i?.id === item?.id
+          );
+          if (filteredList.length === 0) return;
+          if (filteredList[0]?.id !== item?.id) return;
+          if (!filteredList[0]?.selected) return;
+          item.data.list.forEach((task) => {
+            info.total++;
+            if (task.completed) {
+              info.completed++;
+            }
+          });
+        }
+      });
+    }
+    if (node.children.length > 0) {
+      node.children.forEach((item) => {
+        const childInfo = handleCalculateCustomProgress(item, selected);
+        info.total += childInfo.total;
+        info.completed += childInfo.completed;
+      });
+    }
+    return info;
+  };
+
   const handleCalculateProgressCurrentDocAndChild = (node) => {
     let info = {
       total: 0,
@@ -904,16 +1008,37 @@ const DocRenderView = ({
     return info.total === 0 ? 100 : (info.completed / info.total) * 100;
   };
 
-  const handleCalculateProgressField = (type) => {
-    if (type === "doc") {
-      return handleCalculateProgressCurrentDoc();
-    } else if (type === "docChild") {
-      return handleCalculateProgressCurrentDocAndChild(node);
-    } else if (type === "docAll") {
-      return handleCalculateProgressCurrentDocAndChild(currentFlowPlan.root);
-    }
-    return 0;
+  const handleCalculateProgressCustom = (node) => {
+    let info = {
+      total: 0,
+      completed: 0,
+    };
+    info = handleCalculateCustomProgress(node, field?.data?.progress?.selected);
+    return info.total === 0 ? 100 : (info.completed / info.total) * 100;
   };
+
+  const handleCalculateProgressField = (type) => {
+    try {
+      if (type === "doc") {
+        return handleCalculateProgressCurrentDoc();
+      } else if (type === "docChild") {
+        return handleCalculateProgressCurrentDocAndChild(node);
+      } else if (type === "docAll") {
+        return handleCalculateProgressCurrentDocAndChild(currentFlowPlan.root);
+      } else if (type === "custom") {
+        return handleCalculateProgressCustom(currentFlowPlan.root);
+      }
+    } catch (error) {
+      console.log(error);
+      return 0;
+    }
+  };
+
+  useEffect(() => {
+    if (field?.type === "progress") {
+      setProgress(handleCalculateProgressField(field?.data?.progress?.type));
+    }
+  }, []);
 
   return (
     <div
@@ -1337,7 +1462,7 @@ const DocRenderView = ({
           onDoubleClick={() => handleEditField(field, i)}
         >
           <ProgressBar
-            progress={handleCalculateProgressField(field?.data?.progress?.type)}
+            progress={progress}
             color={field?.config?.color}
             multiColor={field?.config?.multiColor}
             showPercentage={field?.config?.showPercentage}
@@ -3217,7 +3342,7 @@ const LinkPreviewConfig = ({ linkPreview, setLinkPreview }) => {
       ...prev,
       [key]: {
         ...prev[key],
-        show: prev[key].show ? false : true,
+        show: prev[key]?.show ? false : true,
       },
     }));
   };
@@ -3269,6 +3394,7 @@ const Progress = ({
 
   const [progress, setProgress] = useState(currentField?.data?.progress ?? 0);
   const [pin, setPin] = useState(currentField?.config?.pin);
+  const [tasklists, setTasklists] = useState([]);
   const list = [
     {
       type: "doc",
@@ -3282,6 +3408,10 @@ const Progress = ({
       type: "docAll",
       des: "All Document Progress",
     },
+    {
+      type: "custom",
+      des: "Select Custom Progress",
+    },
   ];
 
   const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
@@ -3294,6 +3424,25 @@ const Progress = ({
       });
   };
 
+  const handleProcessTasklists = () => {
+    let selected = [];
+    tasklists.forEach((tasklist) => {
+      selected.push({
+        id: tasklist.id,
+        title: tasklist.title,
+        selected: tasklist.selected,
+        minimized: tasklist.minimized,
+        location: tasklist.location,
+        tasks: tasklist.tasks.map((task) => ({
+          id: task.id,
+          selected: task.selected,
+          minimized: task.minimized ? true : false,
+        })),
+      });
+    });
+    return selected;
+  };
+
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
 
@@ -3304,6 +3453,7 @@ const Progress = ({
         progress: {
           ...currentField.data.progress,
           progress: progress,
+          selected: handleProcessTasklists(),
         },
       },
       config: {
@@ -3409,6 +3559,63 @@ const Progress = ({
     return info.total === 0 ? 100 : (info.completed / info.total) * 100;
   };
 
+  const handleGetTaskLists = (node, location) => {
+    let tasklists = [];
+    node?.data.forEach((item) => {
+      if (item.type === "taskList") {
+        if (tasklists.length === 0) {
+          tasklists.push({
+            title: node.title,
+            id: node.id,
+            location: location,
+            selected: false,
+            minimized: false,
+            tasks: [
+              {
+                ...item,
+                id: item.id,
+                selected: false,
+                minimized: false,
+              },
+            ],
+          });
+        } else {
+          tasklists[0].tasks.push({
+            ...item,
+            id: item.id,
+            selected: false,
+            minimized: false,
+          });
+        }
+      }
+    });
+    if (node.children.length > 0) {
+      node.children.forEach((item, i) => {
+        tasklists = tasklists.concat(
+          handleGetTaskLists(item, location.concat([i]))
+        );
+      });
+    }
+    return tasklists;
+  };
+
+  const handleCalculateProgressCustom = (lists) => {
+    let total = 0;
+    let completed = 0;
+    lists.forEach((tasklist) => {
+      tasklist.tasks.forEach((task) => {
+        if (!task.selected) return;
+        task.data.list.forEach((item) => {
+          total++;
+          if (item.completed) {
+            completed++;
+          }
+        });
+      });
+    });
+    return total === 0 ? 100 : (completed / total) * 100;
+  };
+
   const handleDelete = async (index) => {
     let root = currentFlowPlan.root;
     let node = root;
@@ -3422,21 +3629,119 @@ const Progress = ({
     setCurrentField(null);
   };
 
-  useEffect(() => {
-    if (currentField?.data?.progress?.type === "doc") {
-      setProgress(handleCalculateProgressCurrentDoc());
-    } else if (currentField?.data?.progress?.type === "docChild") {
-      setProgress(handleCalculateProgressCurrentDocAndChild(node));
-    } else if (currentField?.data?.progress?.type === "docAll") {
-      setProgress(
-        handleCalculateProgressCurrentDocAndChild(currentFlowPlan.root)
-      );
+  const handleWhatToCalculate = (type) => {
+    switch (type) {
+      case "doc":
+        setProgress(handleCalculateProgressCurrentDoc());
+        break;
+      case "docChild":
+        setProgress(handleCalculateProgressCurrentDocAndChild(node));
+        break;
+      case "docAll":
+        setProgress(
+          handleCalculateProgressCurrentDocAndChild(currentFlowPlan.root)
+        );
+        break;
+      case "custom":
+        setTasklists(handleGetTaskLists(currentFlowPlan.root, [0]));
+      default:
+        setProgress(0);
+        break;
     }
+  };
+
+  const handleToggleSelectInTasklist = (tasklistIndex) => {
+    let newTasklists = tasklists.map((tasklist, index) => {
+      if (index === tasklistIndex) {
+        tasklist.selected = !tasklist.selected;
+        for (let i = 0; i < tasklist.tasks.length; i++) {
+          tasklist.tasks[i].selected = tasklist.selected;
+        }
+      }
+      return tasklist;
+    });
+    setTasklists(newTasklists);
+  };
+
+  const handleToggleSelectInTask = (tasklistIndex, taskIndex) => {
+    let newTasklists = tasklists.map((tasklist, index) => {
+      if (index === tasklistIndex) {
+        tasklist.tasks = tasklist.tasks.map((task, i) => {
+          if (i === taskIndex) {
+            task.selected = !task.selected;
+            if (!task.selected) {
+              tasklist.selected = false;
+            }
+          }
+          return task;
+        });
+      }
+      return tasklist;
+    });
+    setTasklists(newTasklists);
+  };
+
+  const handleToggleMinimizeTasklist = (tasklistIndex) => {
+    let newTasklists = tasklists.map((tasklist, index) => {
+      if (index === tasklistIndex) {
+        tasklist.minimized = !tasklist.minimized;
+      }
+      return tasklist;
+    });
+    setTasklists(newTasklists);
+  };
+
+  const handleToggleMinimizeTask = (tasklistIndex, taskIndex) => {
+    let newTasklists = tasklists.map((tasklist, index) => {
+      if (index === tasklistIndex) {
+        tasklist.tasks = tasklist.tasks.map((task, i) => {
+          if (i === taskIndex) {
+            task.minimized = !task.minimized;
+          }
+          return task;
+        });
+      }
+      return tasklist;
+    });
+    setTasklists(newTasklists);
+  };
+
+  const handleInitilizeTasklists = () => {
+    if (currentField?.data?.progress?.selected) {
+      let tasklists = handleGetTaskLists(currentFlowPlan.root, [0]);
+      let currentTasklists = currentField?.data?.progress?.selected;
+      tasklists = tasklists.map((tasklist, i) => {
+        tasklist.selected = currentTasklists[i]?.selected;
+        tasklist.tasks = tasklist.tasks.map((task, j) => {
+          task.selected = currentTasklists[i]?.tasks[j]?.selected;
+          return task;
+        });
+        return tasklist;
+      });
+      setTasklists(tasklists);
+    }
+  };
+
+  useEffect(() => {
+    if (!tasklists) return;
+    if (!tasklists?.length) return;
+    if (currentField?.data?.progress?.type === "custom") {
+      setProgress(handleCalculateProgressCustom(tasklists));
+    }
+  }, [tasklists]);
+
+  useEffect(() => {
+    handleWhatToCalculate(currentField?.data?.progress?.type);
   }, [currentField?.data?.progress?.type]);
+
+  useEffect(() => {
+    handleInitilizeTasklists();
+  }, []);
+
   return (
     <form
       onSubmit={handleSave}
-      className="w-full flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md"
+      className="w-full flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md gap-2"
     >
       <ProgressBar
         showPercentage={currentField?.config?.showPercentage}
@@ -3444,6 +3749,132 @@ const Progress = ({
         multiColor={currentField?.config?.multiColor}
         color={currentField?.config?.color}
       />
+      {currentField?.data?.progress?.type === "custom" && (
+        <div className="w-full p-2 h-[300px] small-scroll-bar scroll-bar-inverse rounded-md bg-[var(--btn-secondary)] overflow-y-auto overflow-x-hidden flex flex-col justify-start items-start gap-2">
+          {tasklists.map((tasklist, index) => (
+            <div
+              key={tasklist.title}
+              className="w-full flex flex-col justify-start items-start gap-2"
+            >
+              {(index !== 0 || index === tasklists.length - 1) && (
+                <span className="block rounded-md w-full h-[2px] bg-[var(--text-primary)]"></span>
+              )}
+              <span className="w-full flex justify-start items-start text-sm text-[var(--text-primary)] font-bold bg-transparent outline-none break-all">
+                <button
+                  type="button"
+                  onClick={() => handleToggleSelectInTasklist(index)}
+                  className="w-5 h-5 mr-1 block shrink-0 cursor-pointer group"
+                >
+                  {tasklist?.selected ? <CheckedIcon /> : <UncheckedIcon />}
+                </button>
+                {tasklist?.title}
+                <button
+                  type="button"
+                  onClick={() => handleToggleMinimizeTasklist(index)}
+                  className="ml-3 shrink-0 relative w-5 h-5 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+                  title="Minimize"
+                >
+                  <span
+                    style={{
+                      rotate: tasklist?.minimized ? "0deg" : "90deg",
+                    }}
+                    className="flex justify-center items-center text-lg font-bold"
+                  >
+                    <BackIcon />
+                  </span>
+                </button>
+              </span>
+              {!tasklist?.minimized &&
+                tasklist?.tasks.map((field, i) => (
+                  <div
+                    key={field.id}
+                    className="pl-3 w-full flex flex-col justify-between items-center gap-2"
+                  >
+                    <span className="w-full text-xs items-center flex text-[var(--text-primary)] bg-transparent outline-none break-all">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSelectInTask(index, i)}
+                        className="w-5 h-5 mr-1 block shrink-0 cursor-pointer group"
+                      >
+                        {field?.selected ? <CheckedIcon /> : <UncheckedIcon />}
+                      </button>
+                      Tasklist - {i + 1}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleMinimizeTask(index, i)}
+                        className="ml-3 shrink-0 relative w-3 h-3 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+                        title="Minimize"
+                      >
+                        <span
+                          style={{
+                            rotate: field?.minimized ? "0deg" : "90deg",
+                          }}
+                          className="flex justify-center items-center text-lg font-bold"
+                        >
+                          <BackIcon />
+                        </span>
+                      </button>
+                    </span>
+                    {!field?.minimized && (
+                      <div
+                        style={{
+                          display:
+                            field?.id === currentField?.id ? "none" : "flex",
+                          paddingLeft: `${
+                            field?.config?.indentation * 10 || 4
+                          }px`,
+                        }}
+                        className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+                      >
+                        {field?.data?.list?.map((item, j) => (
+                          <div
+                            key={`shown-list-item-${item?.id || j}`}
+                            className="w-full flex flex-col justify-center items-center text-sm"
+                          >
+                            <span
+                              className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
+                              style={{
+                                fontSize: `${field?.config?.fontSize}px`,
+                                textDecoration: `${
+                                  field?.config?.strickthrough
+                                    ? "line-through"
+                                    : "none"
+                                }`,
+                                fontStyle: `${
+                                  field?.config?.italic ? "italic" : "normal"
+                                }`,
+                                fontWeight: `${
+                                  field?.config?.bold ? "bold" : "normal"
+                                }`,
+                                fontFamily: `${field?.config?.fontFamily}`,
+                                color: `${field?.config?.color}`,
+                                textAlign: `${field?.config?.align}`,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  color: `${field?.config?.color}`,
+                                }}
+                                className="w-5 h-5 mr-1 block shrink-0 cursor-pointer group"
+                              >
+                                {item?.completed ? (
+                                  <CheckedIcon />
+                                ) : (
+                                  <UncheckedIcon />
+                                )}
+                              </span>
+                              {item?.text}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="w-full flex justify-center items-center gap-2 flex-wrap mt-2">
         <button
           className="w-14 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
@@ -4334,9 +4765,7 @@ const ProgressBar = ({
   border = false,
 }) => {
   return (
-    <div
-      className="w-full overflow-hidden h-4 flex justify-center items-center rounded-md relative"
-    >
+    <div className="w-full overflow-hidden h-4 flex justify-center items-center rounded-md relative">
       {showPercentage && (
         <span
           style={{
@@ -4348,10 +4777,11 @@ const ProgressBar = ({
         </span>
       )}
       <div
-      style={{
-        background: border ? "var(--bg-quaternary)" : ""
-      }}
-      className="w-full h-2 bg-[var(--btn-secondary)] rounded-md ">
+        style={{
+          background: border ? "var(--bg-quaternary)" : "",
+        }}
+        className="w-full h-2 bg-[var(--btn-secondary)] rounded-md "
+      >
         <div
           className="h-full rounded-md transition-all duration-200"
           style={{
@@ -4804,9 +5234,10 @@ const Link = ({
   };
 
   const handleFaviconSrc = (src, link) => {
+    if (!src) return "";
     if (src === "") return "";
-    if (src.startsWith("data:image")) return src;
-    if (src.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
+    if (src?.startsWith("data:image")) return src;
+    if (src?.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
     let domain = link.split("/")[2];
     return "https://" + domain + src;
   };
@@ -4941,12 +5372,14 @@ const Link = ({
 };
 
 const LinkPreview = ({ link, previewLink }) => {
+  const [previewInfo, setPreviewInfo] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handlePreview = async () => {
     setPreview(null);
     setLoading(true);
+
     if (link === "") return;
     try {
       const url = "https://get-website-preview.vercel.app" + "?link=" + link;
@@ -4979,8 +5412,10 @@ const LinkPreview = ({ link, previewLink }) => {
           }
         }
       });
-      console.log(tempPreview);
       setPreview(tempPreview);
+      if (Object.keys(previewLink).length === 0) {
+        setPreviewInfo(tempPreview);
+      } 
       setLoading(false);
     } catch (e) {
       console.log(e);
@@ -4992,49 +5427,51 @@ const LinkPreview = ({ link, previewLink }) => {
   const handleFaviconSrc = (src, link) => {
     if (!src) return "";
     if (src === "") return "";
-    if (src.startsWith("data:image")) return src;
-    if (src.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
+    if (src?.startsWith("data:image")) return src;
+    if (src?.match(/^(ftp|http|https):\/\/[^ "]+$/)) return src;
     let domain = link.split("/")[2];
     return "https://" + domain + src;
   };
 
   useEffect(() => {
+    setPreviewInfo(previewLink);
     handlePreview();
+    console.log(previewLink)
   }, [link, previewLink]);
 
   return (
     <div className="w-full h-fit flex justify-center items-center flex-col">
       {loading ? (
         <>
-          {previewLink?.favicon && (
+          {previewInfo?.favicon && (
             <div className="w-full flex justify-start items-center gap-1 ">
-              {previewLink?.favicon?.show && (
+              {previewInfo?.favicon?.show && (
                 <img
-                  src={handleFaviconSrc(previewLink.favicon?.value, link)}
+                  src={handleFaviconSrc(previewInfo.favicon?.value, link)}
                   alt="favicon"
                   className="w-5 h-5 rounded-full"
                 />
               )}
-              {previewLink?.siteName?.show && (
+              {previewInfo?.siteName?.show && (
                 <span className="text-sm font-bold text-[var(--text-primary)]">
-                  {previewLink.siteName?.value}
+                  {previewInfo.siteName?.value}
                 </span>
               )}
             </div>
           )}
-          {previewLink?.title?.show && (
+          {previewInfo?.title?.show && (
             <h1 className="w-full text-[var(--text-primary)]  text-sm font-medium">
-              {previewLink.title?.value}
+              {previewInfo.title?.value}
             </h1>
           )}
-          {previewLink?.description?.show && (
+          {previewInfo?.description?.show && (
             <p className="w-full text-[var(--text-primary)] text-xs text-start">
-              {previewLink.description?.value}
+              {previewInfo.description?.value}
             </p>
           )}
-          {previewLink?.previewImages?.show &&
-            previewLink?.previewImages?.value?.length > 0 &&
-            previewLink.previewImages?.value.map((image, i) =>
+          {previewInfo?.previewImages?.show &&
+            previewInfo?.previewImages?.value?.length > 0 &&
+            previewInfo.previewImages?.value.map((image, i) =>
               image?.show ? (
                 <div
                   key={`preview-image-${i}-${image.url}`}
@@ -5053,31 +5490,31 @@ const LinkPreview = ({ link, previewLink }) => {
         <>
           {(preview?.favicon || preview?.siteName) && (
             <div className="w-full flex justify-start items-center gap-1 ">
-              {previewLink?.favicon?.show && (
+              {previewInfo?.favicon?.show && (
                 <img
                   src={handleFaviconSrc(preview?.favicon?.value, link)}
                   alt="favicon"
                   className="w-5 h-5 rounded-full"
                 />
               )}
-              {previewLink?.siteName?.show && (
+              {previewInfo?.siteName?.show && (
                 <span className="text-sm font-bold text-[var(--text-primary)]">
                   {preview?.siteName?.value}
                 </span>
               )}
             </div>
           )}
-          {previewLink?.title?.show && (
+          {previewInfo?.title?.show && (
             <h1 className="w-full text-[var(--text-primary)]  text-sm font-medium">
               {preview?.title?.value}
             </h1>
           )}
-          {previewLink?.description?.show && (
+          {previewInfo?.description?.show && (
             <p className="w-full text-[var(--text-primary)] text-xs text-start">
               {preview?.description?.value}
             </p>
           )}
-          {previewLink?.previewImages?.show &&
+          {previewInfo?.previewImages?.show &&
             preview?.previewImages?.value?.length > 0 &&
             preview?.previewImages?.value?.map((image, i) =>
               image?.show ? (
