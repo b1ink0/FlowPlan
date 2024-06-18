@@ -63,6 +63,11 @@ import PasteStyleIcon from "../../assets/Icons/PasteStyleIcon.jsx";
 import DublicateIcon from "../../assets/Icons/DublicateIcon.jsx";
 import InheritIcon from "../../assets/Icons/InheritIcon.jsx";
 import PInIcon from "../../assets/Icons/PInIcon.jsx";
+import DurationIcon from "../../assets/Icons/DurationIcon.jsx";
+import DurationTimelineIcon from "../../assets/Icons/DurationTimelineIcon.jsx";
+import OverlapIcon from "../../assets/Icons/OverlapIcon.jsx";
+import GraphIcon from "../../assets/Icons/GraphIcon.jsx";
+import RepeatIcon from "../../assets/Icons/RepeatIcon.jsx";
 
 function DisplayDocView() {
   const {
@@ -118,6 +123,7 @@ function DisplayDocView() {
   };
 
   const handleEditField = (field, i) => {
+    if (field?.type === "durationEnd") return;
     handleResetShowAdd(false);
     setCurrentFieldType(field.type);
     setCurrentField({
@@ -166,8 +172,8 @@ function DisplayDocView() {
     let total = 0;
     let completed = 0;
     node?.data.forEach((item) => {
-      if (item.type === "taskList") {
-        console.log(item);
+      if (item?.type === "taskList") {
+        if (item?.config?.repeat) return;
         item.data.list.forEach((task) => {
           total++;
           if (task.completed) {
@@ -176,7 +182,6 @@ function DisplayDocView() {
         });
       }
     });
-    console.log(total, completed);
     return total === 0 ? 100 : (completed / total) * 100;
   };
 
@@ -186,7 +191,8 @@ function DisplayDocView() {
       completed: 0,
     };
     node?.data.forEach((item) => {
-      if (item.type === "taskList") {
+      if (item?.type === "taskList") {
+        if (item?.config?.repeat) return;
         item.data.list.forEach((task) => {
           info.total++;
           if (task.completed) {
@@ -223,7 +229,8 @@ function DisplayDocView() {
     let filtered = selected?.filter((i) => i?.id === node?.id);
     if (filtered.length > 0) {
       node?.data.forEach((item) => {
-        if (item.type === "taskList") {
+        if (item?.type === "taskList") {
+          if (item?.config?.repeat) return;
           let filteredList = filtered[0]?.tasks?.filter(
             (i) => i?.id === item?.id
           );
@@ -533,6 +540,7 @@ function DisplayDocView() {
           )}
 
           <MenuButtons
+            node={node}
             setCurrentField={setCurrentField}
             setType={setCurrentFieldType}
             showAdd={showAdd}
@@ -682,6 +690,8 @@ const DocRenderView = ({
     setFieldStyles,
     copyField,
     setCopyField,
+    dragDurationAll,
+    setDragDurationAll,
   } = useStateContext();
   const { copyToClipboard } = useFunctions();
 
@@ -781,6 +791,7 @@ const DocRenderView = ({
   };
 
   const handleSetMove = () => {
+    if (field?.type === "durationEnd" || field?.type === "duration") return;
     setMove((prev) => ({
       move: !prev.move,
       id: field.id,
@@ -824,34 +835,85 @@ const DocRenderView = ({
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
-  const handleDublicateField = async () => {
+  const handleDublicateField = async (i, duplicateContainingFields = false) => {
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
       node = node.children[i];
     });
-    let temp = structuredClone(node.data[i]);
-    temp.id = v4();
-    if (
-      field.type === "unorderedList" ||
-      field.type === "numberList" ||
-      field.type === "taskList"
-    ) {
-      temp.data.list = temp.data.list.map((item) => {
-        item.id = v4();
-        return item;
-      });
+    let temp;
+    if (field.type === "durationEnd") return;
+    if (field.type === "duration") {
+      let tempDuration = structuredClone(node.data[i]);
+      tempDuration.id = v4();
+      let tempFields = [];
+      for (let j = i + 1; j < node.data.length; j++) {
+        if (node?.data[j]?.type === "durationEnd") {
+          if (node?.data[j]?.data?.durationId === node?.data[i]?.id) {
+            let tempDurationEnd = structuredClone(node.data[j]);
+            tempDurationEnd.id = v4();
+            tempDurationEnd.data.durationId = tempDuration.id;
+            node.data.splice(j + 1, 0, tempDuration);
+            node.data.splice(j + 2, 0, tempDurationEnd);
+            node.data.splice(j + 2, 0, ...tempFields);
+            break;
+          }
+        } else {
+          if (!duplicateContainingFields) continue;
+          temp = structuredClone(node.data[j]);
+          temp.id = v4();
+          if (
+            field.type === "unorderedList" ||
+            field.type === "numberList" ||
+            field.type === "taskList"
+          ) {
+            temp.data.list = temp.data.list.map((item) => {
+              item.id = v4();
+              return item;
+            });
+          }
+          tempFields.push(temp);
+        }
+      }
+    } else {
+      temp = structuredClone(node.data[i]);
+      temp.id = v4();
+      if (
+        field.type === "unorderedList" ||
+        field.type === "numberList" ||
+        field.type === "taskList"
+      ) {
+        temp.data.list = temp.data.list.map((item) => {
+          item.id = v4();
+          return item;
+        });
+      }
+      node.data.splice(i + 1, 0, temp);
     }
-    node.data.splice(i + 1, 0, temp);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
-  const handleDeleteField = async () => {
+  const handleDeleteField = async (deleteContainingFields = false) => {
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
       node = node.children[i];
     });
+    const fieldType = node?.data[i]?.type;
+    if (fieldType === "durationEnd") return;
+    if (fieldType === "duration") {
+      for (let j = i + 1; j < node.data.length; j++) {
+        if (node?.data[j]?.type === "durationEnd") {
+          if (node?.data[j]?.data?.durationId === node?.data[i]?.id) {
+            if (!deleteContainingFields) {
+              node.data.splice(j, 1);
+              break;
+            }
+            node.data.splice(i + 1, j - i);
+          }
+        }
+      }
+    }
     node.data.splice(i, 1);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
@@ -889,33 +951,97 @@ const DocRenderView = ({
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
 
-  const handleCopyField = () => {
+  const handleCopyField = (i, copyContainingFields = false) => {
+    const fieldType = node?.data[i]?.type;
+    if (fieldType === "durationEnd") return;
+    if (fieldType === "duration") {
+      let tempDuration = structuredClone(node.data[i]);
+      let tempFields = [];
+      for (let j = i + 1; j < node.data.length; j++) {
+        if (node?.data[j]?.type === "durationEnd") {
+          if (node?.data[j]?.data?.durationId === node?.data[i]?.id) {
+            let tempDurationEnd = structuredClone(node.data[j]);
+            tempDurationEnd.id = v4();
+            tempDuration.id = v4();
+            tempDurationEnd.data.durationId = tempDuration.id;
+            tempDuration.containingFields = tempFields;
+            tempDuration.durationEnd = tempDurationEnd;
+            setCopyField(tempDuration);
+            return;
+          }
+        } else {
+          if (!copyContainingFields) continue;
+          let temp = structuredClone(node.data[j]);
+          temp.id = v4();
+          if (
+            field.type === "unorderedList" ||
+            field.type === "numberList" ||
+            field.type === "taskList"
+          ) {
+            temp.data.list = temp.data.list.map((item) => {
+              item.id = v4();
+              return item;
+            });
+          }
+          tempFields.push(temp);
+        }
+      }
+    }
     let newField = structuredClone(field);
     setCopyField(newField);
   };
 
   const handlePasteField = async () => {
     if (!copyField) return;
-    console.log(copyField);
-    let newField = structuredClone(copyField);
-    if (
-      newField.type === "unorderedList" ||
-      newField.type === "numberList" ||
-      newField.type === "taskList"
-    ) {
-      newField.data.list = newField.data.list.map((item) => {
-        item.id = v4();
-        return item;
-      });
-    }
-    newField.id = v4();
-    console.log(newField);
+    const fieldType = copyField?.type;
+    if (fieldType === "durationEnd") return;
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
       node = node.children[i];
     });
-    node.data.splice(i + 1, 0, newField);
+    const currentFieldType = node?.data[i]?.type;
+    if (currentFieldType === "duration" && fieldType === "duration") return;
+    let durationEnd = false;
+    for (let j = i; j < node.data.length; j++) {
+      if (node?.data[j]?.type === "durationEnd") {
+        durationEnd = true;
+        break;
+      } else if (node?.data[j]?.type === "duration") {
+        durationEnd = false;
+        break;
+      }
+    }
+    console.log(fieldType, durationEnd);
+    if (fieldType === "duration" && durationEnd) return;
+
+    if (fieldType === "duration") {
+      console.log(copyField);
+      let tempDuration = structuredClone(copyField);
+      let tempFields = structuredClone(tempDuration?.containingFields);
+      let tempDurationEnd = structuredClone(tempDuration?.durationEnd);
+      delete tempDuration.containingFields;
+      delete tempDuration.durationEnd;
+      node.data.splice(i + 1, 0, tempDuration);
+      node.data.splice(i + 2, 0, tempDurationEnd);
+      node.data.splice(i + 2, 0, ...tempFields);
+    } else {
+      let newField = structuredClone(copyField);
+      if (
+        newField.type === "unorderedList" ||
+        newField.type === "numberList" ||
+        newField.type === "taskList"
+      ) {
+        newField.data.list = newField.data.list.map((item) => {
+          item.id = v4();
+          return item;
+        });
+      }
+      newField.id = v4();
+
+      node.data.splice(i + 1, 0, newField);
+    }
+
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
@@ -924,8 +1050,8 @@ const DocRenderView = ({
     let total = 0;
     let completed = 0;
     node?.data.forEach((item) => {
-      if (item.type === "taskList") {
-        console.log(item);
+      if (item?.type === "taskList") {
+        if (item?.config?.repeat) return;
         item.data.list.forEach((task) => {
           total++;
           if (task.completed) {
@@ -934,7 +1060,6 @@ const DocRenderView = ({
         });
       }
     });
-    console.log(total, completed);
     return total === 0 ? 100 : (completed / total) * 100;
   };
 
@@ -945,7 +1070,8 @@ const DocRenderView = ({
     };
 
     node?.data.forEach((item) => {
-      if (item.type === "taskList") {
+      if (item?.type === "taskList") {
+        if (item?.config?.repeat) return;
         item.data.list.forEach((task) => {
           info.total++;
           if (task.completed) {
@@ -973,7 +1099,8 @@ const DocRenderView = ({
     let filtered = selected?.filter((i) => i?.id === node?.id);
     if (filtered.length > 0) {
       node?.data.forEach((item) => {
-        if (item.type === "taskList") {
+        if (item?.type === "taskList") {
+          if (item?.config?.repeat) return;
           let filteredList = filtered[0]?.tasks?.filter(
             (i) => i?.id === item?.id
           );
@@ -1164,69 +1291,17 @@ const DocRenderView = ({
         </div>
       )}
       {field.type === "taskList" && (
-        <div
-          style={{
-            display: field?.id === currentField?.id ? "none" : "flex",
-            paddingLeft: `${field?.config?.indentation * 10 || 4}px`,
-          }}
-          className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
-        >
-          {field?.config?.progressBar && (
-            <ProgressBar progress={field?.config?.progress ?? 0} />
-          )}
-          {field?.data?.list?.map((item, j) => (
-            <div
-              key={`shown-list-item-${item?.id || j}`}
-              className="w-full flex flex-col justify-center items-center text-sm"
-              onDoubleClick={() => handleEditField(field, i)}
-            >
-              <span
-                className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
-                style={{
-                  fontSize: `${field?.config?.fontSize}px`,
-                  textDecoration: `${
-                    field?.config?.strickthrough ? "line-through" : "none"
-                  }`,
-                  fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
-                  fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
-                  fontFamily: `${field?.config?.fontFamily}`,
-                  color: `${field?.config?.color}`,
-                  textAlign: `${field?.config?.align}`,
-                }}
-              >
-                <span
-                  style={{
-                    color: `${field?.config?.color}`,
-                  }}
-                  className="w-5 h-5 mr-1 block shrink-0 cursor-pointer group"
-                >
-                  {item?.completed ? <CheckedIcon /> : <UncheckedIcon />}
-                </span>
-                {item?.text}
-              </span>
-              {field.config?.showDateInfo && (
-                <div className="w-full opacity-100 flex justify-between items-center flex-wrap">
-                  <TimeAndDate
-                    group={false}
-                    absolute={false}
-                    text={`Completed: ${item?.completed ? "" : "Not yet"}`}
-                    timeDate={
-                      item.completed ? new Date(item.completedAt) : undefined
-                    }
-                  />
-                  <TimeAndDate
-                    group={false}
-                    absolute={false}
-                    text="Created: "
-                    timeDate={
-                      item.createdAt ? new Date(item.createdAt) : undefined
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <TaskListDisplay
+          field={field}
+          i={i}
+          node={node}
+          setNode={setNode}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+          handleEditField={handleEditField}
+        />
       )}
       {field.type === "numberList" && (
         <div
@@ -1452,7 +1527,6 @@ const DocRenderView = ({
           </SyntaxHighlighter>
         </div>
       )}
-
       {field.type === "progress" && (
         <div
           style={{
@@ -1469,25 +1543,68 @@ const DocRenderView = ({
           />
         </div>
       )}
+      {field.type === "duration" && (
+        <DurationDisplay
+          onDoubleClick={() => handleEditField(field, i)}
+          currentField={currentField}
+          field={field}
+        />
+      )}
+      {field.type === "durationEnd" && (
+        <DurationEndDisplay
+          node={node}
+          field={field}
+          currentField={currentField}
+        />
+      )}
+      {field.type === "durationTimeline" && (
+        <DurationTimelineDisplay
+          i={i}
+          node={node}
+          field={field}
+          currentFlowPlan={currentFlowPlan}
+          currentField={currentField}
+          onDoubleClick={() => handleEditField(field, i)}
+        />
+      )}
 
       {currentField?.id !== field?.id && showAdd.index !== i && !move.move && (
         <span
           style={{
             opacity: showMenu ? 1 : 0,
             pointerEvents: showMenu ? "all" : "none",
-            top: field.type === "codeBlock" ? "40px" : "4px",
+            top:
+              field.type === "codeBlock" || field?.config?.repeat
+                ? "40px"
+                : "4px",
             height: showSubMenu ? "55px" : "",
-            width: showSubMenu ? "165px" : "",
+            width: showSubMenu
+              ? field.type === "duration"
+                ? "230px"
+                : "165px"
+              : "",
           }}
           onMouseLeave={() => setShowSubMenu(false)}
           className="transition-opacity absolute flex justify-end items-start gap-1 w-fit h-6 right-1 top-1 z-10"
         >
+          {field.type === "duration" && (
+            <div
+              onMouseDown={() => {
+                setDragDurationAll(true);
+              }}
+            >
+              <DragHandle
+                setActive={setActive}
+                title="Drag Duration and its containing fields"
+                className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center"
+              />
+            </div>
+          )}
           <DragHandle
-            ac
+            title="Drag"
             setActive={setActive}
             className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md flex justify-center items-center"
           />
-
           <button
             onClick={() => handleEditField(field, i)}
             className="w-6 h-6 shrink-0 bg-[var(--bg-tertiary)] p-1 rounded-md"
@@ -1513,14 +1630,28 @@ const DocRenderView = ({
           >
             <EditIcon />
             {showSubMenu && (
-              <div className="w-full h-full gap-1 absolute right-[140px] top-7 flex">
+              <div
+                style={{
+                  right: field.type === "duration" ? "225px" : "140px",
+                }}
+                className="w-full h-full gap-1 absolute right-[140px] top-7 flex"
+              >
                 <button
-                  onClick={handleCopyField}
+                  onClick={() => handleCopyField(i)}
                   className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Copy Field"
                 >
                   <CopyIcon />
                 </button>
+                {field.type === "duration" && (
+                  <button
+                    onClick={() => handleCopyField(i, true)}
+                    className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                    title="Copy Duration and its containing fields"
+                  >
+                    <CopyIcon />
+                  </button>
+                )}
 
                 <button
                   onClick={handlePasteField}
@@ -1530,12 +1661,21 @@ const DocRenderView = ({
                   <PasteIcon />
                 </button>
                 <button
-                  onClick={handleDublicateField}
+                  onClick={() => handleDublicateField(i)}
                   className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Duplicate Field"
                 >
                   <DublicateIcon />
                 </button>
+                {field.type === "duration" && (
+                  <button
+                    onClick={() => handleDublicateField(i, true)}
+                    className="w-6 h-6 bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                    title="Duplicate Duration and its containing fields"
+                  >
+                    <DublicateIcon />
+                  </button>
+                )}
 
                 <button
                   onClick={handleCopyFieldStyles}
@@ -1553,12 +1693,22 @@ const DocRenderView = ({
                 </button>
 
                 <button
-                  onClick={handleDeleteField}
+                  onClick={() => handleDeleteField()}
                   className="w-6 h-6 hover:bg-[var(--btn-delete)]  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
                   title="Delete Field"
                 >
                   <DeleteIcon />
                 </button>
+
+                {field.type === "duration" && (
+                  <button
+                    onClick={() => handleDeleteField(true)}
+                    className="w-6 h-6 hover:bg-[var(--btn-delete)]  bg-[var(--bg-tertiary)] p-1 rounded-md shrink-0"
+                    title="Delete Field and its containing fields"
+                  >
+                    <DeleteIcon />
+                  </button>
+                )}
               </div>
             )}
           </span>
@@ -1608,6 +1758,7 @@ const DocRenderView = ({
       {showAdd.show && showAdd.index === i && (
         <div className="flex justify-center items-center">
           <MenuButtons
+            node={node}
             setCurrentField={setCurrentField}
             setType={setCurrentFieldType}
             setShowAdd={setShowAdd}
@@ -1641,6 +1792,7 @@ const DocRenderView = ({
 };
 
 const MenuButtons = ({
+  node,
   setType,
   setCurrentField,
   showAdd,
@@ -1722,6 +1874,16 @@ const MenuButtons = ({
       icon: <TimeStampIcon />,
     },
     {
+      type: "duration",
+      text: "Duration",
+      icon: <DurationIcon />,
+    },
+    {
+      type: "durationTimeline",
+      text: "Duration Timeline",
+      icon: <DurationTimelineIcon />,
+    },
+    {
       type: "codeBlock",
       text: "Code Block",
       icon: <CodeIcon />,
@@ -1752,30 +1914,66 @@ const MenuButtons = ({
 
   const handlePasteField = async () => {
     if (!copyField) return;
-    console.log(copyField);
-    let newField = structuredClone(copyField);
-    if (
-      newField.type === "unorderedList" ||
-      newField.type === "numberList" ||
-      newField.type === "taskList"
-    ) {
-      newField.data.list = newField.data.list.map((item) => {
-        item.id = v4();
-        return item;
-      });
-    }
-    newField.id = v4();
-    console.log(newField);
+    let i = currentFieldIndex;
+    const fieldType = copyField?.type;
+    if (fieldType === "durationEnd") return;
     let root = currentFlowPlan.root;
     let node = root;
     currentFlowPlanNode.forEach((i) => {
       node = node.children[i];
     });
-    if (currentFieldIndex !== null) {
-      node.data.splice(currentFieldIndex + 1, 0, newField);
-    } else {
-      node.data.push(newField);
+    if (i !== null) {
+      const currentFieldType = node?.data[i]?.type;
+      if (currentFieldType === "duration" && fieldType === "duration") return;
+      let durationEnd = false;
+      for (let j = i; j < node.data.length; j++) {
+        if (node?.data[j]?.type === "durationEnd") {
+          durationEnd = true;
+          break;
+        } else if (node?.data[j]?.type === "duration") {
+          durationEnd = false;
+          break;
+        }
+      }
+      if (fieldType === "duration" && durationEnd) return;
     }
+
+    if (fieldType === "duration") {
+      console.log(copyField);
+      let tempDuration = structuredClone(copyField);
+      let tempFields = structuredClone(tempDuration?.containingFields);
+      let tempDurationEnd = structuredClone(tempDuration?.durationEnd);
+      delete tempDuration.containingFields;
+      delete tempDuration.durationEnd;
+      if (i === null) {
+        node.data.push(tempDuration);
+        node.data.push(...tempFields);
+        node.data.push(tempDurationEnd);
+      } else {
+        node.data.splice(i + 1, 0, tempDuration);
+        node.data.splice(i + 2, 0, tempDurationEnd);
+        node.data.splice(i + 2, 0, ...tempFields);
+      }
+    } else {
+      let newField = structuredClone(copyField);
+      if (
+        newField.type === "unorderedList" ||
+        newField.type === "numberList" ||
+        newField.type === "taskList"
+      ) {
+        newField.data.list = newField.data.list.map((item) => {
+          item.id = v4();
+          return item;
+        });
+      }
+      newField.id = v4();
+      if (i === null) {
+        node.data.push(newField);
+      } else {
+        node.data.splice(i + 1, 0, newField);
+      }
+    }
+
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     await handleUpdateIndexDB(currentFlowPlan.refId, root);
   };
@@ -1890,6 +2088,7 @@ const AddEditField = ({
           indentation: 0,
           showDateInfo: false,
           progressBar: false,
+          repeat: false,
         };
       case "numberList":
         return {
@@ -1954,6 +2153,25 @@ const AddEditField = ({
           color: "#199d19",
           pin: false,
         };
+      case "duration":
+        return {
+          color: "#334155",
+          showFromTo: true,
+        };
+      case "durationEnd":
+        return {
+          color: "#334155",
+        };
+      case "durationTimeline":
+        return {
+          color: "#334155",
+          showFromTo: true,
+          showGraph: true,
+          overlap: false,
+          type: "day",
+          current: null,
+        };
+
       default:
         break;
     }
@@ -1965,6 +2183,59 @@ const AddEditField = ({
       data: {
         text: "",
         list: [],
+        taskList: {
+          repeat: {
+            data: [],
+            format: {
+              type: "daily",
+              des: "Daily",
+            },
+            custom: [
+              {
+                type: "monday",
+                des: "Monday",
+                shortDes: "Mon",
+                checked: true,
+              },
+              {
+                type: "tuesday",
+                des: "Tuesday",
+                shortDes: "Tue",
+                checked: true,
+              },
+              {
+                type: "wednesday",
+                des: "Wednesday",
+                shortDes: "Wed",
+                checked: true,
+              },
+              {
+                type: "thursday",
+                des: "Thursday",
+                shortDes: "Thu",
+                checked: true,
+              },
+              {
+                type: "friday",
+                des: "Friday",
+                shortDes: "Fri",
+                checked: true,
+              },
+              {
+                type: "saturday",
+                des: "Saturday",
+                shortDes: "Sat",
+                checked: true,
+              },
+              {
+                type: "sunday",
+                des: "Sunday",
+                shortDes: "Sun",
+                checked: true,
+              },
+            ],
+          },
+        },
         link: "",
         image: {
           name: "",
@@ -2020,6 +2291,40 @@ const AddEditField = ({
           progress: 0,
           type: "doc",
           list: [],
+        },
+        duration: {
+          start: new Date().toISOString(),
+          end: null,
+          format: {
+            type: "Date and Time (12-Hour)",
+            input: {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            },
+          },
+        },
+        durationEnd: { durationId: null },
+        durationTimeline: {
+          type: "doc",
+          format: {
+            type: "Date and Time (12-Hour)",
+            input: {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            },
+          },
+          displayFormat: {
+            type: "week",
+            des: "Week",
+          },
         },
       },
       config: handleGetConfig(type),
@@ -2187,6 +2492,47 @@ const AddEditField = ({
           handleResetShowAdd={handleResetShowAdd}
         />
       );
+    case "duration":
+      return (
+        <Duration
+          node={node}
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
+        />
+      );
+    case "durationEnd":
+      return (
+        <>
+          {/* <DurationEnd
+            node={node}
+            //   handleGetDefaultConfig={handleGetConfig}
+            //   currentField={currentField}
+            //   setCurrentField={setCurrentField}
+            //   currentFieldType={currentFieldType}
+            //   setCurrentFieldType={setCurrentFieldType}
+            //   dataIndex={dataIndex}
+            handleResetShowAdd={handleResetShowAdd}
+          /> */}
+        </>
+      );
+    case "durationTimeline":
+      return (
+        <DurationTimeline
+          node={node}
+          handleGetDefaultConfig={handleGetConfig}
+          currentField={currentField}
+          setCurrentField={setCurrentField}
+          currentFieldType={currentFieldType}
+          setCurrentFieldType={setCurrentFieldType}
+          dataIndex={dataIndex}
+          handleResetShowAdd={handleResetShowAdd}
+        />
+      );
     default:
       break;
   }
@@ -2307,6 +2653,7 @@ const InputTitleButtons = ({
   linkPreviewLoading,
   linkPreview,
   setLinkPreview,
+  defaultTaskList = null,
 }) => {
   const {
     db,
@@ -2727,6 +3074,26 @@ const InputTitleButtons = ({
     });
   };
 
+  const handleToggleRepeatClick = () => {
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        repeat:
+          currentField.config.repeat === undefined
+            ? true
+            : !currentField.config.repeat,
+      },
+      data: {
+        ...currentField.data,
+        taskList:
+          currentField.data?.taskList === undefined
+            ? defaultTaskList
+            : currentField.data?.taskList,
+      },
+    });
+  };
+
   const handleToggleProgressBarClick = () => {
     setCurrentField({
       ...currentField,
@@ -2896,6 +3263,24 @@ const InputTitleButtons = ({
             )}
             {showToolTip.show && showToolTip.type === "Toggle Date Info" && (
               <ToolTip text="Toggle Date Info" />
+            )}
+          </button>
+          <button
+            type="button"
+            title="Toggle Repeat"
+            onClick={handleToggleRepeatClick}
+            className="w-8 h-8 group flex justify-center items-center relative text-xs text-[var(--text-primary)] bg-[var(--btn-secondary)] py-1 px-[6px] rounded-md hover:bg-[var(--btn-edit)] transition-colors duration-300"
+            onMouseEnter={() =>
+              setShowToolTip({ show: true, type: "Toggle Repeat" })
+            }
+            onMouseLeave={() => setShowToolTip({ show: false, type: null })}
+          >
+            <RepeatIcon />
+            {!currentField?.config?.repeat && (
+              <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+            )}
+            {showToolTip.show && showToolTip.type === "Toggle Repeat" && (
+              <ToolTip text="Toggle Repeat" />
             )}
           </button>
         </>
@@ -3372,6 +3757,2418 @@ const LinkPreviewConfig = ({ linkPreview, setLinkPreview }) => {
   );
 };
 
+const Duration = ({
+  node,
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+  handleResetShowAdd,
+  dataIndex,
+}) => {
+  const {
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
+  const formats = [
+    {
+      type: "Date Only",
+      input: { day: "2-digit", month: "2-digit", year: "numeric" },
+    },
+    {
+      type: "Time Only (12-Hour)",
+      input: { hour: "2-digit", minute: "2-digit", hour12: true },
+    },
+    {
+      type: "Time Only (24-Hour)",
+      input: { hour: "2-digit", minute: "2-digit", hour12: false },
+    },
+
+    {
+      type: "Date and Time (12-Hour)",
+      input: {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      },
+    },
+    {
+      type: "Date and Time (24-Hour)",
+      input: {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+    },
+    {
+      type: "Weekday and Time (12-Hour)",
+      input: {
+        weekday: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      },
+    },
+    {
+      type: "Weekday and Time (24-Hour)",
+      input: {
+        weekday: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+    },
+    {
+      type: "Month and Year",
+      input: { year: "numeric", month: "long" },
+    },
+    {
+      type: "Day of the Week, Month, Day, and Year",
+      input: {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      },
+    },
+    {
+      type: "Day of the Week, Date, and Time (12-Hour)",
+      input: {
+        weekday: "long",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      },
+    },
+    {
+      type: "Day of the Week, Date, and Time (24-Hour)",
+      input: {
+        weekday: "long",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+    },
+  ];
+
+  const addDurations = [
+    {
+      type: "1h",
+      value: "1h",
+    },
+    {
+      type: "45m",
+      value: "45m",
+    },
+    {
+      type: "30m",
+      value: "30m",
+    },
+    {
+      type: "15m",
+      value: "15m",
+    },
+    {
+      type: "10m",
+      value: "10m",
+    },
+  ];
+
+  const [addOrSub, setAddOrSub] = useState("add");
+  const [customDuration, setCustomDuration] = useState("");
+
+  const handleGetFormatedDateTime = (iso) => {
+    if (iso === null) return "";
+    let date = new Date(iso);
+    if (!currentField?.data?.duration?.format?.input)
+      return date.toLocaleString();
+    const string = new Intl.DateTimeFormat(
+      "en-IN",
+      currentField?.data?.duration?.format?.input
+    ).format(date);
+    return string;
+  };
+
+  const handleGetDateTime = (iso) => {
+    let utcDate;
+    if (iso === null) {
+      utcDate = new Date();
+    } else {
+      utcDate = new Date(iso);
+    }
+    let finalIso = `${utcDate.getFullYear()}-${(utcDate.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${utcDate
+      .getDate()
+      .toString()
+      .padStart(2, "0")}T${utcDate
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${utcDate.getMinutes().toString().padStart(2, "0")}`;
+    return finalIso;
+  };
+
+  const handleSetDateTime = (e, type) => {
+    let time = e.target.value;
+    let newDate = new Date(time);
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        duration: {
+          ...currentField.data.duration,
+          [type]: newDate.toISOString(),
+        },
+      },
+    });
+  };
+
+  const handleCalculateDuration = (start, end) => {
+    if (!start || !end) return null;
+    // Parse the ISO date strings into Date objects
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    // Calculate the difference in milliseconds
+    let diffMilliseconds = endDate - startDate;
+
+    // Check if the difference is negative
+    if (diffMilliseconds < 0) {
+      // diffMilliseconds = 0;
+      // Adjust the end date to be the same as the start date
+      // endDate.setTime(startDate.getTime());
+    }
+
+    // Convert the difference to various units
+    const diffSeconds = diffMilliseconds / 1000;
+    const diffMinutes = diffSeconds / 60;
+    const diffHours = diffMinutes / 60;
+    const diffDays = diffHours / 24;
+
+    // Calculate the difference in months and years
+    let diffYears = endDate.getFullYear() - startDate.getFullYear();
+    let diffMonths = endDate.getMonth() - startDate.getMonth();
+
+    // Adjust years and months if necessary
+    if (diffMonths < 0) {
+      diffYears--;
+      diffMonths += 12;
+    }
+
+    // Convert the total months to include the year part
+    const totalMonths = diffYears * 12 + diffMonths;
+
+    return {
+      milliseconds: diffMilliseconds,
+      seconds: diffSeconds,
+      minutes: diffMinutes,
+      hours: diffHours,
+      days: diffDays,
+      months: totalMonths,
+      years: diffYears,
+      start: startDate,
+      end: endDate,
+    };
+  };
+
+  const handleCheckInvalidDuration = (e, type, start, end) => {
+    if (type === "end" && end === null) {
+      handleSetDateTime(e, type);
+      return;
+    }
+
+    if (type === "start") {
+      let duration = handleCalculateDuration(start, end);
+      if (duration?.milliseconds < 0) {
+        handleSetDateTime(e, type);
+        return;
+      }
+    }
+
+    if (type === "end") {
+      let duration = handleCalculateDuration(start, end);
+      if (duration.milliseconds < 0) {
+        console.log(duration);
+        handleSetDateTime(e, type);
+        return;
+      }
+    }
+
+    handleSetDateTime(e, type);
+  };
+
+  const handleFormatDuration = (duration) => {
+    if (!duration) return "";
+    let years = Math.floor(duration.years);
+    let months = Math.floor(duration.months);
+    let days = Math.floor(duration.days);
+    let hours = Math.floor(duration.hours) % 24;
+    let minutes = Math.floor(duration.minutes) % 60;
+    let seconds = Math.floor(duration.seconds) % 60;
+
+    const all = [years, months, days, hours, minutes];
+
+    let string = "";
+    all.forEach((item, index) => {
+      if (item > 0) {
+        if (index === 0) {
+          string += `${item}y `;
+        } else if (index === 1) {
+          string += `${item}m `;
+        } else if (index === 2) {
+          string += `${item}d `;
+        } else if (index === 3) {
+          string += `${item}h `;
+        } else if (index === 4) {
+          string += `${item}m `;
+        } else if (index === 5) {
+          string += `${item}s `;
+        }
+      }
+    });
+    return string;
+  };
+
+  const handleParseDuration = (durationStr) => {
+    const regex = /(\d+d)?(\d+h)?(\d+m)?(\d+s)?/;
+    const matches = durationStr.match(regex);
+
+    const days = matches[1] ? parseInt(matches[1], 10) : 0;
+    const hours = matches[2] ? parseInt(matches[2], 10) : 0;
+    const minutes = matches[3] ? parseInt(matches[3], 10) : 0;
+    const seconds = matches[4] ? parseInt(matches[4], 10) : 0;
+
+    return {
+      days,
+      hours,
+      minutes,
+      seconds,
+    };
+  };
+
+  const handleAddOrSubDurationToDate = (date, durationStr, add = true) => {
+    const duration = handleParseDuration(durationStr);
+
+    // Add duration to the given date
+    const newDate = new Date(date);
+    newDate.setDate(
+      add
+        ? newDate.getDate() + duration.days
+        : newDate.getDate() - duration.days
+    );
+    newDate.setHours(
+      add
+        ? newDate.getHours() + duration.hours
+        : newDate.getHours() - duration.hours
+    );
+    newDate.setMinutes(
+      add
+        ? newDate.getMinutes() + duration.minutes
+        : newDate.getMinutes() - duration.minutes
+    );
+    newDate.setSeconds(
+      add
+        ? newDate.getSeconds() + duration.seconds
+        : newDate.getSeconds() - duration.seconds
+    );
+
+    return newDate;
+  };
+
+  const handleAddOrSubDuration = (duration) => {
+    let startDate = new Date(currentField?.data?.duration?.start);
+    let endDate = new Date(currentField?.data?.duration?.end ?? startDate);
+    let newEndDate = new Date(endDate);
+    newEndDate = handleAddOrSubDurationToDate(
+      newEndDate,
+      duration,
+      addOrSub === "add" ? true : false
+    );
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        duration: {
+          ...currentField.data.duration,
+          end: newEndDate.toISOString(),
+        },
+      },
+    });
+  };
+
+  const handleSelectChange = (e) => {
+    let type = e.target.value;
+    let format = formats.find((format) => format.type === type);
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        duration: {
+          ...currentField.data.duration,
+          format: format,
+        },
+      },
+    });
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    const finalFieldId = v4();
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        duration: {
+          ...currentField.data.duration,
+        },
+      },
+    };
+
+    let durationEndField = {
+      id: v4(),
+      type: "durationEnd",
+      data: {
+        durationId: finalFieldId,
+      },
+      config: finalField.config,
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+      for (let i = index + 1; i < node.data.length; i++) {
+        if (node.data[i].type === "durationEnd") {
+          if (node.data[i].data.durationId === finalField.id) {
+            node.data[i].config = finalField.config;
+            break;
+          }
+        }
+      }
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: finalFieldId,
+      });
+      node.data.splice(dataIndex + 2, 0, durationEndField);
+      handleResetShowAdd();
+    } else {
+      node.data.push({ ...finalField, id: finalFieldId });
+      node.data.push(durationEndField);
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  const handleDelete = async (i, deleteContainingFields = false) => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    const fieldType = node?.data[i]?.type;
+    if (fieldType === "durationEnd") return;
+    if (fieldType === "duration") {
+      for (let j = i + 1; j < node.data.length; j++) {
+        if (node?.data[j]?.type === "durationEnd") {
+          if (node?.data[j]?.data?.durationId === node?.data[i]?.id) {
+            if (!deleteContainingFields) {
+              node.data.splice(j, 1);
+              break;
+            }
+            node.data.splice(i + 1, j - i);
+          }
+        }
+      }
+    }
+    node.data.splice(i, 1);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+  const [formated, setFormated] = useState({
+    start: handleGetFormatedDateTime(currentField?.data?.duration?.start),
+    end: handleGetFormatedDateTime(currentField?.data?.duration?.end),
+    duration: handleFormatDuration(
+      handleCalculateDuration(
+        currentField?.data?.duration?.start,
+        currentField?.data?.duration?.end
+      )
+    ),
+  });
+
+  useEffect(() => {
+    setFormated({
+      start: handleGetFormatedDateTime(currentField?.data?.duration?.start),
+      end: handleGetFormatedDateTime(currentField?.data?.duration?.end),
+      duration: handleFormatDuration(
+        handleCalculateDuration(
+          currentField?.data?.duration?.start,
+          currentField?.data?.duration?.end
+        )
+      ),
+    });
+  }, [
+    currentField?.data?.duration?.start,
+    currentField?.data?.duration?.end,
+    currentField?.data?.duration?.format,
+  ]);
+
+  return (
+    <form
+      onSubmit={handleSave}
+      className="w-full flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md gap-2"
+    >
+      <div
+        style={{
+          backgroundColor: `${currentField?.config?.color}`,
+        }}
+        className="flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-t-md"
+      >
+        {currentField?.config?.showFromTo && (
+          <div className="text-xs">
+            <span className="w-fit">
+              From: {formated.start || "Select Start DateTime"}
+            </span>
+            <span>{" - To: "}</span>
+            <span className="w-fit">
+              {formated.end || "Select End DateTime"}
+            </span>
+          </div>
+        )}
+        <div className="flex justify-center items-center">
+          <span className="text-xs text-[var(--text-primary)]">
+            Duration: {formated.duration || "Not Yet"}
+          </span>
+        </div>
+      </div>
+      <div className="w-full flex justify-center items-center gap-4 flex-wrap p-2">
+        <div className="w-fit h-fit relative flex justify-center items-center gap-2">
+          <label className="text-sm text-[var(--text-primary)]">From:</label>
+          <input
+            type="datetime-local"
+            className="w-[200px] h-8 cursor-pointer text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+            value={handleGetDateTime(currentField?.data?.duration?.start)}
+            max={handleGetDateTime(currentField?.data?.duration?.end)}
+            onChange={(e) =>
+              handleCheckInvalidDuration(
+                e,
+                "start",
+                currentField?.data?.duration?.start,
+                currentField?.data?.duration?.end
+              )
+            }
+          />
+        </div>
+
+        <div className="w-fit h-fit relative flex justify-center items-center gap-2">
+          <label className="text-sm text-[var(--text-primary)]">to:</label>
+          <input
+            type="datetime-local"
+            className="w-[200px] h-8 cursor-pointer text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+            value={handleGetDateTime(currentField?.data?.duration?.end)}
+            min={handleGetDateTime(currentField?.data?.duration?.start)}
+            onChange={(e) =>
+              handleCheckInvalidDuration(
+                e,
+                "end",
+                currentField?.data?.duration?.start,
+                currentField?.data?.duration?.end
+              )
+            }
+          />
+        </div>
+      </div>
+      <div className="w-fit h-fit relative flex justify-center items-center gap-2 flex-wrap">
+        <select
+          title="Add or Subtract Duration"
+          value={addOrSub}
+          onChange={(e) => setAddOrSub(e.target.value)}
+          className="w-13 group h-8 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center px-2 outline-none"
+        >
+          <option
+            className="text-xs font-bold text-[var(--text-primary)] bg-[var(--btn-secondary)]"
+            value="add"
+          >
+            +Add
+          </option>
+          <option
+            className="text-xs font-bold text-[var(--text-primary)] bg-[var(--btn-secondary)]"
+            value="subtract"
+          >
+            -Sub
+          </option>
+        </select>
+
+        {addDurations.map((addDuration) => (
+          <button
+            key={`field-${currentField.type}-addduration-${addDuration.value}`}
+            type="button"
+            className="w-10 shrink-0 h-8 px-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+            onClick={() => handleAddOrSubDuration(addDuration.value)}
+          >
+            {addDuration.type}
+          </button>
+        ))}
+        <input
+          type="text"
+          className="w-20 px-2 h-8 text-xs rounded-md outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+          title="Custom Duration"
+          placeholder="2h30m"
+          value={customDuration}
+          onChange={(e) => setCustomDuration(e.target.value)}
+        />
+        <button
+          type="button"
+          className="w-8 text-2xl shrink-0 h-8 px-1 rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          title="Add Custom Duration"
+          onClick={() => {
+            handleAddOrSubDuration(customDuration);
+            setCustomDuration("");
+          }}
+        >
+          {addOrSub === "add" ? "+" : "-"}
+        </button>
+      </div>
+      <div className="w-full flex justify-center items-center gap-2 flex-wrap my-2">
+        <button
+          className="w-14 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          type="button"
+          onClick={() => {
+            setCurrentFieldType(null);
+            setCurrentField(null);
+          }}
+        >
+          Cancel
+        </button>
+
+        <div className="w-fit h-fit flex justify-center items-center gap-2 flex-wrap">
+          <select
+            title="Date Format"
+            className="w-40 group h-8 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+            value={currentField?.data?.duration?.format?.type}
+            onChange={handleSelectChange}
+          >
+            {formats.map((format) => (
+              <option key={format.type} value={format.type}>
+                {format.type}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="button"
+          title="Toggle Show From To"
+          className="relative w-8 h-8 px-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => {
+            setCurrentField({
+              ...currentField,
+              config: {
+                ...currentField.config,
+                showFromTo: !currentField?.config?.showFromTo ?? false,
+              },
+            });
+          }}
+        >
+          {!currentField?.config?.showFromTo && (
+            <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+          )}
+          <span className="flex justify-center items-center text-lg font-bold">
+            <PreviewIcon />
+          </span>
+        </button>
+        <div className="w-8 h-8 bg-[var(--btn-secondary)] text-center text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center outline-none relative">
+          <input
+            className="w-full h-full opacity-0 bg-transparent outline-none cursor-pointer"
+            type="color"
+            title="Duration Color"
+            value={currentField?.config?.color}
+            onChange={(e) => {
+              setCurrentField({
+                ...currentField,
+                config: {
+                  ...currentField.config,
+                  color: e.target.value,
+                },
+              });
+            }}
+          />
+          <span className="pointer-events-none absolute  top-0 left-0 w-full h-full p-[8px]">
+            <ColorIcon />
+          </span>
+          <span
+            style={{
+              backgroundColor: `${currentField?.config?.color}`,
+            }}
+            className="-top-1 -right-1 absolute w-3 h-3 rounded-full"
+          ></span>
+        </div>
+        {currentField?.id && (
+          <>
+            <button
+              type="button"
+              className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
+              onClick={() => handleDelete(currentField?.index)}
+              title="Delete Field"
+            >
+              <span className="">
+                <DeleteIcon />
+              </span>
+            </button>
+            <button
+              type="button"
+              className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
+              onClick={() => handleDelete(currentField?.index, true)}
+              title="Delete Duration and containing Fields"
+            >
+              <span className="">
+                <DeleteIcon />
+              </span>
+            </button>
+          </>
+        )}
+        <button
+          className="w-14 h-8 px-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={(e) => handleSave(e, currentField?.index)}
+        >
+          Save
+        </button>
+      </div>
+    </form>
+  );
+};
+const DurationDisplay = ({ field, currentField, onDoubleClick }) => {
+  const handleGetFormatedDateTime = (iso) => {
+    if (iso === null) return "";
+    let date = new Date(iso);
+    if (!field?.data?.duration?.format?.input) return date.toLocaleString();
+    const string = new Intl.DateTimeFormat(
+      "en-IN",
+      field?.data?.duration?.format?.input
+    ).format(date);
+    return string;
+  };
+
+  const handleCalculateDuration = (start, end) => {
+    if (!start || !end) return null;
+    // Parse the ISO date strings into Date objects
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    // Calculate the difference in milliseconds
+    let diffMilliseconds = endDate - startDate;
+
+    // Check if the difference is negative
+    if (diffMilliseconds < 0) {
+      // diffMilliseconds = 0;
+      // Adjust the end date to be the same as the start date
+      // endDate.setTime(startDate.getTime());
+    }
+
+    // Convert the difference to various units
+    const diffSeconds = diffMilliseconds / 1000;
+    const diffMinutes = diffSeconds / 60;
+    const diffHours = diffMinutes / 60;
+    const diffDays = diffHours / 24;
+
+    // Calculate the difference in months and years
+    let diffYears = endDate.getFullYear() - startDate.getFullYear();
+    let diffMonths = endDate.getMonth() - startDate.getMonth();
+
+    // Adjust years and months if necessary
+    if (diffMonths < 0) {
+      diffYears--;
+      diffMonths += 12;
+    }
+
+    // Convert the total months to include the year part
+    const totalMonths = diffYears * 12 + diffMonths;
+
+    return {
+      milliseconds: diffMilliseconds,
+      seconds: diffSeconds,
+      minutes: diffMinutes,
+      hours: diffHours,
+      days: diffDays,
+      months: totalMonths,
+      years: diffYears,
+      start: startDate,
+      end: endDate,
+    };
+  };
+
+  const handleFormatDuration = (duration) => {
+    if (!duration) return "";
+    let years = Math.floor(duration.years);
+    let months = Math.floor(duration.months);
+    let days = Math.floor(duration.days);
+    let hours = Math.floor(duration.hours) % 24;
+    let minutes = Math.floor(duration.minutes) % 60;
+    let seconds = Math.floor(duration.seconds) % 60;
+
+    const all = [years, months, days, hours, minutes];
+
+    let string = "";
+    all.forEach((item, index) => {
+      if (item > 0) {
+        if (index === 0) {
+          string += `${item}y `;
+        } else if (index === 1) {
+          string += `${item}m `;
+        } else if (index === 2) {
+          string += `${item}d `;
+        } else if (index === 3) {
+          string += `${item}h `;
+        } else if (index === 4) {
+          string += `${item}m `;
+        } else if (index === 5) {
+          string += `${item}s `;
+        }
+      }
+    });
+    return string;
+  };
+  const [formated, setFormated] = useState({
+    start: handleGetFormatedDateTime(field?.data?.duration?.start),
+    end: handleGetFormatedDateTime(field?.data?.duration?.end),
+    duration: handleFormatDuration(
+      handleCalculateDuration(
+        field?.data?.duration?.start,
+        field?.data?.duration?.end
+      )
+    ),
+  });
+
+  useEffect(() => {
+    setFormated({
+      start: handleGetFormatedDateTime(field?.data?.duration?.start),
+      end: handleGetFormatedDateTime(field?.data?.duration?.end),
+      duration: handleFormatDuration(
+        handleCalculateDuration(
+          field?.data?.duration?.start,
+          field?.data?.duration?.end
+        )
+      ),
+    });
+  }, [field?.data?.duration?.start, field?.data?.duration?.end]);
+
+  return (
+    <div
+      style={{
+        backgroundColor: `${field?.config?.color}`,
+        display: field?.id === currentField?.id ? "none" : "flex",
+      }}
+      onDoubleClick={onDoubleClick}
+      className="flex mb-1 flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-tr-md rounded-tl-md"
+    >
+      {field?.config?.showFromTo && (
+        <div className="text-xs">
+          {/* <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap"> */}
+          <span className="w-fit">
+            From: {formated.start || "Select Start DateTime"}
+          </span>
+          {/* </div> */}
+          <span>{" - To: "}</span>
+          {/* <div className="w-fit h-7 flex justify-center items-center gap-2 flex-wrap"> */}
+          <span className="w-fit">{formated.end || "Select End DateTime"}</span>
+          {/* </div> */}
+        </div>
+      )}
+      <div className="flex justify-center items-center">
+        <span className="text-xs text-[var(--text-primary)]">
+          Duration: {formated.duration || "Not Yet"}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const DurationEndDisplay = ({ node, field, currentField }) => {
+  return (
+    <div
+      style={{
+        backgroundColor: `${field?.config?.color}`,
+        display: field?.id === currentField?.id ? "none" : "flex",
+      }}
+      className="flex mb-2 mt-1 flex-wrap justify-between items-center text-xs w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-br-md rounded-bl-md"
+    >
+      <div className="w-full flex justify-center items-center gap-2 flex-wrap">
+        <span className="w-full text-center">End of Duration</span>
+      </div>
+    </div>
+  );
+};
+
+const DurationTimeline = ({
+  node,
+  currentField,
+  setCurrentField,
+  currentFieldType,
+  setCurrentFieldType,
+  handleGetDefaultConfig,
+  handleResetShowAdd,
+  dataIndex,
+}) => {
+  const {
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    currentFlowPlanNode,
+    setCurrentFlowPlanNode,
+  } = useStateContext();
+  const formats = [
+    {
+      type: "Date Only",
+      input: { day: "2-digit", month: "2-digit", year: "numeric" },
+    },
+    {
+      type: "Time Only (12-Hour)",
+      input: { hour: "2-digit", minute: "2-digit", hour12: true },
+    },
+    {
+      type: "Time Only (24-Hour)",
+      input: { hour: "2-digit", minute: "2-digit", hour12: false },
+    },
+
+    {
+      type: "Date and Time (12-Hour)",
+      input: {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      },
+    },
+    {
+      type: "Date and Time (24-Hour)",
+      input: {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+    },
+    {
+      type: "Weekday and Time (12-Hour)",
+      input: {
+        weekday: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      },
+    },
+    {
+      type: "Weekday and Time (24-Hour)",
+      input: {
+        weekday: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+    },
+    {
+      type: "Month and Year",
+      input: { year: "numeric", month: "long" },
+    },
+    {
+      type: "Day of the Week, Month, Day, and Year",
+      input: {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      },
+    },
+    {
+      type: "Day of the Week, Date, and Time (12-Hour)",
+      input: {
+        weekday: "long",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      },
+    },
+    {
+      type: "Day of the Week, Date, and Time (24-Hour)",
+      input: {
+        weekday: "long",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+    },
+  ];
+  const displayFormats = [
+    {
+      type: "week",
+      des: "Week",
+    },
+    {
+      type: "month",
+      des: "Month",
+    },
+    {
+      type: "year",
+      des: "Year",
+    },
+  ];
+  const list = [
+    {
+      type: "doc",
+      des: "Current Document Progress",
+    },
+    {
+      type: "docChild",
+      des: "Current and All Child Document Progress",
+    },
+    {
+      type: "docAll",
+      des: "All Document Progress",
+    },
+    // {
+    //   type: "custom",
+    //   des: "Select Custom Progress",
+    // },
+  ];
+
+  const handleGetFormatedDateTime = (iso) => {
+    if (iso === null) return "";
+    let date = new Date(iso);
+    if (!currentField?.data?.durationTimeline?.format?.input)
+      return date.toLocaleString();
+    const string = new Intl.DateTimeFormat(
+      "en-IN",
+      currentField?.data?.durationTimeline?.format?.input
+    ).format(date);
+    return string;
+  };
+  const handleGetDateTime = (iso) => {
+    let utcDate;
+    if (iso === null) {
+      utcDate = new Date();
+    } else {
+      utcDate = new Date(iso);
+    }
+    let finalIso = `${utcDate.getFullYear()}-${(utcDate.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${utcDate
+      .getDate()
+      .toString()
+      .padStart(2, "0")}T${utcDate
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${utcDate.getMinutes().toString().padStart(2, "0")}`;
+    return finalIso;
+  };
+
+  const handleSetDateTime = (e) => {
+    let time = e.target.value;
+    let newDate = new Date(time);
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        current: newDate.toISOString(),
+      },
+    });
+  };
+  const handleGetDurations = (node, stop = false) => {
+    let durations = [];
+    node?.data?.forEach((field, index) => {
+      if (!field) return;
+      if (field?.type === "duration") {
+        let duration = field?.data?.duration;
+        if (!duration) return;
+        if (!duration?.end) return;
+        if (duration?.end === null) return;
+        durations.push({
+          id: field.id,
+          index: index,
+          start: new Date(duration.start),
+          end: new Date(duration.end),
+        });
+      }
+    });
+
+    if (stop) return durations;
+    if (node?.children?.length > 0) {
+      node.children.forEach((child) => {
+        durations = [...durations, ...handleGetDurations(child)];
+      });
+    }
+
+    return durations;
+  };
+
+  const handleCalculateDuration = (type, overlap = false) => {
+    if (!type) return null;
+    // Parse the ISO date strings into Date objects
+    console.log(type);
+    let start = null;
+    let end = null;
+    let duration = 0;
+    let durations = [];
+
+    switch (type) {
+      case "doc":
+        durations = handleGetDurations(node, true);
+        break;
+      case "docChild":
+        durations = handleGetDurations(node);
+        break;
+      case "docAll":
+        durations = handleGetDurations(currentFlowPlan.root);
+        break;
+      default:
+        break;
+    }
+    if (durations.length === 0) return null;
+
+    durations.sort((a, b) => a.start - b.start);
+    start = durations[0]?.start;
+    end = durations[durations.length - 1]?.end;
+
+    durations.forEach((duration) => {
+      if (duration.start < start) {
+        start = duration.start;
+      }
+      if (duration.end > end) {
+        end = duration.end;
+      }
+    });
+    if (!overlap) {
+      durations.forEach((d) => {
+        duration += d.end - d.start;
+      });
+    } else {
+      let mergedIntervals = [];
+      let currentInterval = durations[0];
+      for (let i = 1; i < durations.length; i++) {
+        let currentStart = currentInterval.start;
+        let currentEnd = currentInterval.end;
+        let nextStart = durations[i].start;
+        let nextEnd = durations[i].end;
+
+        // Check if intervals overlap
+        if (nextStart <= currentEnd) {
+          // Merge intervals
+          currentInterval.end = new Date(Math.max(currentEnd, nextEnd));
+        } else {
+          // Push the current interval and move to the next
+          mergedIntervals.push(currentInterval);
+          currentInterval = durations[i];
+        }
+      }
+      mergedIntervals.push(currentInterval);
+      mergedIntervals.forEach((d) => {
+        duration += d.end - d.start;
+        console.log(duration / 1000 / 60);
+      });
+      durations = mergedIntervals;
+    }
+
+    // Calculate the difference in milliseconds
+    let diffMilliseconds = duration;
+
+    // Convert the difference to various units
+    const diffSeconds = diffMilliseconds / 1000;
+    const diffMinutes = diffSeconds / 60;
+    const diffHours = diffMinutes / 60;
+    const diffDays = diffHours / 24;
+    console.log(diffHours);
+    return {
+      milliseconds: diffMilliseconds,
+      seconds: diffSeconds,
+      minutes: diffMinutes,
+      hours: diffHours,
+      days: diffDays,
+      start: start,
+      end: end,
+      durations: durations,
+    };
+  };
+
+  const handleFormatDuration = (duration) => {
+    if (!duration) return "";
+    let days = Math.floor(duration.days);
+    let hours = Math.floor(duration.hours) % 24;
+    let minutes = Math.floor(duration.minutes) % 60;
+    let seconds = Math.floor(duration.seconds) % 60;
+
+    const all = [days, hours, minutes];
+
+    let string = "";
+    all.forEach((item, index) => {
+      if (item > 0) {
+        if (index === 0) {
+          string += `${item}d `;
+        } else if (index === 1) {
+          string += `${item}h `;
+        } else if (index === 2) {
+          string += `${item}m `;
+        } else if (index === 3) {
+          string += `${item}s `;
+        }
+      }
+    });
+    return string;
+  };
+  const handleSetFormated = () => {
+    let duration = handleCalculateDuration(
+      currentField?.data?.durationTimeline?.type,
+      currentField?.config?.overlap
+    );
+    if (!duration) return;
+    console.log(handleFormatDuration(duration));
+    setFormated((prev) => ({
+      ...prev,
+      start: handleGetFormatedDateTime(duration.start.toISOString()),
+      end: handleGetFormatedDateTime(duration.end.toISOString()),
+      startISO: duration.start.toISOString(),
+      endISO: duration.end.toISOString(),
+      duration: handleFormatDuration(duration),
+      durations: duration.durations,
+    }));
+  };
+
+  const getWeekRange = (date) => {
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+    return [startOfWeek, endOfWeek];
+  };
+
+  const getMonthRange = (date) => {
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    return [startOfMonth, endOfMonth];
+  };
+
+  const getYearRange = (date) => {
+    const startOfYear = new Date(date.getFullYear(), 0, 1);
+    const endOfYear = new Date(date.getFullYear(), 11, 31);
+    return [startOfYear, endOfYear];
+  };
+
+  const splitEventByDay = (event) => {
+    const segments = [];
+    let currentStart = new Date(event.start);
+    const end = new Date(event.end);
+
+    while (currentStart < end) {
+      const currentEnd = new Date(currentStart);
+      currentEnd.setHours(23, 59, 59, 999); // End of the current day
+      if (currentEnd > end) currentEnd.setTime(end.getTime());
+
+      segments.push({
+        id: event.id,
+        index: event.index,
+        start: new Date(currentStart),
+        end: new Date(currentEnd),
+      });
+
+      currentStart = new Date(currentEnd);
+      currentStart.setHours(24, 0, 0, 0); // Start of the next day
+    }
+
+    return segments;
+  };
+
+  const calculateDurations = (events, rangeStart, rangeEnd, unit) => {
+    const dayDurations = {};
+
+    events.forEach((event) => {
+      const segments = splitEventByDay(event);
+
+      segments.forEach((segment) => {
+        const start = new Date(segment.start);
+        const end = new Date(segment.end);
+
+        if (start >= rangeStart && start <= rangeEnd) {
+          const dayKey = start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+          if (!dayDurations[dayKey]) {
+            dayDurations[dayKey] = 0;
+          }
+          dayDurations[dayKey] += end - start; // Duration in milliseconds
+        }
+      });
+    });
+
+    const durations = [];
+
+    if (unit === "week") {
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(rangeStart);
+        day.setDate(day.getDate() + i);
+        const dayKey = day.toISOString().split("T")[0];
+        const dayName = day.toLocaleDateString("en-US", { weekday: "long" });
+        durations.push({
+          label: dayName,
+          duration: dayDurations[dayKey] || 0,
+        });
+      }
+    } else if (unit === "month") {
+      const weeks = {};
+      const current = new Date(rangeStart);
+      while (current <= rangeEnd) {
+        const weekKey = `${current.getFullYear()}-W${Math.ceil(
+          (current.getDate() + 6 - current.getDay()) / 7
+        )}`;
+        if (!weeks[weekKey]) {
+          weeks[weekKey] = 0;
+        }
+        const dayKey = current.toISOString().split("T")[0];
+        weeks[weekKey] += dayDurations[dayKey] || 0;
+        current.setDate(current.getDate() + 1);
+      }
+      Object.entries(weeks).forEach(([weekKey, duration]) => {
+        durations.push({
+          label: "w-" + weekKey.split("-W")[1],
+          duration,
+        });
+      });
+    } else if (unit === "year") {
+      for (let i = 0; i < 12; i++) {
+        const monthStart = new Date(rangeStart.getFullYear(), i, 1);
+        const monthEnd = new Date(rangeStart.getFullYear(), i + 1, 0);
+        let monthDuration = 0;
+        for (
+          let day = new Date(monthStart);
+          day <= monthEnd;
+          day.setDate(day.getDate() + 1)
+        ) {
+          const dayKey = day.toISOString().split("T")[0];
+          monthDuration += dayDurations[dayKey] || 0;
+        }
+        const monthName = monthStart.toLocaleDateString("en-US", {
+          month: "long",
+        });
+        durations.push({
+          label: monthName,
+          duration: monthDuration,
+        });
+      }
+      let jan = durations[durations.length - 1];
+      durations.unshift(jan);
+      durations.pop();
+    }
+
+    return durations.map((item) => ({
+      ...item,
+      milliseconds: item.duration,
+      seconds: item.duration / 1000,
+      minutes: item.duration / 60000,
+      hours: item.duration / 3600000,
+    }));
+  };
+  const getWeeklyDuration = (events, selectedDate) => {
+    const [weekStart, weekEnd] = getWeekRange(selectedDate);
+    return calculateDurations(events, weekStart, weekEnd, "week");
+  };
+
+  const getMonthlyDuration = (events, selectedDate) => {
+    const [monthStart, monthEnd] = getMonthRange(selectedDate);
+    return calculateDurations(events, monthStart, monthEnd, "month");
+  };
+
+  const getYearlyDuration = (events, selectedDate) => {
+    const [yearStart, yearEnd] = getYearRange(selectedDate);
+    return calculateDurations(events, yearStart, yearEnd, "year");
+  };
+
+  const handleCalculateRange = (type, selectedDate) => {
+    if (formated.durations.length === 0) return;
+    if (!formated.start) return;
+    selectedDate = new Date(selectedDate || formated.startISO);
+    console.log(selectedDate);
+    let durations = [];
+    switch (type) {
+      case "week":
+        durations = getWeeklyDuration(formated.durations, selectedDate);
+        break;
+      case "month":
+        durations = getMonthlyDuration(formated.durations, selectedDate);
+        break;
+      case "year":
+        durations = getYearlyDuration(formated.durations, selectedDate);
+        break;
+      default:
+        break;
+    }
+    setFormated((prev) => ({
+      ...prev,
+      displayType: type,
+      displayDuration: durations,
+    }));
+  };
+
+  const getNextWeek = (date) => {
+    const nextWeek = new Date(date);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return nextWeek;
+  };
+
+  const getPreviousWeek = (date) => {
+    const previousWeek = new Date(date);
+    previousWeek.setDate(previousWeek.getDate() - 7);
+    return previousWeek;
+  };
+
+  const getNextMonth = (date) => {
+    const nextMonth = new Date(date);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    return nextMonth;
+  };
+
+  const getPreviousMonth = (date) => {
+    const previousMonth = new Date(date);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    return previousMonth;
+  };
+
+  const getNextYear = (date) => {
+    const nextYear = new Date(date);
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    return nextYear;
+  };
+
+  const getPreviousYear = (date) => {
+    const previousYear = new Date(date);
+    previousYear.setFullYear(previousYear.getFullYear() - 1);
+    return previousYear;
+  };
+
+  const handleGetDateNavigationFunction = (iso, durationType, direction) => {
+    const navigationFunctions = {
+      week: {
+        next: getNextWeek,
+        prev: getPreviousWeek,
+      },
+      month: {
+        next: getNextMonth,
+        prev: getPreviousMonth,
+      },
+      year: {
+        next: getNextYear,
+        prev: getPreviousYear,
+      },
+    };
+
+    let newDate = navigationFunctions[durationType]?.[direction](iso);
+    setCurrentField({
+      ...currentField,
+      config: {
+        ...currentField.config,
+        current: newDate.toISOString(),
+      },
+    });
+  };
+
+  const handleSelectChange = (e) => {
+    let type = e.target.value;
+    let format = formats.find((format) => format.type === type);
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        durationTimeline: {
+          ...currentField.data.durationTimeline,
+          format: format,
+        },
+      },
+    });
+  };
+  const handleSelectDisplayFormatChange = (e) => {
+    let type = e.target.value;
+    let displayFormat = displayFormats.find(
+      (displayFormat) => displayFormat.type === type
+    );
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        durationTimeline: {
+          ...currentField.data.durationTimeline,
+          displayFormat: displayFormat,
+        },
+      },
+    });
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleSave = async (e, index = null) => {
+    e?.preventDefault();
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    const finalFieldId = v4();
+    let finalField = {
+      ...currentField,
+      data: {
+        ...currentField.data,
+        durationTimeline: {
+          ...currentField.data.durationTimeline,
+        },
+      },
+      config: {
+        ...currentField.config,
+        current: currentField.config.current || new Date().toISOString(),
+      }
+    };
+
+    if (index !== null) {
+      node.data[index] = finalField;
+    } else if (dataIndex !== null) {
+      node.data.splice(dataIndex + 1, 0, {
+        ...finalField,
+        id: finalFieldId,
+      });
+      handleResetShowAdd();
+    } else {
+      node.data.push({ ...finalField, id: finalFieldId });
+    }
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    setCurrentFieldType(null);
+    setCurrentField(null);
+  };
+
+  const handleDelete = async (i) => {
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+    node.data.splice(i, 1);
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
+  const [formated, setFormated] = useState({
+    start: null,
+    end: null,
+    startISO: null,
+    endISO: null,
+    duration: null,
+    durations: [],
+    displayType: null,
+    displayDuration: [],
+  });
+
+  useEffect(() => {
+    handleSetFormated();
+    handleCalculateRange(
+      currentField?.data?.durationTimeline?.displayFormat?.type,
+      currentField?.config?.current
+    );
+  }, [
+    currentField?.data?.durationTimeline?.type,
+    currentField?.config?.overlap,
+    currentField?.config?.current,
+    currentField?.data?.durationTimeline?.displayFormat?.type,
+    currentField?.data?.durationTimeline?.format,
+  ]);
+
+  useEffect(() => {
+    handleCalculateRange(
+      currentField?.data?.durationTimeline?.displayFormat?.type,
+      currentField?.config?.current
+    );
+  }, [formated.durations]);
+
+  return (
+    <form
+      onSubmit={handleSave}
+      className="w-full flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md gap-2"
+    >
+      <div className="w-full flex flex-col justify-start items-center">
+        <div
+          style={{
+            backgroundColor: `${currentField?.config?.color}`,
+          }}
+          className="flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-t-md"
+        >
+          {currentField?.config?.showFromTo && (
+            <div className="text-xs">
+              <span className="w-fit">
+                From: {formated.start || "Select Start DateTime"}
+              </span>
+              <span>{" - To: "}</span>
+              <span className="w-fit">
+                {formated.end || "Select End DateTime"}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-center items-center">
+            <span className="text-xs text-[var(--text-primary)]">
+              Duration: {formated.duration || "Not Yet"}
+            </span>
+          </div>
+        </div>
+        {currentField?.config?.showGraph && (
+          <div
+            style={{
+              backgroundColor: `${currentField?.config?.color}`,
+            }}
+            className="w-full flex flex-wrap justify-between items-center text-s px-2 pb-2 bg-[var(--btn-secondary)] rounded-b-md"
+          >
+            {formated.displayDuration.length > 0 && (
+              <DisplayDurationGraph
+                durations={formated.displayDuration}
+                type={currentField?.data?.durationTimeline?.displayFormat?.type}
+                color={currentField?.config?.color}
+              />
+            )}
+          </div>
+        )}
+      </div>
+      {currentField?.config?.showGraph && (
+        <div className="w-full flex flex-col justify-center items-center gap-2 flex-wrap p-2">
+          <span>
+            Select A {currentField?.data?.durationTimeline?.displayFormat?.des}:
+          </span>
+          <div className="w-full flex justify-center items-center gap-2 flex-wrap">
+            <button
+              className=" relative w-8 h-8 p-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
+              type="button"
+              onClick={() =>
+                handleGetDateNavigationFunction(
+                  currentField?.config?.current ?? formated?.startISO,
+                  currentField?.data?.durationTimeline?.displayFormat?.type,
+                  "prev"
+                )
+              }
+            >
+              <span className="rotate-180 flex justify-center items-center text-lg font-bold">
+                <BackIcon />
+              </span>
+            </button>
+            <input
+              type="datetime-local"
+              className="w-[200px] h-8 cursor-pointer text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+              value={handleGetDateTime(
+                currentField?.config?.current ?? formated?.startISO
+              )}
+              onChange={handleSetDateTime}
+            />
+            <button
+              className=" relative w-8 h-8 p-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
+              type="button"
+              onClick={() =>
+                handleGetDateNavigationFunction(
+                  currentField?.config?.current ?? formated?.startISO,
+                  currentField?.data?.durationTimeline?.displayFormat?.type,
+                  "next"
+                )
+              }
+            >
+              <span className="flex justify-center items-center text-lg font-bold">
+                <BackIcon />
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="w-full flex justify-center items-center gap-2 flex-wrap">
+        <button
+          className="w-14 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          type="button"
+          onClick={() => {
+            setCurrentFieldType(null);
+            setCurrentField(null);
+          }}
+        >
+          Cancel
+        </button>
+        <div className="w-fit h-fit flex justify-center items-center gap-2 flex-wrap">
+          <select
+            title="Date Format"
+            className="w-40 group h-8 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+            value={currentField?.data?.durationTimeline?.format?.type}
+            onChange={handleSelectChange}
+          >
+            {formats.map((format) => (
+              <option key={format.type} value={format.type}>
+                {format.type}
+              </option>
+            ))}
+          </select>
+          <select
+            title="Type of Duration Timeline"
+            className="w-[150px] group h-7 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+            value={currentField?.data?.durationTimeline?.type}
+            onChange={(e) => {
+              setCurrentField({
+                ...currentField,
+                data: {
+                  ...currentField.data,
+                  durationTimeline: {
+                    ...currentField.data.durationTimeline,
+                    type: e.target.value,
+                  },
+                },
+              });
+            }}
+          >
+            {list.map((item) => (
+              <option key={item.type} value={item.type}>
+                {item.des}
+              </option>
+            ))}
+          </select>
+          <select
+            title="Type of Display Format"
+            className="w-[60px] group h-7 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+            value={currentField?.data?.durationTimeline?.displayFormat?.type}
+            onChange={handleSelectDisplayFormatChange}
+          >
+            {displayFormats.map((item) => (
+              <option key={item.type} value={item.type}>
+                {item.des}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="button"
+          title="Toggle Show From To"
+          className="relative w-8 h-8 px-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => {
+            setCurrentField({
+              ...currentField,
+              config: {
+                ...currentField.config,
+                showFromTo: !currentField?.config?.showFromTo ?? false,
+              },
+            });
+          }}
+        >
+          {!currentField?.config?.showFromTo && (
+            <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+          )}
+          <span className="flex justify-center items-center text-lg font-bold">
+            <PreviewIcon />
+          </span>
+        </button>
+        <button
+          type="button"
+          title="Toggle Show Graph"
+          className="relative w-8 h-8 px-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => {
+            setCurrentField({
+              ...currentField,
+              config: {
+                ...currentField.config,
+                showGraph: !currentField?.config?.showGraph ?? false,
+              },
+            });
+          }}
+        >
+          {!currentField?.config?.showGraph && (
+            <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+          )}
+          <span className="flex justify-center items-center text-lg font-bold">
+            <GraphIcon />
+          </span>
+        </button>
+        <button
+          type="button"
+          title="Toggle Overlap Duration"
+          className="relative w-8 h-8 px-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={() => {
+            setCurrentField({
+              ...currentField,
+              config: {
+                ...currentField.config,
+                overlap: !currentField?.config?.overlap ?? false,
+              },
+            });
+          }}
+        >
+          {!currentField?.config?.overlap && (
+            <span className="absolute w-[3px] h-full bg-[var(--logo-primary)] rotate-45 rounded-md flex"></span>
+          )}
+          <span className="flex justify-center items-center text-lg font-bold">
+            <OverlapIcon />
+          </span>
+        </button>
+        <div className="w-8 h-8 bg-[var(--btn-secondary)] text-center text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center outline-none relative">
+          <input
+            className="w-full h-full opacity-0 bg-transparent outline-none cursor-pointer"
+            type="color"
+            title="Duration Color"
+            value={currentField?.config?.color}
+            onChange={(e) => {
+              setCurrentField({
+                ...currentField,
+                config: {
+                  ...currentField.config,
+                  color: e.target.value,
+                },
+              });
+            }}
+          />
+          <span className="pointer-events-none absolute  top-0 left-0 w-full h-full p-[8px]">
+            <ColorIcon />
+          </span>
+          <span
+            style={{
+              backgroundColor: `${currentField?.config?.color}`,
+            }}
+            className="-top-1 -right-1 absolute w-3 h-3 rounded-full"
+          ></span>
+        </div>
+        {currentField?.id && (
+          <button
+            type="button"
+            className="w-8 h-8 px-2 text-xs rounded-md flex justify-between items-center bg-[var(--btn-secondary)] hover:bg-[var(--btn-delete)] transition-colors duration-300 cursor-pointer"
+            onClick={() => handleDelete(currentField?.index)}
+            title="Delete Field"
+          >
+            <span className="">
+              <DeleteIcon />
+            </span>
+          </button>
+        )}
+        <button
+          className="w-14 h-8 px-2 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointer"
+          onClick={(e) => handleSave(e, currentField?.index)}
+        >
+          Save
+        </button>
+      </div>
+    </form>
+  );
+};
+
+const DurationTimelineDisplay = ({
+  i,
+  node,
+  field,
+  currentField,
+  onDoubleClick,
+  currentFlowPlan,
+}) => {
+  const [formated, setFormated] = useState({
+    start: null,
+    end: null,
+    current: null,
+    currentISO: null,
+    startISO: null,
+    endISO: null,
+    duration: null,
+    durations: [],
+    displayType: null,
+    displayDuration: [],
+  });
+
+  const handleGetDurations = (node, stop = false) => {
+    let durations = [];
+    node?.data?.forEach((field, index) => {
+      if (!field) return;
+      if (field?.type === "duration") {
+        let duration = field?.data?.duration;
+        if (!duration) return;
+        if (!duration?.end) return;
+        if (duration?.end === null) return;
+        durations.push({
+          id: field.id,
+          index: index,
+          start: new Date(duration.start),
+          end: new Date(duration.end),
+        });
+      }
+    });
+
+    if (stop) return durations;
+    if (node?.children?.length > 0) {
+      node.children.forEach((child) => {
+        durations = [...durations, ...handleGetDurations(child)];
+      });
+    }
+
+    return durations;
+  };
+  const handleCalculateDuration = (type, overlap = false) => {
+    if (!type) return null;
+    // Parse the ISO date strings into Date objects
+    let start = null;
+    let end = null;
+    let duration = 0;
+    let durations = [];
+
+    switch (type) {
+      case "doc":
+        durations = handleGetDurations(node, true);
+        break;
+      case "docChild":
+        durations = handleGetDurations(node);
+        break;
+      case "docAll":
+        durations = handleGetDurations(currentFlowPlan.root);
+        break;
+      default:
+        break;
+    }
+    console.log(type, durations);
+    if (durations.length === 0) return null;
+
+    durations.sort((a, b) => a.start - b.start);
+    start = durations[0]?.start;
+    end = durations[durations.length - 1]?.end;
+
+    durations.forEach((duration) => {
+      if (duration.start < start) {
+        start = duration.start;
+      }
+      if (duration.end > end) {
+        end = duration.end;
+      }
+    });
+    console.log(overlap);
+    if (!overlap) {
+      durations.forEach((d) => {
+        duration += d.end - d.start;
+      });
+    } else {
+      let mergedIntervals = [];
+      let currentInterval = durations[0];
+      for (let i = 1; i < durations.length; i++) {
+        let currentStart = currentInterval.start;
+        let currentEnd = currentInterval.end;
+        let nextStart = durations[i].start;
+        let nextEnd = durations[i].end;
+
+        // Check if intervals overlap
+        if (nextStart <= currentEnd) {
+          // Merge intervals
+          currentInterval.end = new Date(Math.max(currentEnd, nextEnd));
+        } else {
+          // Push the current interval and move to the next
+          mergedIntervals.push(currentInterval);
+          currentInterval = durations[i];
+        }
+      }
+      mergedIntervals.push(currentInterval);
+      mergedIntervals.forEach((d) => {
+        duration += d.end - d.start;
+        console.log(duration / 1000 / 60);
+      });
+      durations = mergedIntervals;
+    }
+
+    // Calculate the difference in milliseconds
+    let diffMilliseconds = duration;
+
+    // Convert the difference to various units
+    const diffSeconds = diffMilliseconds / 1000;
+    const diffMinutes = diffSeconds / 60;
+    const diffHours = diffMinutes / 60;
+    const diffDays = diffHours / 24;
+    console.log(diffHours);
+    return {
+      milliseconds: diffMilliseconds,
+      seconds: diffSeconds,
+      minutes: diffMinutes,
+      hours: diffHours,
+      days: diffDays,
+      start: start,
+      end: end,
+      durations: durations,
+    };
+  };
+
+  const handleFormatDuration = (duration) => {
+    if (!duration) return "";
+    let days = Math.floor(duration.days);
+    let hours = Math.floor(duration.hours) % 24;
+    let minutes = Math.floor(duration.minutes) % 60;
+    let seconds = Math.floor(duration.seconds) % 60;
+
+    const all = [days, hours, minutes];
+
+    let string = "";
+    all.forEach((item, index) => {
+      if (item > 0) {
+        if (index === 0) {
+          string += `${item}d `;
+        } else if (index === 1) {
+          string += `${item}h `;
+        } else if (index === 2) {
+          string += `${item}m `;
+        } else if (index === 3) {
+          string += `${item}s `;
+        }
+      }
+    });
+    return string;
+  };
+
+  const handleGetFormatedDateTime = (iso) => {
+    if (!iso) return "";
+    if (iso === null) return "";
+    let date = new Date(iso);
+    console.log(iso, field?.data?.durationTimeline?.format?.input);
+    if (!field?.data?.durationTimeline?.format?.input)
+      return date.toLocaleString();
+    const string = new Intl.DateTimeFormat(
+      "en-IN",
+      field?.data?.durationTimeline?.format?.input
+    ).format(date);
+    return string;
+  };
+
+  const handleSetFormated = () => {
+    let duration = handleCalculateDuration(
+      field?.data?.durationTimeline?.type,
+      field?.config?.overlap
+    );
+    if (!duration) return;
+    setFormated((prev) => ({
+      ...prev,
+      start: handleGetFormatedDateTime(duration.start.toISOString()),
+      end: handleGetFormatedDateTime(duration.end.toISOString()),
+      currentISO:
+        field?.config?.current ??
+        duration.start.toISOString() ??
+        new Date().toISOString(),
+      current:
+        handleGetCurrent(
+          field?.config?.current ??
+            duration.start.toISOString() ??
+            new Date().toISOString(),
+          field?.data?.durationTimeline?.displayFormat?.type
+        ) +
+        handleGetFormatedDateTime(
+          field?.config?.current ??
+            duration.start.toISOString() ??
+            new Date().toISOString()
+        ),
+      startISO: duration.start.toISOString(),
+      endISO: duration.end.toISOString(),
+      duration: handleFormatDuration(duration),
+      durations: duration.durations,
+    }));
+  };
+
+  const splitEventByDay = (event) => {
+    const segments = [];
+    let currentStart = new Date(event.start);
+    const end = new Date(event.end);
+
+    while (currentStart < end) {
+      const currentEnd = new Date(currentStart);
+      currentEnd.setHours(23, 59, 59, 999); // End of the current day
+      if (currentEnd > end) currentEnd.setTime(end.getTime());
+
+      segments.push({
+        id: event.id,
+        index: event.index,
+        start: new Date(currentStart),
+        end: new Date(currentEnd),
+      });
+
+      currentStart = new Date(currentEnd);
+      currentStart.setHours(24, 0, 0, 0); // Start of the next day
+    }
+
+    return segments;
+  };
+  const calculateDurations = (events, rangeStart, rangeEnd, unit) => {
+    const dayDurations = {};
+
+    events.forEach((event) => {
+      const segments = splitEventByDay(event);
+
+      segments.forEach((segment) => {
+        const start = new Date(segment.start);
+        const end = new Date(segment.end);
+
+        if (start >= rangeStart && start <= rangeEnd) {
+          const dayKey = start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+          if (!dayDurations[dayKey]) {
+            dayDurations[dayKey] = 0;
+          }
+          dayDurations[dayKey] += end - start; // Duration in milliseconds
+        }
+      });
+    });
+
+    const durations = [];
+
+    if (unit === "week") {
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(rangeStart);
+        day.setDate(day.getDate() + i);
+        const dayKey = day.toISOString().split("T")[0];
+        const dayName = day.toLocaleDateString("en-US", { weekday: "long" });
+        durations.push({
+          label: dayName,
+          duration: dayDurations[dayKey] || 0,
+        });
+      }
+    } else if (unit === "month") {
+      const weeks = {};
+      const current = new Date(rangeStart);
+      while (current <= rangeEnd) {
+        const weekKey = `${current.getFullYear()}-W${Math.ceil(
+          (current.getDate() + 6 - current.getDay()) / 7
+        )}`;
+        if (!weeks[weekKey]) {
+          weeks[weekKey] = 0;
+        }
+        const dayKey = current.toISOString().split("T")[0];
+        weeks[weekKey] += dayDurations[dayKey] || 0;
+        current.setDate(current.getDate() + 1);
+      }
+      Object.entries(weeks).forEach(([weekKey, duration]) => {
+        durations.push({
+          label: "w-" + weekKey.split("-W")[1],
+          duration,
+        });
+      });
+    } else if (unit === "year") {
+      for (let i = 0; i < 12; i++) {
+        const monthStart = new Date(rangeStart.getFullYear(), i, 1);
+        const monthEnd = new Date(rangeStart.getFullYear(), i + 1, 0);
+        let monthDuration = 0;
+        for (
+          let day = new Date(monthStart);
+          day <= monthEnd;
+          day.setDate(day.getDate() + 1)
+        ) {
+          const dayKey = day.toISOString().split("T")[0];
+          monthDuration += dayDurations[dayKey] || 0;
+        }
+        const monthName = monthStart.toLocaleDateString("en-US", {
+          month: "long",
+        });
+        durations.push({
+          label: monthName,
+          duration: monthDuration,
+        });
+      }
+      let jan = durations[durations.length - 1];
+      durations.unshift(jan);
+      durations.pop();
+    }
+
+    return durations.map((item) => ({
+      ...item,
+      milliseconds: item.duration,
+      seconds: item.duration / 1000,
+      minutes: item.duration / 60000,
+      hours: item.duration / 3600000,
+    }));
+  };
+  const getWeekRange = (date) => {
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+    return [startOfWeek, endOfWeek];
+  };
+
+  const getMonthRange = (date) => {
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    return [startOfMonth, endOfMonth];
+  };
+
+  const getYearRange = (date) => {
+    const startOfYear = new Date(date.getFullYear(), 0, 1);
+    const endOfYear = new Date(date.getFullYear(), 11, 31);
+    return [startOfYear, endOfYear];
+  };
+  const getWeeklyDuration = (events, selectedDate) => {
+    const [weekStart, weekEnd] = getWeekRange(selectedDate);
+    return calculateDurations(events, weekStart, weekEnd, "week");
+  };
+
+  const getMonthlyDuration = (events, selectedDate) => {
+    const [monthStart, monthEnd] = getMonthRange(selectedDate);
+    return calculateDurations(events, monthStart, monthEnd, "month");
+  };
+
+  const getYearlyDuration = (events, selectedDate) => {
+    const [yearStart, yearEnd] = getYearRange(selectedDate);
+    return calculateDurations(events, yearStart, yearEnd, "year");
+  };
+  const getWeekNumber = (date) => {
+    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const dayOfMonth = date.getDate();
+    const dayOfWeek = firstDayOfMonth.getDay();
+
+    // Calculate the week number in the month
+    return "Week " + Math.ceil((dayOfMonth + dayOfWeek) / 7) + " - ";
+  };
+
+  // Function to get the month from a date
+  const getMonth = (date) => {
+    return date.toLocaleDateString("en-US", { month: "long" }) + " - ";
+  };
+
+  // Function to get the year from a date
+  const getYear = (date) => {
+    return date.getFullYear() + " - ";
+  };
+
+  const handleGetCurrent = (iso, type) => {
+    let date;
+    if (iso === null) {
+      date = new Date();
+    }
+    date = new Date(iso);
+    console.log(iso, type);
+    switch (type) {
+      case "week":
+        return getWeekNumber(date);
+      case "month":
+        return getMonth(date);
+      case "year":
+        return getYear(date);
+      default:
+        return "";
+    }
+  };
+
+  const handleCalculateRange = (type, selectedDate) => {
+    if (formated.durations.length === 0) return;
+    if (!formated.start) return;
+    if (!selectedDate) {
+      if (formated.startISO) {
+        selectedDate = new Date(formated.startISO);
+      } else {
+        selectedDate = new Date();
+      }
+    }
+    let durations = [];
+    switch (type) {
+      case "week":
+        durations = getWeeklyDuration(formated.durations, selectedDate);
+        break;
+      case "month":
+        durations = getMonthlyDuration(formated.durations, selectedDate);
+        break;
+      case "year":
+        durations = getYearlyDuration(formated.durations, selectedDate);
+        break;
+      default:
+        break;
+    }
+    setFormated((prev) => ({
+      ...prev,
+      displayType: type,
+      displayDuration: durations,
+    }));
+  };
+
+  useEffect(() => {
+    handleSetFormated();
+    handleCalculateRange(
+      field?.data?.durationTimeline?.displayFormat?.type,
+      field?.config?.current
+    );
+  }, [
+    field?.data?.durationTimeline?.type,
+    field?.config?.overlap,
+    field?.config?.current,
+    field?.data?.durationTimeline?.displayFormat?.type,
+  ]);
+
+  useEffect(() => {
+    handleCalculateRange(
+      field?.data?.durationTimeline?.displayFormat?.type,
+      field?.config?.current
+    );
+    console.log(formated, field?.config);
+  }, [formated.durations]);
+  return (
+    <div
+      style={{
+        backgroundColor: `${field?.config?.color}`,
+        display: field?.id === currentField?.id ? "none" : "flex",
+      }}
+      onDoubleClick={onDoubleClick}
+      className="w-full flex flex-col justify-start items-center bg-[var(--bg-secondary)] rounded-md gap-2"
+    >
+      <div className="w-full flex flex-col justify-start items-center">
+        <div
+          style={{
+            backgroundColor: `${field?.config?.color}`,
+          }}
+          className="flex flex-wrap justify-between items-center text-sm w-full px-2 py-1 bg-[var(--btn-secondary)] rounded-t-md"
+        >
+          {field?.config?.showFromTo && (
+            <div className="text-xs">
+              <span className="w-fit">
+                From: {formated.start || "Select Start DateTime"}
+              </span>
+              <span>{" - To: "}</span>
+              <span className="w-fit">
+                {formated.end || "Select End DateTime"}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-center items-center">
+            <span className="text-xs text-[var(--text-primary)]">
+              Duration: {formated.duration || "Not Yet"}
+            </span>
+          </div>
+        </div>
+        {field?.config?.showGraph && (
+          <div
+            style={{
+              backgroundColor: `${field?.config?.color}`,
+            }}
+            className="w-full flex flex-wrap justify-between items-center text-s px-2 bg-[var(--btn-secondary)] rounded-b-md"
+          >
+            {formated.displayDuration.length > 0 && (
+              <DisplayDurationGraph
+                durations={formated.displayDuration}
+                type={field?.data?.durationTimeline?.displayFormat?.type}
+                color={field?.config?.color}
+              />
+            )}
+            <span className="w-full text-center text-[10px]">
+              {formated.current}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const DisplayDurationGraph = ({ durations, type, color}) => {
+  const hours = {
+    week: [24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0],
+    month: [168, 153, 137, 122, 107, 92, 76, 61, 46, 31, 15, 0],
+    year: [744, 672, 620, 558, 496, 434, 372, 310, 248, 186, 124, 62, 0],
+  };
+
+  useEffect(() => {
+    console.log(durations);
+  }, []);
+  return (
+    <div className="w-full h-[300px] bg-[var(--bg-secondary)] rounded-md flex justify-center items-center">
+      <div className="w-[20px] h-full flex justify-between py-2 items-end">
+        <div className="h-full flex flex-col justify-end items-center gap-2">
+          <div className="h-full flex flex-col justify-between">
+            {hours[type].map((hour, index) => {
+              return (
+                <div
+                  key={"duration-graph-hours-" + index}
+                  className="w-[30px] h-full flex flex-col justify-end items-center"
+                >
+                  <span className="w-full h-fit text-[10px] text-center text-[var(--text-primary)]">
+                    {hour}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <span className="text-xs text-[var(--text-primary)]">H</span>
+        </div>
+      </div>
+      <div className="w-full h-full flex justify-between items-end p-2 gap-1">
+        {durations.map((duration, index) => (
+          <div
+            key={"duration-graph-data" + index}
+            className="w-full h-full flex flex-col justify-end items-center"
+          >
+            <div className="w-full h-full flex flex-col justify-end items-center gap-2">
+              {duration.duration !== 0 && (
+                <div
+                  className="w-full h-0 transition-all rounded-md text-center items-center relative"
+                  style={{
+                    height: `${
+                      (duration.duration /
+                        1000 /
+                        60 /
+                        60 /
+                        (type === "week" ? 24 : type === "month" ? 168 : 744)) *
+                      100
+                    }%`,
+                    backgroundColor: color,
+                  }}
+                >
+                  <span className="w-full h-fit text-[10px] text-center text-[var(--text-primary)] #rotate-45 absolute top-0.5 left-0">
+                    {duration.duration / 1000 / 60 / 60 > 1
+                      ? `${Math.floor(
+                          duration.duration / 1000 / 60 / 60
+                        )}h${Math.round(
+                          (duration.duration / 1000 / 60 / 60 -
+                            Math.floor(duration.duration / 1000 / 60 / 60)) *
+                            60
+                        )}m`
+                      : `${Math.round(duration.duration / 1000 / 60)}m`}
+                  </span>
+                </div>
+              )}
+              <span className="text-xs text-[var(--text-primary)]">
+                {duration?.label?.slice(0, 3)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Progress = ({
   setShowAdd,
   node,
@@ -3511,8 +6308,8 @@ const Progress = ({
     let total = 0;
     let completed = 0;
     node?.data.forEach((item) => {
-      if (item.type === "taskList") {
-        console.log(item);
+      if (item?.type === "taskList") {
+        if (item?.config?.repeat) return;
         item.data.list.forEach((task) => {
           total++;
           if (task.completed) {
@@ -3531,7 +6328,8 @@ const Progress = ({
       completed: 0,
     };
     node?.data.forEach((item) => {
-      if (item.type === "taskList") {
+      if (item?.type === "taskList") {
+        if (item?.config?.repeat) return;
         item.data.list.forEach((task) => {
           info.total++;
           if (task.completed) {
@@ -3562,7 +6360,8 @@ const Progress = ({
   const handleGetTaskLists = (node, location) => {
     let tasklists = [];
     node?.data.forEach((item) => {
-      if (item.type === "taskList") {
+      if (item?.type === "taskList") {
+        if (item?.config?.repeat) return;
         if (tasklists.length === 0) {
           tasklists.push({
             title: node.title,
@@ -4400,22 +7199,474 @@ const TaskList = ({
     setCurrentFlowPlanNode,
   } = useStateContext();
   const [list, setList] = useState(currentField?.data?.list ?? []);
+  const [repeatData, setRepeatData] = useState(
+    currentField?.data?.taskList?.repeat?.data ?? []
+  );
+
   const [item, setItem] = useState({
     text: "",
     completed: false,
     createdAt: new Date(),
     completedAt: null,
   });
+  const inputRefs = useRef([]);
   const [showChangeDateInfo, setShowChangeDateInfo] = useState({
     show: false,
     index: null,
   });
   const [progress, setProgress] = useState(0);
+  const repeatFormats = [
+    {
+      type: "daily",
+      des: "Daily",
+    },
+    {
+      type: "weekdays",
+      des: "Weekdays (Mon to Fri)",
+    },
+    {
+      type: "weekends",
+      des: "Weekends (Sat and Sun)",
+    },
+    {
+      type: "customDays",
+      des: "Custom Days",
+    },
+    {
+      type: "weekly",
+      des: "Weekly",
+    },
+    {
+      type: "monthly",
+      des: "Monthly",
+    },
+    {
+      type: "customMonths",
+      des: "Custom Months",
+    },
+    {
+      type: "yearly",
+      des: "Yearly",
+    },
+  ];
+  const defaultCustomDays = [
+    {
+      type: "monday",
+      des: "Monday",
+      shortDes: "Mon",
+      checked: true,
+    },
+    {
+      type: "tuesday",
+      des: "Tuesday",
+      shortDes: "Tue",
+      checked: true,
+    },
+    {
+      type: "wednesday",
+      des: "Wednesday",
+      shortDes: "Wed",
+      checked: true,
+    },
+    {
+      type: "thursday",
+      des: "Thursday",
+      shortDes: "Thu",
+      checked: true,
+    },
+    {
+      type: "friday",
+      des: "Friday",
+      shortDes: "Fri",
+      checked: true,
+    },
+    {
+      type: "saturday",
+      des: "Saturday",
+      shortDes: "Sat",
+      checked: true,
+    },
+    {
+      type: "sunday",
+      des: "Sunday",
+      shortDes: "Sun",
+      checked: true,
+    },
+  ];
+  const defaultCustomMonths = [
+    {
+      type: "january",
+      des: "January",
+      shortDes: "Jan",
+      checked: true,
+    },
+    {
+      type: "february",
+      des: "February",
+      shortDes: "Feb",
+      checked: true,
+    },
+    {
+      type: "march",
+      des: "March",
+      shortDes: "Mar",
+      checked: true,
+    },
+    {
+      type: "april",
+      des: "April",
+      shortDes: "Apr",
+      checked: true,
+    },
+    {
+      type: "may",
+      des: "May",
+      shortDes: "May",
+      checked: true,
+    },
+    {
+      type: "june",
+      des: "June",
+      shortDes: "Jun",
+      checked: true,
+    },
+    {
+      type: "july",
+      des: "July",
+      shortDes: "Jul",
+      checked: true,
+    },
+    {
+      type: "august",
+      des: "August",
+      shortDes: "Aug",
+      checked: true,
+    },
+    {
+      type: "september",
+      des: "September",
+      shortDes: "Sep",
+      checked: true,
+    },
+    {
+      type: "october",
+      des: "October",
+      shortDes: "Oct",
+      checked: true,
+    },
+    {
+      type: "november",
+      des: "November",
+      shortDes: "Nov",
+      checked: true,
+    },
+    {
+      type: "december",
+      des: "December",
+      shortDes: "Dec",
+      checked: true,
+    },
+  ];
+  const defaultTaskList = {
+    repeat: {
+      format: {
+        type: "daily",
+        des: "Daily",
+      },
+      custom: defaultCustomDays,
+    },
+  };
+
   const handleSetChangeDateInfo = (index) => {
     setShowChangeDateInfo((prev) => ({
       show: prev.index === index ? !prev.show : prev.show,
       index: index,
     }));
+  };
+
+  const handleGetCustom = (type) => {
+    return type === "monthly" || type === "customMonths"
+      ? defaultCustomMonths
+      : type === "daily" || type === "customDays"
+      ? defaultCustomDays
+      : type === "weekdays"
+      ? defaultCustomDays.map((day) =>
+          day.type === "saturday" || day.type === "sunday"
+            ? { ...day, checked: false }
+            : {
+                ...day,
+                checked: true,
+              }
+        )
+      : type === "weekends"
+      ? defaultCustomDays.map((day) =>
+          day.type === "saturday" || day.type === "sunday"
+            ? { ...day, checked: true }
+            : {
+                ...day,
+                checked: false,
+              }
+        )
+      : defaultCustomDays;
+  };
+
+  const handleSelectChange = (e) => {
+    let type = e.target.value;
+    let format = repeatFormats.find((format) => format.type === type);
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        taskList: {
+          ...(currentField.data.taskList === undefined
+            ? defaultTaskList
+            : currentField.data.taskList),
+          repeat: {
+            ...(currentField.data.taskList === undefined
+              ? defaultTaskList.repeat
+              : currentField.data.taskList.repeat),
+            format: format,
+            custom: handleGetCustom(format?.type),
+          },
+        },
+      },
+    });
+    setRepeatData([]);
+    setCurrentRepeatList(handleGetCurrentRepeatList(currentDate.current, []));
+  };
+
+  const getRelativeDayString = (date) => {
+    const inputDate = new Date(date);
+    const today = new Date();
+
+    // Clear the time part for accurate date comparison
+    today.setHours(0, 0, 0, 0);
+    inputDate.setHours(0, 0, 0, 0);
+
+    const timeDifference = inputDate.getTime() - today.getTime();
+    const dayDifference = timeDifference / (1000 * 3600 * 24);
+
+    if (dayDifference === 0) {
+      return "Today";
+    } else if (dayDifference === 1) {
+      return "Tomorrow";
+    } else if (dayDifference === -1) {
+      return "Yesterday";
+    } else {
+      const type = currentField?.data?.taskList?.repeat?.format?.type;
+      const dayTypes = ["daily", "weekdays", "weekends", "customDays"];
+      const monthTypes = ["monthly", "customMonths"];
+      const isTypeDay = dayTypes.includes(type);
+      const isTypeMonth = monthTypes.includes(type);
+      return isTypeDay
+        ? inputDate.toLocaleDateString("en-US", { weekday: "short" })
+        : isTypeMonth
+        ? inputDate.toLocaleDateString("en-US", { month: "short" })
+        : inputDate.toLocaleDateString("en-US", { year: "numeric" });
+    }
+  };
+
+  const [currentDate, setCurrentDate] = useState({
+    current: new Date(),
+    formated: getRelativeDayString(new Date()),
+  });
+
+  const areAllCustomUnchecked = (customs) => {
+    return customs.every((custom) => !custom.checked);
+  };
+
+  const getDayStringFromDate = (date) => {
+    const dayOfWeek = date.getDay(); // 0 (Sunday) to 6 (Saturday)
+    const dayMap = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    return dayMap[dayOfWeek];
+  };
+
+  const getNextCheckedDay = (date) => {
+    date = new Date(date);
+    const currentDay = getDayStringFromDate(date);
+    const days = currentField?.data?.taskList?.repeat?.custom;
+    if (areAllCustomUnchecked(days)) return;
+    const currentIndex = days.findIndex((day) => day.type === currentDay);
+    const totalDays = days.length;
+    let nextIndex = currentIndex;
+    const nextDate = new Date(date);
+
+    do {
+      nextIndex = (nextIndex + 1) % totalDays;
+      nextDate.setDate(nextDate.getDate() + 1);
+    } while (!days[nextIndex].checked && nextIndex !== currentIndex);
+
+    return nextDate;
+  };
+
+  const getPreviousCheckedDay = (date) => {
+    date = new Date(date);
+    const currentDay = getDayStringFromDate(date);
+    const days = currentField?.data?.taskList?.repeat?.custom;
+    if (areAllCustomUnchecked(days)) return;
+    const currentIndex = days.findIndex((day) => day.type === currentDay);
+    const totalDays = days.length;
+    let previousIndex = currentIndex;
+    const previousDate = new Date(date);
+
+    do {
+      previousIndex = (previousIndex - 1 + totalDays) % totalDays;
+      previousDate.setDate(previousDate.getDate() - 1);
+    } while (!days[previousIndex].checked && previousIndex !== currentIndex);
+
+    return previousDate;
+  };
+
+  const getNextWeek = (date) => {
+    const nextWeek = new Date(date);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return nextWeek;
+  };
+
+  const getPreviousWeek = (date) => {
+    const previousWeek = new Date(date);
+    previousWeek.setDate(previousWeek.getDate() - 7);
+    return previousWeek;
+  };
+
+  const getNextMonth = (date) => {
+    const nextMonth = new Date(date);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    return nextMonth;
+  };
+
+  const getPreviousMonth = (date) => {
+    const previousMonth = new Date(date);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    return previousMonth;
+  };
+
+  const getNextCheckedMonth = (date) => {
+    let currentDate = new Date(date);
+    const months = currentField?.data?.taskList?.repeat?.custom;
+    if (areAllCustomUnchecked(months)) return;
+    const currentIndex = currentDate.getMonth(); // 0 (January) to 11 (December)
+    const totalMonths = months?.length;
+    let nextIndex = currentIndex;
+    const nextDate = new Date(currentDate);
+
+    do {
+      nextIndex = (nextIndex + 1) % totalMonths;
+      nextDate.setMonth(nextDate.getMonth() + 1);
+    } while (!months[nextIndex].checked && nextIndex !== currentIndex);
+
+    return nextDate;
+  };
+
+  const getPreviousCheckedMonth = (date) => {
+    let currentDate = new Date(date);
+    const months = currentField?.data?.taskList?.repeat?.custom;
+    if (areAllCustomUnchecked(months)) return;
+    const currentIndex = currentDate.getMonth(); // 0 (January) to 11 (December)
+    const totalMonths = months?.length;
+    let previousIndex = currentIndex;
+    const previousDate = new Date(currentDate);
+
+    do {
+      previousIndex = (previousIndex - 1 + totalMonths) % totalMonths;
+      previousDate.setMonth(previousDate.getMonth() - 1);
+    } while (!months[previousIndex].checked && previousIndex !== currentIndex);
+
+    return previousDate;
+  };
+
+  const getNextYear = (date) => {
+    const nextYear = new Date(date);
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    return nextYear;
+  };
+
+  const getPreviousYear = (date) => {
+    const previousYear = new Date(date);
+    previousYear.setFullYear(previousYear.getFullYear() - 1);
+    return previousYear;
+  };
+
+  const handleGetDateNavigationFunction = (iso, repeatType, direction) => {
+    const navigationFunctions = {
+      daily: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      weekdays: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      weekends: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      customDays: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      weekly: {
+        next: getNextWeek,
+        prev: getPreviousWeek,
+      },
+      monthly: {
+        next: getNextMonth,
+        prev: getPreviousMonth,
+      },
+      customMonths: {
+        next: getNextCheckedMonth,
+        prev: getPreviousCheckedMonth,
+      },
+      yearly: {
+        next: getNextYear,
+        prev: getPreviousYear,
+      },
+    };
+
+    let newDate = navigationFunctions[repeatType]?.[direction](iso);
+    setCurrentDate({
+      current: newDate,
+      formated: getRelativeDayString(newDate),
+    });
+  };
+
+  const handleCheck = (index) => {
+    let newDays = [...currentField?.data?.taskList?.repeat?.custom];
+    newDays[index] = {
+      ...newDays[index],
+      checked: !newDays[index].checked,
+    };
+    if (areAllCustomUnchecked(newDays)) return;
+    setCurrentField({
+      ...currentField,
+      data: {
+        ...currentField.data,
+        taskList: {
+          ...currentField.data.taskList,
+          repeat: {
+            ...currentField.data.taskList.repeat,
+            custom: newDays,
+          },
+        },
+      },
+    });
+  };
+
+  const handleSetDateTime = (e) => {
+    let time = e.target.value;
+    let newDate = new Date(time);
+    setCurrentDate({
+      current: newDate,
+      formated: getRelativeDayString(newDate),
+    });
   };
 
   const handleItemChange = (e, i = null) => {
@@ -4433,6 +7684,29 @@ const TaskList = ({
         ...item,
         text: e.target.value,
       });
+    }
+  };
+
+  const handleKeyDown = (event, i) => {
+    if (event?.key === "Enter") {
+      console.log("Enter key pressed", event);
+      let newItem = {
+        text: "",
+        completed: false,
+        createdAt: new Date(),
+        completedAt: null,
+        id: v4(),
+      };
+      setList((prev) => {
+        let newList = [...prev];
+        newList.splice(i + 1, 0, newItem);
+        return newList;
+      });
+      setTimeout(() => {
+        if (inputRefs.current[i + 1]) {
+          inputRefs.current[i + 1].focus();
+        }
+      }, 100);
     }
   };
 
@@ -4462,6 +7736,7 @@ const TaskList = ({
         ...(updateDate && { updatedAt: new Date() }),
       });
   };
+
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
     let finalList =
@@ -4487,6 +7762,16 @@ const TaskList = ({
       data: {
         ...currentField.data,
         list: finalList,
+        taskList:
+          currentField?.data?.taskList === undefined
+            ? defaultTaskList
+            : {
+                ...currentField.data.taskList,
+                repeat: {
+                  ...currentField.data.taskList.repeat,
+                  data: repeatData,
+                },
+              },
       },
     };
 
@@ -4507,14 +7792,146 @@ const TaskList = ({
     setCurrentField(null);
   };
 
+  const isSameDate = (date1, date2) => {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  };
+
+  const isSameWeek = (date1, date2) => {
+    const firstDate = new Date(date1);
+    const secondDate = new Date(date2);
+
+    // Set both dates to the start of their respective weeks
+    firstDate.setHours(0, 0, 0, 0);
+    secondDate.setHours(0, 0, 0, 0);
+
+    const dayOfWeek = (date) => (date.getDay() + 6) % 7; // 0 (Monday) to 6 (Sunday)
+
+    const firstDayOfWeek = dayOfWeek(firstDate);
+    const secondDayOfWeek = dayOfWeek(secondDate);
+
+    // Move to the start of the week (Monday)
+    firstDate.setDate(firstDate.getDate() - firstDayOfWeek);
+    secondDate.setDate(secondDate.getDate() - secondDayOfWeek);
+
+    // Compare the adjusted dates
+    return firstDate.getTime() === secondDate.getTime();
+  };
+
+  const isSameMonth = (date1, date2) => {
+    return date1.getMonth() === date2.getMonth();
+  };
+
+  const isSameYear = (date1, date2) => {
+    return date1.getFullYear() === date2.getFullYear();
+  };
+
+  const findObjectByDate = (array, targetDate, type) => {
+    const index = array.findIndex((item) => {
+      switch (type) {
+        case "daily":
+        case "weekdays":
+        case "weekends":
+        case "customDays":
+          return isSameDate(new Date(item.date), new Date(targetDate));
+        case "weekly":
+          return isSameWeek(new Date(item.date), new Date(targetDate));
+        case "monthly":
+        case "customMonths":
+          return isSameMonth(new Date(item.date), new Date(targetDate));
+        case "yearly":
+          return isSameYear(new Date(item.date), new Date(targetDate));
+        default:
+          return;
+      }
+    });
+    return index !== -1 ? { index, object: array[index] } : null;
+  };
+
+  const handleSetRepeatData = (date, newList, index) => {
+    date = date.toISOString();
+    let dateObject = findObjectByDate(
+      repeatData,
+      date,
+      currentField?.data?.taskList?.repeat?.format?.type
+    );
+
+    if (dateObject) {
+      let data = dateObject.object.data;
+      let itemIndex = data.findIndex((item) => item.id === newList[index].id);
+      if (itemIndex !== -1) {
+        data[itemIndex] = {
+          id: newList[index].id,
+          completed: newList[index].completed,
+        };
+      } else {
+        data.push({
+          id: newList[index].id,
+          completed: newList[index].completed,
+        });
+      }
+
+      setRepeatData((prev) => {
+        let newRepeatData = [...prev];
+        newRepeatData[dateObject.index] = {
+          date: date,
+          data: data,
+        };
+        return newRepeatData;
+      });
+
+      setCurrentRepeatList((prev) => {
+        let newCurrentRepeatList = [...prev];
+        newCurrentRepeatList[index] = {
+          ...newCurrentRepeatList[index],
+          completed: newList[index].completed,
+        };
+        return newCurrentRepeatList;
+      });
+    } else {
+      let newRepeatData = [
+        ...repeatData,
+        {
+          date: date,
+          data: [
+            {
+              id: newList[index].id,
+              completed: newList[index].completed,
+            },
+          ],
+        },
+      ];
+
+      setRepeatData(newRepeatData);
+      setCurrentRepeatList((prev) => {
+        let newCurrentRepeatList = [...prev];
+        newCurrentRepeatList[index] = {
+          ...newCurrentRepeatList[index],
+          completed: newList[index].completed,
+        };
+        return newCurrentRepeatList;
+      });
+    }
+  };
+
   const handleCompleteToggle = (e, index = null) => {
     if (index !== null) {
-      let newList = [...list];
+      let newList = [
+        ...(currentField?.config?.repeat ? currentRepeatList : list),
+      ];
       newList[index] = {
         ...newList[index],
         completed: !newList[index].completed,
         completedAt: !newList[index].completed ? new Date() : null,
       };
+
+      if (currentField?.config?.repeat) {
+        handleSetRepeatData(currentDate.current, newList, index);
+      }
+
       setList(newList);
     } else {
       setItem((prev) => ({
@@ -4524,6 +7941,44 @@ const TaskList = ({
       }));
     }
   };
+
+  const handleGetCurrentRepeatList = (date, repeatData) => {
+    let repeatList = structuredClone(list);
+    let currentDate = date;
+    if (!currentDate) {
+      currentDate = new Date();
+    }
+    console.log(repeatData);
+    let repeatObject = findObjectByDate(
+      repeatData,
+      currentDate.toISOString(),
+      currentField?.data?.taskList?.repeat?.format?.type
+    );
+    if (repeatObject) {
+      let repeatObjectData = repeatObject.object.data;
+      repeatList = list.map((item) => {
+        let repeatItem = repeatObjectData.find((data) => data.id === item.id);
+        return repeatItem
+          ? {
+              ...item,
+              completed: repeatItem.completed,
+            }
+          : {
+              ...item,
+              completed: false,
+            };
+      });
+
+      return repeatList;
+    } else {
+      return repeatList.map((item) => ({
+        ...item,
+        completed: false,
+      }));
+    }
+  };
+
+  const [currentRepeatList, setCurrentRepeatList] = useState(list);
 
   const handleDelete = async (index) => {
     let newList = [...list];
@@ -4561,7 +8016,7 @@ const TaskList = ({
     setList(newList);
   };
 
-  const handleCalculateProgress = () => {
+  const handleCalculateProgress = (list) => {
     if (!currentField?.config?.progressBar) return;
     if (list.length === 0) return;
     let total = 0;
@@ -4587,8 +8042,19 @@ const TaskList = ({
   };
 
   useEffect(() => {
-    handleCalculateProgress();
-  }, [list, item]);
+    if (currentField?.config?.repeat) {
+      handleCalculateProgress(currentRepeatList);
+    } else {
+      handleCalculateProgress(list);
+    }
+  }, [list, item, currentRepeatList]);
+
+  useEffect(() => {
+    if (!currentField?.config?.repeat) return;
+    setCurrentRepeatList(
+      handleGetCurrentRepeatList(currentDate.current, repeatData)
+    );
+  }, [currentDate, list, currentField?.config?.repeat]);
 
   return (
     <div
@@ -4597,6 +8063,52 @@ const TaskList = ({
       }}
       className="w-full h-fit flex flex-col justify-start items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-md"
     >
+      {currentField?.config?.repeat && (
+        <div className="flex h-7 mb-1 flex-wrap justify-between items-center text-sm w-full px-2 bg-[var(--btn-secondary)] rounded-tr-md rounded-tl-md">
+          <button
+            className=" relative w-6 h-6 p-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
+            type="button"
+            onClick={() =>
+              handleGetDateNavigationFunction(
+                currentDate.current,
+                currentField?.data?.taskList?.repeat?.format?.type,
+                "prev"
+              )
+            }
+          >
+            <span className="rotate-180 flex justify-center items-center text-lg font-bold">
+              <BackIcon />
+            </span>
+          </button>
+          <div className="flex justify-center items-center">
+            <span className="text-[10px] font-bold text-[var(--text-primary)]">
+              {currentDate.formated}
+              {" : "}
+            </span>
+            <input
+              type="datetime-local"
+              className="w-[170px] h-7 cursor-pointer  text-[10px] font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+              value={handleGetDateTime(currentDate.current)}
+              onChange={handleSetDateTime}
+            />
+          </div>
+          <button
+            className=" relative w-6 h-6 p-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
+            type="button"
+            onClick={() =>
+              handleGetDateNavigationFunction(
+                currentDate.current,
+                currentField?.data?.taskList?.repeat?.format?.type,
+                "next"
+              )
+            }
+          >
+            <span className="flex justify-center items-center text-lg font-bold">
+              <BackIcon />
+            </span>
+          </button>
+        </div>
+      )}
       {currentField?.config?.progressBar && <ProgressBar progress={progress} />}
       <SortableList
         items={list}
@@ -4609,22 +8121,35 @@ const TaskList = ({
               className="group w-full flex justify-center items-center flex-col text-sm relative"
             >
               <div className="w-full flex">
-                <span
+                <button
+                  type="button"
                   style={{
                     color: `${currentField?.config?.color}`,
                   }}
                   className="w-5 h-5 mr-1 block cursor-pointer"
                   onClick={(e) => handleCompleteToggle(e, index)}
                 >
-                  {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
-                </span>
+                  {currentField?.config?.repeat ? (
+                    currentRepeatList[index]?.completed ? (
+                      <CheckedIcon />
+                    ) : (
+                      <UncheckedIcon />
+                    )
+                  ) : item.completed ? (
+                    <CheckedIcon />
+                  ) : (
+                    <UncheckedIcon />
+                  )}
+                </button>
                 <input
                   required
+                  ref={(el) => (inputRefs.current[index] = el)}
                   type="text"
                   placeholder="Enter List Item..."
                   value={item?.text}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
                   onChange={(e) => handleItemChange(e, index)}
-                  className="w-full text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
+                  className="w-full pr-[80px] text-[var(--text-primary)] cursor-pointer bg-transparent outline-none"
                   style={{
                     fontSize: `${currentField?.config?.fontSize}px`,
                     textDecoration: `${
@@ -4714,7 +8239,8 @@ const TaskList = ({
         onSubmit={handleAdd}
         className="w-full flex justify-center items-center text-sm"
       >
-        <span
+        <button
+          type="button"
           style={{
             color: `${currentField?.config?.color}`,
           }}
@@ -4722,7 +8248,7 @@ const TaskList = ({
           onClick={handleCompleteToggle}
         >
           {item.completed ? <CheckedIcon /> : <UncheckedIcon />}
-        </span>
+        </button>
         <input
           required
           autoFocus
@@ -4744,6 +8270,50 @@ const TaskList = ({
           }}
         />
       </form>
+      {currentField?.config?.repeat && (
+        <div className="w-full flex flex-col justify-center items-center gap-2 flex-wrap mt-2">
+          <div className="w-fit h-fit flex justify-center items-center gap-2 flex-wrap">
+            <select
+              title="Repeat Type"
+              className="w-[130px] group h-8 bg-[var(--btn-secondary)] text-[var(--text-primary)] text-xs font-bold rounded-md flex justify-center items-center p-1 outline-none"
+              value={currentField?.data?.taskList?.repeat?.format?.type}
+              onChange={handleSelectChange}
+            >
+              {repeatFormats.map((format) => (
+                <option key={format.type} value={format.type}>
+                  {format.des}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-fit h-fit flex justify-center items-center gap-2 flex-wrap">
+            {(currentField?.data?.taskList?.repeat?.format?.type ===
+              "customDays" ||
+              currentField?.data?.taskList?.repeat?.format?.type ===
+                "customMonths") &&
+              currentField?.data?.taskList?.repeat?.custom?.map(
+                (custom, index) => (
+                  <button
+                    key={custom.type}
+                    type="button"
+                    onClick={() => handleCheck(index)}
+                    className={`w-fit px-2 h-8 flex justify-center items-center rounded-md ${
+                      custom.checked
+                        ? "bg-[var(--btn-secondary)]"
+                        : "bg-[var(--btn-primary)]"
+                    } text-[var(--text-primary)] text-xs font-bold`}
+                  >
+                    <span className="w-4 h-4 mr-1 block cursor-pointer">
+                      {custom.checked ? <CheckedIcon /> : <UncheckedIcon />}
+                    </span>
+                    {custom.shortDes}
+                  </button>
+                )
+              )}
+          </div>
+        </div>
+      )}
+
       <InputTitleButtons
         handleSave={handleSave}
         config={currentField?.config}
@@ -4752,7 +8322,757 @@ const TaskList = ({
         setCurrentFieldType={setCurrentFieldType}
         type={currentField.type}
         handleGetDefaultConfig={handleGetDefaultConfig}
+        defaultTaskList={defaultTaskList}
       />
+    </div>
+  );
+};
+
+const TaskListDisplay = ({
+  field,
+  currentField,
+  setCurrentField,
+  i,
+  handleEditField,
+}) => {
+  const { db, currentFlowPlan, currentFlowPlanNode, setCurrentFlowPlan } =
+    useStateContext();
+
+  const getRelativeDayString = (date) => {
+    const inputDate = new Date(date);
+    const today = new Date();
+
+    // Clear the time part for accurate date comparison
+    today.setHours(0, 0, 0, 0);
+    inputDate.setHours(0, 0, 0, 0);
+
+    const timeDifference = inputDate.getTime() - today.getTime();
+    const dayDifference = timeDifference / (1000 * 3600 * 24);
+
+    if (dayDifference === 0) {
+      return "Today";
+    } else if (dayDifference === 1) {
+      return "Tomorrow";
+    } else if (dayDifference === -1) {
+      return "Yesterday";
+    } else {
+      const type = field?.data?.taskList?.repeat?.format?.type;
+      const dayTypes = ["daily", "weekdays", "weekends", "customDays"];
+      const monthTypes = ["monthly", "customMonths"];
+      const isTypeDay = dayTypes.includes(type);
+      const isTypeMonth = monthTypes.includes(type);
+      return isTypeDay
+        ? inputDate.toLocaleDateString("en-US", { weekday: "short" })
+        : isTypeMonth
+        ? inputDate.toLocaleDateString("en-US", { month: "short" })
+        : inputDate.toLocaleDateString("en-US", { year: "numeric" });
+    }
+  };
+  const [list, setList] = useState(field?.data?.list ?? []);
+  const [currentRepeatList, setCurrentRepeatList] = useState(
+    field?.data?.list ?? []
+  );
+  const [currentDate, setCurrentDate] = useState({
+    current: new Date(),
+    formated: getRelativeDayString(new Date()),
+  });
+  const [repeatData, setRepeatData] = useState(
+    field?.data?.taskList?.repeat?.data ?? []
+  );
+  const [progress, setProgress] = useState(0);
+
+  const defaultCustomDays = [
+    {
+      type: "monday",
+      des: "Monday",
+      shortDes: "Mon",
+      checked: true,
+    },
+    {
+      type: "tuesday",
+      des: "Tuesday",
+      shortDes: "Tue",
+      checked: true,
+    },
+    {
+      type: "wednesday",
+      des: "Wednesday",
+      shortDes: "Wed",
+      checked: true,
+    },
+    {
+      type: "thursday",
+      des: "Thursday",
+      shortDes: "Thu",
+      checked: true,
+    },
+    {
+      type: "friday",
+      des: "Friday",
+      shortDes: "Fri",
+      checked: true,
+    },
+    {
+      type: "saturday",
+      des: "Saturday",
+      shortDes: "Sat",
+      checked: true,
+    },
+    {
+      type: "sunday",
+      des: "Sunday",
+      shortDes: "Sun",
+      checked: true,
+    },
+  ];
+  const defaultCustomMonths = [
+    {
+      type: "january",
+      des: "January",
+      shortDes: "Jan",
+      checked: true,
+    },
+    {
+      type: "february",
+      des: "February",
+      shortDes: "Feb",
+      checked: true,
+    },
+    {
+      type: "march",
+      des: "March",
+      shortDes: "Mar",
+      checked: true,
+    },
+    {
+      type: "april",
+      des: "April",
+      shortDes: "Apr",
+      checked: true,
+    },
+    {
+      type: "may",
+      des: "May",
+      shortDes: "May",
+      checked: true,
+    },
+    {
+      type: "june",
+      des: "June",
+      shortDes: "Jun",
+      checked: true,
+    },
+    {
+      type: "july",
+      des: "July",
+      shortDes: "Jul",
+      checked: true,
+    },
+    {
+      type: "august",
+      des: "August",
+      shortDes: "Aug",
+      checked: true,
+    },
+    {
+      type: "september",
+      des: "September",
+      shortDes: "Sep",
+      checked: true,
+    },
+    {
+      type: "october",
+      des: "October",
+      shortDes: "Oct",
+      checked: true,
+    },
+    {
+      type: "november",
+      des: "November",
+      shortDes: "Nov",
+      checked: true,
+    },
+    {
+      type: "december",
+      des: "December",
+      shortDes: "Dec",
+      checked: true,
+    },
+  ];
+  const defaultTaskList = {
+    repeat: {
+      format: {
+        type: "daily",
+        des: "Daily",
+      },
+      custom: defaultCustomDays,
+    },
+  };
+
+  const areAllCustomUnchecked = (customs) => {
+    return customs.every((custom) => !custom.checked);
+  };
+
+  const getDayStringFromDate = (date) => {
+    const dayOfWeek = date.getDay(); // 0 (Sunday) to 6 (Saturday)
+    const dayMap = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    return dayMap[dayOfWeek];
+  };
+
+  const getNextCheckedDay = (date) => {
+    date = new Date(date);
+    const currentDay = getDayStringFromDate(date);
+    const days = field?.data?.taskList?.repeat?.custom;
+    if (areAllCustomUnchecked(days)) return;
+    const currentIndex = days.findIndex((day) => day.type === currentDay);
+    const totalDays = days.length;
+    let nextIndex = currentIndex;
+    const nextDate = new Date(date);
+
+    do {
+      nextIndex = (nextIndex + 1) % totalDays;
+      nextDate.setDate(nextDate.getDate() + 1);
+    } while (!days[nextIndex].checked && nextIndex !== currentIndex);
+
+    return nextDate;
+  };
+
+  const getPreviousCheckedDay = (date) => {
+    date = new Date(date);
+    const currentDay = getDayStringFromDate(date);
+    const days = field?.data?.taskList?.repeat?.custom;
+    if (areAllCustomUnchecked(days)) return;
+    const currentIndex = days.findIndex((day) => day.type === currentDay);
+    const totalDays = days.length;
+    let previousIndex = currentIndex;
+    const previousDate = new Date(date);
+
+    do {
+      previousIndex = (previousIndex - 1 + totalDays) % totalDays;
+      previousDate.setDate(previousDate.getDate() - 1);
+    } while (!days[previousIndex].checked && previousIndex !== currentIndex);
+
+    return previousDate;
+  };
+
+  const getNextWeek = (date) => {
+    const nextWeek = new Date(date);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return nextWeek;
+  };
+
+  const getPreviousWeek = (date) => {
+    const previousWeek = new Date(date);
+    previousWeek.setDate(previousWeek.getDate() - 7);
+    return previousWeek;
+  };
+
+  const getNextMonth = (date) => {
+    const nextMonth = new Date(date);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    return nextMonth;
+  };
+
+  const getPreviousMonth = (date) => {
+    const previousMonth = new Date(date);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    return previousMonth;
+  };
+
+  const getNextCheckedMonth = (date) => {
+    let currentDate = new Date(date);
+    const months = field?.data?.taskList?.repeat?.custom;
+    if (areAllCustomUnchecked(months)) return;
+    const currentIndex = currentDate.getMonth(); // 0 (January) to 11 (December)
+    const totalMonths = months?.length;
+    let nextIndex = currentIndex;
+    const nextDate = new Date(currentDate);
+
+    do {
+      nextIndex = (nextIndex + 1) % totalMonths;
+      nextDate.setMonth(nextDate.getMonth() + 1);
+    } while (!months[nextIndex].checked && nextIndex !== currentIndex);
+
+    return nextDate;
+  };
+
+  const getPreviousCheckedMonth = (date) => {
+    let currentDate = new Date(date);
+    const months = field?.data?.taskList?.repeat?.custom;
+    if (areAllCustomUnchecked(months)) return;
+    const currentIndex = currentDate.getMonth(); // 0 (January) to 11 (December)
+    const totalMonths = months?.length;
+    let previousIndex = currentIndex;
+    const previousDate = new Date(currentDate);
+
+    do {
+      previousIndex = (previousIndex - 1 + totalMonths) % totalMonths;
+      previousDate.setMonth(previousDate.getMonth() - 1);
+    } while (!months[previousIndex].checked && previousIndex !== currentIndex);
+
+    return previousDate;
+  };
+
+  const getNextYear = (date) => {
+    const nextYear = new Date(date);
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    return nextYear;
+  };
+
+  const getPreviousYear = (date) => {
+    const previousYear = new Date(date);
+    previousYear.setFullYear(previousYear.getFullYear() - 1);
+    return previousYear;
+  };
+
+  const handleGetDateNavigationFunction = (iso, repeatType, direction) => {
+    const navigationFunctions = {
+      daily: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      weekdays: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      weekends: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      customDays: {
+        next: getNextCheckedDay,
+        prev: getPreviousCheckedDay,
+      },
+      weekly: {
+        next: getNextWeek,
+        prev: getPreviousWeek,
+      },
+      monthly: {
+        next: getNextMonth,
+        prev: getPreviousMonth,
+      },
+      customMonths: {
+        next: getNextCheckedMonth,
+        prev: getPreviousCheckedMonth,
+      },
+      yearly: {
+        next: getNextYear,
+        prev: getPreviousYear,
+      },
+    };
+
+    let newDate = navigationFunctions[repeatType]?.[direction](iso);
+    setCurrentDate({
+      current: newDate,
+      formated: getRelativeDayString(newDate),
+    });
+  };
+
+  const handleSetDateTime = (e) => {
+    let time = e.target.value;
+    let newDate = new Date(time);
+    setCurrentDate({
+      current: newDate,
+      formated: getRelativeDayString(newDate),
+    });
+  };
+
+  const handleGetDateTime = (iso) => {
+    if (!iso) {
+      iso = new Date().toISOString();
+    }
+    let utcDate = new Date(iso);
+    let finalIso = `${utcDate.getFullYear()}-${(utcDate.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${utcDate
+      .getDate()
+      .toString()
+      .padStart(2, "0")}T${utcDate
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${utcDate.getMinutes().toString().padStart(2, "0")}`;
+    return finalIso;
+  };
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
+
+  const handleCalculateProgress = (list) => {
+    if (!field?.config?.progressBar) return;
+    if (list.length === 0) return;
+    let total = 0;
+    list?.forEach((item) => {
+      if (item.completed) {
+        total++;
+      }
+    });
+
+    let progress = (total / list?.length) * 100;
+    setProgress(progress);
+  };
+
+  const handleGetRepeatData = (date, newList, index) => {
+    date = date.toISOString();
+    let dateObject = findObjectByDate(
+      repeatData,
+      date,
+      field?.data?.taskList?.repeat?.format?.type
+    );
+    let newRepeatData = [];
+    let newCurrentRepeatList = [];
+
+    if (dateObject) {
+      let data = dateObject.object.data;
+      let itemIndex = data.findIndex((item) => item.id === newList[index].id);
+      if (itemIndex !== -1) {
+        data[itemIndex] = {
+          id: newList[index].id,
+          completed: newList[index].completed,
+        };
+      } else {
+        data.push({
+          id: newList[index].id,
+          completed: newList[index].completed,
+        });
+      }
+
+      newRepeatData = [...repeatData];
+      newRepeatData[dateObject.index] = {
+        date: date,
+        data: data,
+      };
+
+      newCurrentRepeatList = [...currentRepeatList];
+      newCurrentRepeatList[index] = {
+        ...newCurrentRepeatList[index],
+        completed: newList[index].completed,
+      };
+    } else {
+      newRepeatData = [
+        ...repeatData,
+        {
+          date: date,
+          data: [
+            {
+              id: newList[index].id,
+              completed: newList[index].completed,
+            },
+          ],
+        },
+      ];
+
+      newCurrentRepeatList = [...currentRepeatList];
+      newCurrentRepeatList[index] = {
+        ...newCurrentRepeatList[index],
+        completed: newList[index].completed,
+      };
+    }
+
+    return {
+      repeatData: newRepeatData,
+      currentRepeatList: newCurrentRepeatList,
+    };
+  };
+
+  const handleCompleteToggle = (e, index) => {
+    let newList = [
+      ...(field?.config?.repeat ? currentRepeatList : field?.data?.list),
+    ];
+    newList[index] = {
+      ...newList[index],
+      completed: !newList[index].completed,
+      completedAt: !newList[index].completed ? new Date() : null,
+    };
+
+    let root = currentFlowPlan.root;
+    let node = root;
+    currentFlowPlanNode.forEach((i) => {
+      node = node.children[i];
+    });
+
+    let result = null;
+    if (field?.config?.repeat) {
+      result = handleGetRepeatData(currentDate.current, newList, index);
+      if (result) {
+        setRepeatData(result.repeatData);
+        setCurrentRepeatList(result.currentRepeatList);
+      }
+    }
+
+    node.data[i] = {
+      ...field,
+      data: {
+        ...field.data,
+        list: field?.config?.repeat ? field?.data.list : newList,
+        taskList:
+          field?.data?.taskList === undefined
+            ? {
+                ...defaultTaskList,
+                repeat: {
+                  ...defaultTaskList.repeat,
+                  data: result?.repeatData ?? repeatData,
+                },
+              }
+            : {
+                ...field.data.taskList,
+                repeat: {
+                  ...field.data.taskList.repeat,
+                  data: result?.repeatData ?? repeatData,
+                },
+              },
+      },
+    };
+    setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    handleUpdateIndexDB(currentFlowPlan.refId, root);
+  };
+
+  const isSameDate = (date1, date2) => {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  };
+
+  const isSameWeek = (date1, date2) => {
+    const firstDate = new Date(date1);
+    const secondDate = new Date(date2);
+
+    // Set both dates to the start of their respective weeks
+    firstDate.setHours(0, 0, 0, 0);
+    secondDate.setHours(0, 0, 0, 0);
+
+    const dayOfWeek = (date) => (date.getDay() + 6) % 7; // 0 (Monday) to 6 (Sunday)
+
+    const firstDayOfWeek = dayOfWeek(firstDate);
+    const secondDayOfWeek = dayOfWeek(secondDate);
+
+    // Move to the start of the week (Monday)
+    firstDate.setDate(firstDate.getDate() - firstDayOfWeek);
+    secondDate.setDate(secondDate.getDate() - secondDayOfWeek);
+
+    // Compare the adjusted dates
+    return firstDate.getTime() === secondDate.getTime();
+  };
+
+  const isSameMonth = (date1, date2) => {
+    return date1.getMonth() === date2.getMonth();
+  };
+
+  const isSameYear = (date1, date2) => {
+    return date1.getFullYear() === date2.getFullYear();
+  };
+
+  const findObjectByDate = (array, targetDate, type) => {
+    const index = array.findIndex((item) => {
+      switch (type) {
+        case "daily":
+        case "weekdays":
+        case "weekends":
+        case "customDays":
+          return isSameDate(new Date(item.date), new Date(targetDate));
+        case "weekly":
+          return isSameWeek(new Date(item.date), new Date(targetDate));
+        case "monthly":
+        case "customMonths":
+          return isSameMonth(new Date(item.date), new Date(targetDate));
+        case "yearly":
+          return isSameYear(new Date(item.date), new Date(targetDate));
+        default:
+          return;
+      }
+    });
+    return index !== -1 ? { index, object: array[index] } : null;
+  };
+
+  const handleGetCurrentRepeatList = (date, repeatData) => {
+    let repeatList = structuredClone(list);
+    let currentDate = date;
+    if (!currentDate) {
+      currentDate = new Date();
+    }
+    let repeatObject = findObjectByDate(
+      repeatData,
+      currentDate.toISOString(),
+      field?.data?.taskList?.repeat?.format?.type
+    );
+    if (repeatObject) {
+      let repeatObjectData = repeatObject.object.data;
+      repeatList = list.map((item) => {
+        let repeatItem = repeatObjectData.find((data) => data.id === item.id);
+        return repeatItem
+          ? {
+              ...item,
+              completed: repeatItem.completed,
+            }
+          : {
+              ...item,
+              completed: false,
+            };
+      });
+
+      return repeatList;
+    } else {
+      return repeatList.map((item) => ({
+        ...item,
+        completed: false,
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (field?.config?.repeat) {
+      handleCalculateProgress(currentRepeatList);
+    } else {
+      handleCalculateProgress(field?.data?.list);
+    }
+  }, [currentRepeatList, field?.config?.repeat, field?.data?.list]);
+
+  useEffect(() => {
+    if (!field?.config?.repeat) return;
+    console.log(currentDate.current, repeatData);
+    setCurrentRepeatList(
+      handleGetCurrentRepeatList(currentDate.current, repeatData)
+    );
+  }, [currentDate, repeatData, field?.config?.repeat]);
+
+  useEffect(() => {
+    if (!field?.config?.repeat) return;
+    setRepeatData(field?.data?.taskList?.repeat?.data ?? []);
+  }, [field?.data?.taskList?.repeat?.data]);
+
+  return (
+    <div
+      style={{
+        display: field?.id === currentField?.id ? "none" : "flex",
+        paddingLeft: `${field?.config?.indentation * 10 || 4}px`,
+      }}
+      className="w-full bg-[var(--bg-secondary)] p-1 rounded-md flex flex-col gap-1"
+    >
+      {field?.config?.repeat && (
+        <div className="flex h-7 mb-1 flex-wrap justify-between items-center text-sm w-full px-2 bg-[var(--btn-secondary)] rounded-tr-md rounded-tl-md">
+          <button
+            className=" relative w-6 h-6 p-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
+            type="button"
+            onClick={() =>
+              handleGetDateNavigationFunction(
+                currentDate.current,
+                field?.data?.taskList?.repeat?.format?.type,
+                "prev"
+              )
+            }
+          >
+            <span className="rotate-180 flex justify-center items-center text-lg font-bold">
+              <BackIcon />
+            </span>
+          </button>
+          <div className="flex justify-center items-center">
+            <span className="text-[10px] font-bold text-[var(--text-primary)]">
+              {currentDate.formated}
+              {" : "}
+            </span>
+            <input
+              type="datetime-local"
+              className="w-[170px] h-7 cursor-pointer  text-[10px] font-bold rounded-md flex justify-center items-center p-1 outline-none bg-[var(--btn-secondary)] text-[var(--text-primary)]"
+              value={handleGetDateTime(currentDate.current)}
+              onChange={handleSetDateTime}
+            />
+          </div>
+          <button
+            className=" relative w-6 h-6 p-1 text-xs rounded-md flex justify-center items-center bg-[var(--btn-secondary)] transition-colors duration-300 cursor-pointers"
+            type="button"
+            onClick={() =>
+              handleGetDateNavigationFunction(
+                currentDate.current,
+                field?.data?.taskList?.repeat?.format?.type,
+                "next"
+              )
+            }
+          >
+            <span className="flex justify-center items-center text-lg font-bold">
+              <BackIcon />
+            </span>
+          </button>
+        </div>
+      )}
+      {field?.config?.progressBar && <ProgressBar progress={progress} />}
+      {field?.data?.list?.map((item, j) => (
+        <div
+          key={`shown-list-item-${item?.id || j}`}
+          className="w-full flex flex-col justify-center items-center text-sm"
+          onDoubleClick={() => handleEditField(field, i)}
+        >
+          <span
+            className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
+            style={{
+              fontSize: `${field?.config?.fontSize}px`,
+              textDecoration: `${
+                field?.config?.strickthrough ? "line-through" : "none"
+              }`,
+              fontStyle: `${field?.config?.italic ? "italic" : "normal"}`,
+              fontWeight: `${field?.config?.bold ? "bold" : "normal"}`,
+              fontFamily: `${field?.config?.fontFamily}`,
+              color: `${field?.config?.color}`,
+              textAlign: `${field?.config?.align}`,
+            }}
+          >
+            <button
+              type="button"
+              style={{
+                color: `${field?.config?.color}`,
+              }}
+              className="w-5 shrink-0 h-5 mr-1 block cursor-pointer"
+              onClick={(e) => handleCompleteToggle(e, j)}
+            >
+              {field?.config?.repeat ? (
+                currentRepeatList[j]?.completed ? (
+                  <CheckedIcon />
+                ) : (
+                  <UncheckedIcon />
+                )
+              ) : item.completed ? (
+                <CheckedIcon />
+              ) : (
+                <UncheckedIcon />
+              )}
+            </button>
+            {item?.text}
+          </span>
+          {field.config?.showDateInfo && (
+            <div className="w-full opacity-100 flex justify-between items-center flex-wrap">
+              <TimeAndDate
+                group={false}
+                absolute={false}
+                text={`Completed: ${item?.completed ? "" : "Not yet"}`}
+                timeDate={
+                  item.completed ? new Date(item.completedAt) : undefined
+                }
+              />
+              <TimeAndDate
+                group={false}
+                absolute={false}
+                text="Created: "
+                timeDate={item.createdAt ? new Date(item.createdAt) : undefined}
+              />
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 };
@@ -5415,7 +9735,7 @@ const LinkPreview = ({ link, previewLink }) => {
       setPreview(tempPreview);
       if (Object.keys(previewLink).length === 0) {
         setPreviewInfo(tempPreview);
-      } 
+      }
       setLoading(false);
     } catch (e) {
       console.log(e);
@@ -5436,7 +9756,7 @@ const LinkPreview = ({ link, previewLink }) => {
   useEffect(() => {
     setPreviewInfo(previewLink);
     handlePreview();
-    console.log(previewLink)
+    console.log(previewLink);
   }, [link, previewLink]);
 
   return (

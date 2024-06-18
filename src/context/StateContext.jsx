@@ -216,6 +216,8 @@ export function StateProvider({ children }) {
 
   const [handleTransform, setHandleTransform] = useState(null)
 
+  const [dragDurationAll, setDragDurationAll] = useState(false)
+
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -252,7 +254,9 @@ export function StateProvider({ children }) {
     copyNode,
     setCopyNode,
     handleTransform,
-    setHandleTransform
+    setHandleTransform,
+    dragDurationAll,
+    setDragDurationAll
   };
   return (
     // Providing all the states and functions to update the states
