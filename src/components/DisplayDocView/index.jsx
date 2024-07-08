@@ -68,6 +68,7 @@ import DurationTimelineIcon from "../../assets/Icons/DurationTimelineIcon.jsx";
 import OverlapIcon from "../../assets/Icons/OverlapIcon.jsx";
 import GraphIcon from "../../assets/Icons/GraphIcon.jsx";
 import RepeatIcon from "../../assets/Icons/RepeatIcon.jsx";
+import SettingsIcon from "../../assets/Icons/SettingsIcon.jsx";
 
 function DisplayDocView() {
   const {
@@ -97,6 +98,7 @@ function DisplayDocView() {
   });
   const [showNodeNavigation, setShowNodeNavigation] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showDocViewSettings, setShowDocViewSettings] = useState(false);
 
   const { docConfig } = settings;
 
@@ -412,6 +414,13 @@ function DisplayDocView() {
           >
             <InheritIcon />
           </button>
+          <button
+            className="w-8 h-8 p-[6px]"
+            onClick={() => setShowDocViewSettings((prev) => !prev)}
+            title="Document View Settings"
+          >
+            <SettingsIcon />
+          </button>
           {showNodeNavigation && (
             <button
               style={{
@@ -432,6 +441,14 @@ function DisplayDocView() {
             <FullScreenIcon />
           </button>
         </div>
+        {showDocViewSettings && (
+          <div className="bg-[var(--bg-tertiary)]  rounded-md">
+            <AddToQuickAccess
+              node={node}
+              currentFlowPlanNode={currentFlowPlanNode}
+            />
+          </div>
+        )}
         {node?.pin?.show &&
           node?.data[node?.pin?.index] &&
           node?.pin?.id === node?.data[node?.pin?.index].id && (
@@ -988,7 +1005,7 @@ const DocRenderView = ({
       }
     }
     let newField = structuredClone(field);
-    console.log(newField)
+    console.log(newField);
     setCopyField(newField);
   };
 
@@ -1788,6 +1805,98 @@ const DocRenderView = ({
           currentFieldType={currentFieldType}
         />
       )}
+    </div>
+  );
+};
+
+const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
+  const { sharedQuickAccess, setSharedQuickAccess } = useStateContext();
+  const [current, setCurrent] = useState({
+    id: null,
+    show: "false",
+    title: null,
+    location: null,
+  });
+  const handleUpdateState = () => {
+    let index = sharedQuickAccess.findIndex((item) => item?.id === node?.id);
+    if (index !== -1) {
+      setSharedQuickAccess((prev) => {
+        let temp = [...prev];
+        temp[index] = {
+          id: node?.id,
+          show: current?.show === "true" ? "false" : "true",
+          title: node?.title,
+          location: currentFlowPlanNode,
+        };
+        localStorage.setItem("sharedQuickAccess", JSON.stringify(temp));
+        return temp;
+      });
+    } else {
+      setSharedQuickAccess((prev) => {
+        let temp = [...prev];
+        temp.push({
+          id: node?.id,
+          show: current?.show === "true" ? "false" : "true",
+          title: node?.title,
+          location: currentFlowPlanNode,
+        });
+        localStorage.setItem("sharedQuickAccess", JSON.stringify(temp));
+        return temp;
+      });
+    }
+
+    setCurrent({
+      id: node?.id,
+      show: current?.show === "true" ? "false" : "true",
+      title: node?.title,
+      location: currentFlowPlanNode,
+    });
+  };
+
+  useEffect(() => {
+    if (sharedQuickAccess?.length > 0) {
+      let index = sharedQuickAccess.findIndex((item) => item?.id === node?.id);
+      if (index !== -1) {
+        setCurrent({
+          id: sharedQuickAccess[index]?.id,
+          show: sharedQuickAccess[index]?.show,
+          title: sharedQuickAccess[index]?.title,
+          location: sharedQuickAccess[index]?.location,
+        });
+        return;
+      }
+      console.log(sharedQuickAccess, index);
+      setCurrent({
+        id: null,
+        show: "false",
+        title: null,
+        location: null,
+      });
+    }
+  }, [sharedQuickAccess, node?.id, currentFlowPlanNode]);
+  return (
+    <div className="w-full h-fit overflow-hidden rounded-md bg-[var(--bg-primary)] border-2 border-[var(--border-primary)]">
+      <div className="flex flex-col text-sm p-1 gap-1">
+        <div className="flex justify-between items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
+          <span className="text-[var(--text-primary)]">
+            Add Doc To Shared Quick Access
+          </span>
+          <span
+            onClick={handleUpdateState}
+            className="cursor-pointer flex justify-start items-center w-7 h-3 rounded-md bg-[var(--bg-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+          >
+            <span
+              style={{
+                transform:
+                  current?.show === "true"
+                    ? "translateX(18px)"
+                    : "translateX(2px)",
+              }}
+              className="block w-2 h-2 rounded-md bg-[var(--logo-primary)] transition-transform"
+            ></span>
+          </span>
+        </div>
+      </div>
     </div>
   );
 };
@@ -5266,7 +5375,7 @@ const DurationTimeline = ({
       config: {
         ...currentField.config,
         current: currentField.config.current || new Date().toISOString(),
-      }
+      },
     };
 
     if (index !== null) {
@@ -6093,7 +6202,7 @@ const DurationTimelineDisplay = ({
   );
 };
 
-const DisplayDurationGraph = ({ durations, type, color}) => {
+const DisplayDurationGraph = ({ durations, type, color }) => {
   const hours = {
     week: [24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0],
     month: [168, 153, 137, 122, 107, 92, 76, 61, 46, 31, 15, 0],

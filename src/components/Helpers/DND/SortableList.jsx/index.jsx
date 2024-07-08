@@ -21,7 +21,7 @@ import { SortableOverlay } from "../Overlay";
 import { useStateContext } from "../../../../context/StateContext";
 
 export function SortableList({ items, onChange, renderItem, className }) {
-  const { dragDurationAll, setDragDurationAll } = useStateContext();
+  const { dragDurationAll, setDragDurationAll, settings } = useStateContext();
   const [active, setActive] = useState(null);
   const activeItem = useMemo(
     () => items.find((item) => item?.id === active?.id),
@@ -175,8 +175,11 @@ export function SortableList({ items, onChange, renderItem, className }) {
     >
       <SortableContext items={items}>
         <div
-          className={"SortableList list-none w-full transition-all" + className}
+          className={"SortableList list-none w-full transition-all flex flex-col " + className}
           role="application"
+          style={{
+            gap: settings.docConfig.gap + "px",
+          }}
         >
           {items.map((item, index) => (
             <React.Fragment

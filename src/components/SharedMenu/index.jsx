@@ -4,9 +4,26 @@ import AddIcon from "../../assets/Icons/AddIcon";
 import { v4 } from "uuid";
 
 function SharedMenu() {
-  const { shared } = useStateContext();
-  const { sharedData, setSharedData, sharedQuickAccess, setCopyField } =
-    useStateContext();
+  const {
+    shared,
+    db,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    sharedData,
+    setSharedData,
+    sharedQuickAccess,
+    setCopyField,
+  } = useStateContext();
+
+  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        root: root,
+        ...(updateDate && { updatedAt: new Date() }),
+      });
+  };
 
   const handleIsLinkValid = () => {
     const regex = new RegExp(/^(http|https):\/\/[^ "]+$/, "gi");
@@ -254,6 +271,7 @@ function SharedMenu() {
       }));
 
       setCopyField(field);
+      return field;
     } else {
       const field = {
         type: "paragraph",
@@ -422,15 +440,43 @@ function SharedMenu() {
         id: v4(),
       };
 
-      setCopyField(field);
       setSharedData((prev) => ({
         ...prev,
         link: false,
         title: shared.title,
         text: shared.text,
       }));
+
+      setCopyField(field);
+      return field;
     }
   };
+
+  const handleQuickAccess = async (item) => {
+    const field = await handleInit();
+    if (field) {
+      try {
+        let root = currentFlowPlan.root;
+        let node = root;
+        item.location.forEach((i) => {
+          node = node?.children[i];
+        });
+
+        if (node.id !== item.id) {
+          throw new Error("Node id mismatch.");
+        }
+        node.data.push(field);
+
+        setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+        await handleUpdateIndexDB(currentFlowPlan.refId, root);
+
+        setSharedData((prev) => ({ ...prev, showMenu: false }));
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  };
+
   useEffect(() => {
     handleInit();
   }, [shared]);
@@ -449,24 +495,26 @@ function SharedMenu() {
         </button>
         <div className="w-full flex flex-col justify-between items-start gap-1">
           <h3 className="text-md font-semibold">Shared Data</h3>
-          {sharedData.title && <h2>Title: {sharedData.title}</h2>}
-          {sharedData.text && <p>Text: {sharedData.text}</p>}
-          {sharedData.link && (
-            <span
-              className="text-[var(--btn-move)] text-sm break-all
+          <div className="small-scroll-bar w-full max-h-[200px] h-fit flex flex-col justify-center items-start gap-1 overflow-y-auto">
+            {sharedData.title && <h2>Title: {sharedData.title}</h2>}
+            {sharedData.text && <p>Text: {sharedData.text}</p>}
+            {sharedData.link && (
+              <span
+                className="text-[var(--btn-move)] text-sm break-all
                 bg-[var(--bg-primary)] p-1 rounded-md w-full
             "
-            >
-              <a
-                className="hover:underline"
-                href={sharedData.url}
-                target="_blank"
-                rel="noreferrer"
               >
-                {sharedData.url}
-              </a>
-            </span>
-          )}
+                <a
+                  className="hover:underline"
+                  href={sharedData.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {sharedData.url}
+                </a>
+              </span>
+            )}
+          </div>
           <hr className="w-full border-[var(--border-primary)] my-2" />
 
           <div className="w-full flex flex-col justify-center items-start gap-1">
@@ -486,20 +534,18 @@ function SharedMenu() {
                 </p>
               </>
             ) : (
-              <div className="w-full flex flex-col justify-center items-start gap-1">
+              <div className="small-scroll-bar w-full max-h-[200px] flex flex-col justify-center items-start gap-1 overflow-y-auto">
                 {sharedQuickAccess.map((item, index) => (
                   <button
                     key={index}
                     title={item.title}
-                    className="flex justify-between items-center w-full p-1 border-2 border-[var(--border-primary)] rounded-md
+                    onClick={() => handleQuickAccess(item)}
+                    className="shrink-0 flex justify-between items-center w-full p-1 border-2 border-[var(--border-primary)] rounded-md
                         bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] transition-colors duration-300
                     "
                   >
                     <span className="truncate">{item.title}</span>
-                    <span
-                      className="w-5 h-5 shrink-0 text-[var(--text-primary)] hover:rotate-90 transition-transform duration-300"
-                      onClick={() => console.log(item)}
-                    >
+                    <span className="w-5 h-5 shrink-0 text-[var(--text-primary)] hover:rotate-90 transition-transform duration-300">
                       <AddIcon />
                     </span>
                   </button>

@@ -49,7 +49,7 @@ export function SortableItem({ children, id }) {
   return (
     <SortableItemContext.Provider value={context}>
       <div
-        className="SortableItem list-none w-full"
+        className="SortableItem shrink-0 list-none w-full"
         ref={setNodeRef}
         style={style}
       >
