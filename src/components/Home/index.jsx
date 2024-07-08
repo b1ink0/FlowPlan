@@ -6,6 +6,7 @@ import { useStateContext } from "../../context/StateContext";
 import { useFunctions } from "../../hooks/useFunctions";
 import Navbar from "../Navbar";
 import DisplayDocView from "../DisplayDocView";
+import SharedMenu from "../SharedMenu";
 
 function Home() {
   // destructure state from context
@@ -17,6 +18,7 @@ function Home() {
       id="top_container"
       className="w-dvw h-dvh flex justify-center items-center relative overflow-hidden"
     >
+      <SharedMenu />
       <Navbar />
       <SideNavbar />
       {/* If currentFlowPlan is set then display tree */}
