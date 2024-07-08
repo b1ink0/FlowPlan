@@ -56,5 +56,14 @@
     "categories": [
         "productivity",
         "tools"
-    ]
+    ],
+    "share_target": {
+        "action": "/share-text",
+        "method": "GET",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "link"
+        }
+    }
 }

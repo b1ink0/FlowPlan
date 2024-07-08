@@ -96,7 +96,7 @@ export function StateProvider({ children }) {
         {
           label: "Impact",
           value: "Impact, sans-serif",
-        }
+        },
       ],
     },
   });
@@ -214,9 +214,35 @@ export function StateProvider({ children }) {
   const [copyField, setCopyField] = useState(null);
   const [copyNode, setCopyNode] = useState(null);
 
-  const [handleTransform, setHandleTransform] = useState(null)
+  const [handleTransform, setHandleTransform] = useState(null);
 
-  const [dragDurationAll, setDragDurationAll] = useState(false)
+  const [dragDurationAll, setDragDurationAll] = useState(false);
+
+  const [shared, setShared] = useState({
+    title: null,
+    text: null,
+    url: null,
+    file: null,
+    current: null,
+  });
+
+  const [sharedData, setSharedData] = useState({
+    link: false,
+    title: null,
+    text: null,
+    url: null,
+    file: null,
+    showMenu: true,
+  });
+
+  const [sharedQuickAccess, setSharedQuickAccess] = useState(() => {
+    const sharedQuickAccess = localStorage.getItem("sharedQuickAccess");
+    if (sharedQuickAccess) {
+      return JSON.parse(sharedQuickAccess);
+    } else {
+      return [];
+    }
+  });
 
   // values contains all the states and functions to update the states
   const values = {
@@ -256,7 +282,13 @@ export function StateProvider({ children }) {
     handleTransform,
     setHandleTransform,
     dragDurationAll,
-    setDragDurationAll
+    setDragDurationAll,
+    shared,
+    setShared,
+    sharedData,
+    setSharedData,
+    sharedQuickAccess,
+    setSharedQuickAccess,
   };
   return (
     // Providing all the states and functions to update the states
