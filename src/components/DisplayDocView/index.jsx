@@ -988,6 +988,7 @@ const DocRenderView = ({
       }
     }
     let newField = structuredClone(field);
+    console.log(newField)
     setCopyField(newField);
   };
 
