@@ -25,6 +25,10 @@ function SharedMenu() {
       });
   };
 
+  const handleAllAreNull = (obj) => {
+    return Object.values(obj).every((val) => val === null);
+  };
+
   const handleIsLinkValid = () => {
     const regex = new RegExp(/^(http|https):\/\/[^ "]+$/, "gi");
     if (regex.test(shared.title)) {
@@ -81,6 +85,8 @@ function SharedMenu() {
   };
 
   const handleInit = async () => {
+    const allNull = handleAllAreNull(shared);
+    if (allNull) return false;
     const isValid = handleIsLinkValid();
     if (isValid) {
       setSharedData((prev) => ({
@@ -456,19 +462,23 @@ function SharedMenu() {
     const field = await handleInit();
     if (field) {
       try {
-        let root = currentFlowPlan.root;
+        let root = await db.flowPlans.where("refId").equals(item.refId).first();
+        root = root.root;
         let node = root;
         item.location.forEach((i) => {
           node = node?.children[i];
         });
 
-        if (node.id !== item.id) {
+        if (node?.id !== item.id) {
           throw new Error("Node id mismatch.");
         }
         node.data.push(field);
 
-        setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-        await handleUpdateIndexDB(currentFlowPlan.refId, root);
+        await handleUpdateIndexDB(item.refId, root);
+
+        if (currentFlowPlan.refId === item.refId) {
+          setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+        }
 
         setSharedData((prev) => ({ ...prev, showMenu: false }));
       } catch (e) {
@@ -484,7 +494,7 @@ function SharedMenu() {
   return (
     (sharedData.link || sharedData.title || sharedData.text) &&
     sharedData.showMenu && (
-      <div className="absolute w-[400px] max-md:w-11/12 bg-[var(--bg-secondary)] text-[var(--text-primary)] border-2 border-[var(--border-primary)] rounded-md z-50 p-2">
+      <div className="absolute w-[500px] max-md:w-11/12 bg-[var(--bg-secondary)] text-[var(--text-primary)] border-2 border-[var(--border-primary)] rounded-md z-50 p-2">
         <button
           className="absolute top-1 right-1 w-5 h-6 rotate-45"
           onClick={() =>
