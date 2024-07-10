@@ -58,7 +58,7 @@
         "tools"
     ],
     "share_target": {
-        "action": "/share-text",
+        "action": "/",
         "method": "GET",
         "params": {
             "title": "title",
