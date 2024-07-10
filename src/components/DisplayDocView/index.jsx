@@ -54,7 +54,7 @@ import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 import MoveIcon from "../../assets/Icons/MoveIcon";
 import BackIcon from "../../assets/Icons/BackIcon";
 import { TimeAndDate } from "../Helpers/TimeAndDate";
-import { SortableList } from "../Helpers/DND/SortableList.jsx";
+import { SortableList } from "../Helpers/DND/SortableList/index.jsx";
 import IndentationIcon from "../../assets/Icons/IndentationIcon.jsx";
 import PasteIcon from "../../assets/Icons/PasteIcon.jsx";
 import TopbarIcon from "../../assets/Icons/TopbarIcon.jsx";
@@ -79,6 +79,10 @@ function DisplayDocView() {
     setCurrentFlowPlanNode,
     defaultNodeConfig,
   } = useStateContext();
+  const scrollableDiv = useRef(null);
+  const [isScrollable, setIsScrollable] = useState(false);
+  const [isScrolledDown, setIsScrolledDown] = useState(false);
+  const [isScrolledUp, setScrolledUp] = useState(false);
   const [currentFieldType, setCurrentFieldType] = useState(null);
   const [currentField, setCurrentField] = useState(null);
   const [move, setMove] = useState({
@@ -287,6 +291,20 @@ function DisplayDocView() {
     }
   };
 
+  // Function to scroll to the bottom
+  const handleScrollToBottom = () => {
+    if (scrollableDiv.current) {
+      scrollableDiv.current.scrollTop = scrollableDiv.current.scrollHeight;
+    }
+  };
+
+  // Function to scroll to the top
+  const handleScrollToTop = () => {
+    if (scrollableDiv.current) {
+      scrollableDiv.current.scrollTop = 0;
+    }
+  };
+
   useEffect(() => {
     if (
       !(
@@ -357,6 +375,35 @@ function DisplayDocView() {
     }
     setNodeNavigation(tempNodeNavigation);
   }, [currentFlowPlanNode]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollable = scrollableDiv.current;
+      if (scrollable) {
+        const isAtTop = scrollable?.scrollTop === 0;
+        const isAtBottom =
+          scrollable?.scrollHeight - scrollable?.scrollTop ===
+          scrollable?.clientHeight;
+        const canScroll = scrollable?.scrollHeight > scrollable?.clientHeight;
+        setIsScrollable(canScroll);
+        setIsScrolledDown(!isAtTop);
+        setScrolledUp(!isAtBottom);
+      }
+    };
+
+    const scrollable = scrollableDiv.current;
+    if (scrollable) {
+      scrollable?.addEventListener("scroll", handleScroll);
+      handleScroll(); // Initialize the state based on current scroll position
+    }
+
+    return () => {
+      if (scrollable) {
+        scrollable?.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, []);
+
   return (
     <div
       style={{
@@ -476,7 +523,34 @@ function DisplayDocView() {
         }
         className="mt-[35px] w-full flex flex-col justify-start items-center"
       >
-        <div className=" w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-14 overflow-x-hidden">
+        <div
+          ref={scrollableDiv}
+          className="relative scroll-smooth w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-14 overflow-x-hidden"
+        >
+          {isScrollable && (
+            <div className="flex flex-col gap-1 fixed right-5 bottom-11  z-[100]">
+              {isScrolledDown && (
+                <button
+                  className="p-2 bg-[var(--bg-tertiary)] border-2 border-[var(--border-primary)] rounded-full"
+                  onClick={handleScrollToTop}
+                >
+                  <span className="block w-3 h-3 -rotate-90">
+                    <BackIcon />
+                  </span>
+                </button>
+              )}
+              {isScrolledUp && (
+                <button
+                  className="p-2 bg-[var(--bg-tertiary)] border-2 border-[var(--border-primary)] rounded-full"
+                  onClick={handleScrollToBottom}
+                >
+                  <span className="block w-3 h-3 rotate-90">
+                    <BackIcon />
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
           <h3
             style={{
               fontSize: `${node?.config?.titleConfig?.fontSize}px`,
@@ -647,6 +721,7 @@ const DocRenderViewContainer = ({
     <SortableList
       items={node?.data}
       onChange={handleMove}
+      applayGap={true}
       renderItem={(item, active, setActive, index) => (
         <SortableList.Item id={item.id}>
           <DocRenderView
@@ -5208,27 +5283,17 @@ const DurationTimeline = ({
           weeks[weekKey] = 0;
         }
         const dayKey = current.toISOString().split("T")[0];
-        console.log(
-          new Date(dayKey).getDay() === 6,
-          dayKey,
-          dayDurations[dayKey] && dayKey,
-          weekKey,
-          current.getDate(),
-          6,
-          current.getDay()
-        );
         if (new Date(dayKey).getDay() === 6) {
           // if saturday
           if (!weeks[weekKey - 1]) {
             weeks[weekKey] += dayDurations[dayKey] || 0;
-          };
+          }
           weeks[weekKey - 1] += dayDurations[dayKey] || 0;
         } else {
           weeks[weekKey] += dayDurations[dayKey] || 0;
         }
         current.setDate(current.getDate() + 1);
       }
-      console.log(weeks);
       Object.entries(weeks).forEach(([weekKey, duration]) => {
         durations.push({
           label: "w-" + weekKey.split("-W")[1],
@@ -5260,7 +5325,6 @@ const DurationTimeline = ({
       durations.unshift(jan);
       durations.pop();
     }
-    console.log(durations);
 
     return durations.map((item) => ({
       ...item,
@@ -5272,7 +5336,6 @@ const DurationTimeline = ({
   };
   const getWeeklyDuration = (events, selectedDate) => {
     const [weekStart, weekEnd] = getWeekRange(selectedDate);
-    console.log("WEEEK", weekStart.toISOString());
     return calculateDurations(events, weekStart, weekEnd, "week");
   };
 
@@ -5290,7 +5353,6 @@ const DurationTimeline = ({
     if (formated.durations.length === 0) return;
     if (!formated.start) return;
     selectedDate = new Date(selectedDate || formated.startISO);
-    console.log(selectedDate);
     let durations = [];
     switch (type) {
       case "week":
@@ -6000,11 +6062,9 @@ const DurationTimelineDisplay = ({
 
     events.forEach((event) => {
       const segments = splitEventByDay(event);
-
       segments.forEach((segment) => {
         const start = new Date(segment.start);
         const end = new Date(segment.end);
-
         if (start >= rangeStart && start <= rangeEnd) {
           const dayKey = start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
           if (!dayDurations[dayKey]) {
@@ -6016,7 +6076,6 @@ const DurationTimelineDisplay = ({
     });
 
     const durations = [];
-
     if (unit === "week") {
       for (let i = 0; i < 7; i++) {
         const day = new Date(rangeStart);
@@ -6031,15 +6090,24 @@ const DurationTimelineDisplay = ({
     } else if (unit === "month") {
       const weeks = {};
       const current = new Date(rangeStart);
+
       while (current <= rangeEnd) {
-        const weekKey = `${current.getFullYear()}-W${Math.ceil(
+        const weekKey = `${Math.ceil(
           (current.getDate() + 6 - current.getDay()) / 7
         )}`;
         if (!weeks[weekKey]) {
           weeks[weekKey] = 0;
         }
         const dayKey = current.toISOString().split("T")[0];
-        weeks[weekKey] += dayDurations[dayKey] || 0;
+        if (new Date(dayKey).getDay() === 6) {
+          // if saturday
+          if (!weeks[weekKey - 1]) {
+            weeks[weekKey] += dayDurations[dayKey] || 0;
+          }
+          weeks[weekKey - 1] += dayDurations[dayKey] || 0;
+        } else {
+          weeks[weekKey] += dayDurations[dayKey] || 0;
+        }
         current.setDate(current.getDate() + 1);
       }
       Object.entries(weeks).forEach(([weekKey, duration]) => {
@@ -6087,6 +6155,8 @@ const DurationTimelineDisplay = ({
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(endOfWeek.getDate() + 6);
+    startOfWeek.setSeconds(0);
+    startOfWeek.setMilliseconds(0);
     return [startOfWeek, endOfWeek];
   };
 
@@ -9187,7 +9257,7 @@ const TaskListDisplay = ({
           onDoubleClick={() => handleEditField(field, i)}
         >
           <span
-            className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
+            className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-words"
             style={{
               fontSize: `${field?.config?.fontSize}px`,
               textDecoration: `${
