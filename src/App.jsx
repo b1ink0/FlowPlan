@@ -15,15 +15,14 @@ const App = () => {
   const { setDb, shared, setShared } = useStateContext();
 
   const handleGetShare = async () => {
-    const wUrl = new URL(window.location.href);
-    // console.log(url);
-    if (wUrl.pathname === "/share-text") {
-      const title = wUrl.searchParams.get("title");
-      const text = wUrl.searchParams.get("text");
-      const url = wUrl.searchParams.get("url");
-      const current = window.location.href;
-      setShared((prev) => ({ ...prev, title, text, url, current }));
-    }
+    const href = window.location.href;
+    if (!href.includes("?")) return;
+    const wUrl = new URL(href);
+    const title = wUrl.searchParams.get("title");
+    const text = wUrl.searchParams.get("text");
+    const url = wUrl.searchParams.get("url");
+    const current = window.location.href;
+    setShared((prev) => ({ ...prev, title, text, url, current }));
   };
 
   // Initialize Database on App Load

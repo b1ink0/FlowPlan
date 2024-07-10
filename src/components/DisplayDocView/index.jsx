@@ -54,7 +54,7 @@ import EditBtnIcon from "../../assets/Icons/EditBtnIcon";
 import MoveIcon from "../../assets/Icons/MoveIcon";
 import BackIcon from "../../assets/Icons/BackIcon";
 import { TimeAndDate } from "../Helpers/TimeAndDate";
-import { SortableList } from "../Helpers/DND/SortableList.jsx";
+import { SortableList } from "../Helpers/DND/SortableList/index.jsx";
 import IndentationIcon from "../../assets/Icons/IndentationIcon.jsx";
 import PasteIcon from "../../assets/Icons/PasteIcon.jsx";
 import TopbarIcon from "../../assets/Icons/TopbarIcon.jsx";
@@ -79,6 +79,10 @@ function DisplayDocView() {
     setCurrentFlowPlanNode,
     defaultNodeConfig,
   } = useStateContext();
+  const scrollableDiv = useRef(null);
+  const [isScrollable, setIsScrollable] = useState(false);
+  const [isScrolledDown, setIsScrolledDown] = useState(false);
+  const [isScrolledUp, setScrolledUp] = useState(false);
   const [currentFieldType, setCurrentFieldType] = useState(null);
   const [currentField, setCurrentField] = useState(null);
   const [move, setMove] = useState({
@@ -287,6 +291,20 @@ function DisplayDocView() {
     }
   };
 
+  // Function to scroll to the bottom
+  const handleScrollToBottom = () => {
+    if (scrollableDiv.current) {
+      scrollableDiv.current.scrollTop = scrollableDiv.current.scrollHeight;
+    }
+  };
+
+  // Function to scroll to the top
+  const handleScrollToTop = () => {
+    if (scrollableDiv.current) {
+      scrollableDiv.current.scrollTop = 0;
+    }
+  };
+
   useEffect(() => {
     if (
       !(
@@ -357,6 +375,35 @@ function DisplayDocView() {
     }
     setNodeNavigation(tempNodeNavigation);
   }, [currentFlowPlanNode]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollable = scrollableDiv.current;
+      if (scrollable) {
+        const isAtTop = scrollable?.scrollTop === 0;
+        const isAtBottom =
+          scrollable?.scrollHeight - scrollable?.scrollTop ===
+          scrollable?.clientHeight;
+        const canScroll = scrollable?.scrollHeight > scrollable?.clientHeight;
+        setIsScrollable(canScroll);
+        setIsScrolledDown(!isAtTop);
+        setScrolledUp(!isAtBottom);
+      }
+    };
+
+    const scrollable = scrollableDiv.current;
+    if (scrollable) {
+      scrollable?.addEventListener("scroll", handleScroll);
+      handleScroll(); // Initialize the state based on current scroll position
+    }
+
+    return () => {
+      if (scrollable) {
+        scrollable?.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, []);
+
   return (
     <div
       style={{
@@ -476,7 +523,34 @@ function DisplayDocView() {
         }
         className="mt-[35px] w-full flex flex-col justify-start items-center"
       >
-        <div className=" w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-14 overflow-x-hidden">
+        <div
+          ref={scrollableDiv}
+          className="relative scroll-smooth w-full h-full flex flex-col justify-start items-center gap-1 overflow-y-auto p-1 pb-14 overflow-x-hidden"
+        >
+          {isScrollable && (
+            <div className="flex flex-col gap-1 fixed right-5 bottom-11  z-[100]">
+              {isScrolledDown && (
+                <button
+                  className="p-2 bg-[var(--bg-tertiary)] border-2 border-[var(--border-primary)] rounded-full"
+                  onClick={handleScrollToTop}
+                >
+                  <span className="block w-3 h-3 -rotate-90">
+                    <BackIcon />
+                  </span>
+                </button>
+              )}
+              {isScrolledUp && (
+                <button
+                  className="p-2 bg-[var(--bg-tertiary)] border-2 border-[var(--border-primary)] rounded-full"
+                  onClick={handleScrollToBottom}
+                >
+                  <span className="block w-3 h-3 rotate-90">
+                    <BackIcon />
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
           <h3
             style={{
               fontSize: `${node?.config?.titleConfig?.fontSize}px`,
@@ -647,6 +721,7 @@ const DocRenderViewContainer = ({
     <SortableList
       items={node?.data}
       onChange={handleMove}
+      applayGap={true}
       renderItem={(item, active, setActive, index) => (
         <SortableList.Item id={item.id}>
           <DocRenderView
@@ -1810,7 +1885,14 @@ const DocRenderView = ({
 };
 
 const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
-  const { sharedQuickAccess, setSharedQuickAccess } = useStateContext();
+  const {
+    sharedQuickAccess,
+    setSharedQuickAccess,
+    currentFlowPlan,
+    settings,
+    setSettings,
+  } = useStateContext();
+  const { docConfig } = settings;
   const [current, setCurrent] = useState({
     id: null,
     show: "false",
@@ -1823,6 +1905,7 @@ const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
       setSharedQuickAccess((prev) => {
         let temp = [...prev];
         temp[index] = {
+          refId: currentFlowPlan.refId,
           id: node?.id,
           show: current?.show === "true" ? "false" : "true",
           title: node?.title,
@@ -1835,6 +1918,7 @@ const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
       setSharedQuickAccess((prev) => {
         let temp = [...prev];
         temp.push({
+          refId: currentFlowPlan.refId,
           id: node?.id,
           show: current?.show === "true" ? "false" : "true",
           title: node?.title,
@@ -1851,6 +1935,24 @@ const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
       title: node?.title,
       location: currentFlowPlanNode,
     });
+  };
+
+  const handleChangeFieldGap = (e) => {
+    let value = e.target.value;
+    if (value === "") return;
+    if (value < 0) return;
+    value = Number(value);
+    if (Number.isNaN(value)) return;
+    value = "" + value;
+
+    setSettings((prev) => ({
+      ...prev,
+      docConfig: {
+        ...prev.docConfig,
+        gap: value,
+      },
+    }));
+    localStorage.setItem("docSpacing", value);
   };
 
   useEffect(() => {
@@ -1875,9 +1977,9 @@ const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
     }
   }, [sharedQuickAccess, node?.id, currentFlowPlanNode]);
   return (
-    <div className="w-full h-fit overflow-hidden rounded-md bg-[var(--bg-primary)] border-2 border-[var(--border-primary)]">
-      <div className="flex flex-col text-sm p-1 gap-1">
-        <div className="flex justify-between items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
+    <div className="w-full h-fit flex flex-col overflow-hidden rounded-md bg-[var(--bg-primary)] border-2 border-[var(--border-primary)] p-1 gap-1">
+      <div className="flex flex-col text-sm gap-1">
+        <div className=" w-full flex h-8 justify-between items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
           <span className="text-[var(--text-primary)]">
             Add Doc To Shared Quick Access
           </span>
@@ -1895,6 +1997,18 @@ const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
               className="block w-2 h-2 rounded-md bg-[var(--logo-primary)] transition-transform"
             ></span>
           </span>
+        </div>
+      </div>
+      <div className="flex flex-col text-sm gap-1">
+        <div className="flex justify-between  items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
+          <span className="text-[var(--text-primary)]">Field Gap:</span>
+          <input
+            type="number"
+            min={0}
+            value={docConfig?.gap}
+            onChange={(e) => handleChangeFieldGap(e)}
+            className="w-[40px] h-6 rounded-md bg-[var(--bg-primary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+          />
         </div>
       </div>
     </div>
@@ -5086,6 +5200,8 @@ const DurationTimeline = ({
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(endOfWeek.getDate() + 6);
+    startOfWeek.setSeconds(0);
+    startOfWeek.setMilliseconds(0);
     return [startOfWeek, endOfWeek];
   };
 
@@ -5130,11 +5246,9 @@ const DurationTimeline = ({
 
     events.forEach((event) => {
       const segments = splitEventByDay(event);
-
       segments.forEach((segment) => {
         const start = new Date(segment.start);
         const end = new Date(segment.end);
-
         if (start >= rangeStart && start <= rangeEnd) {
           const dayKey = start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
           if (!dayDurations[dayKey]) {
@@ -5146,7 +5260,6 @@ const DurationTimeline = ({
     });
 
     const durations = [];
-
     if (unit === "week") {
       for (let i = 0; i < 7; i++) {
         const day = new Date(rangeStart);
@@ -5161,15 +5274,24 @@ const DurationTimeline = ({
     } else if (unit === "month") {
       const weeks = {};
       const current = new Date(rangeStart);
+
       while (current <= rangeEnd) {
-        const weekKey = `${current.getFullYear()}-W${Math.ceil(
+        const weekKey = `${Math.ceil(
           (current.getDate() + 6 - current.getDay()) / 7
         )}`;
         if (!weeks[weekKey]) {
           weeks[weekKey] = 0;
         }
         const dayKey = current.toISOString().split("T")[0];
-        weeks[weekKey] += dayDurations[dayKey] || 0;
+        if (new Date(dayKey).getDay() === 6) {
+          // if saturday
+          if (!weeks[weekKey - 1]) {
+            weeks[weekKey] += dayDurations[dayKey] || 0;
+          }
+          weeks[weekKey - 1] += dayDurations[dayKey] || 0;
+        } else {
+          weeks[weekKey] += dayDurations[dayKey] || 0;
+        }
         current.setDate(current.getDate() + 1);
       }
       Object.entries(weeks).forEach(([weekKey, duration]) => {
@@ -5231,7 +5353,6 @@ const DurationTimeline = ({
     if (formated.durations.length === 0) return;
     if (!formated.start) return;
     selectedDate = new Date(selectedDate || formated.startISO);
-    console.log(selectedDate);
     let durations = [];
     switch (type) {
       case "week":
@@ -5941,11 +6062,9 @@ const DurationTimelineDisplay = ({
 
     events.forEach((event) => {
       const segments = splitEventByDay(event);
-
       segments.forEach((segment) => {
         const start = new Date(segment.start);
         const end = new Date(segment.end);
-
         if (start >= rangeStart && start <= rangeEnd) {
           const dayKey = start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
           if (!dayDurations[dayKey]) {
@@ -5957,7 +6076,6 @@ const DurationTimelineDisplay = ({
     });
 
     const durations = [];
-
     if (unit === "week") {
       for (let i = 0; i < 7; i++) {
         const day = new Date(rangeStart);
@@ -5972,15 +6090,24 @@ const DurationTimelineDisplay = ({
     } else if (unit === "month") {
       const weeks = {};
       const current = new Date(rangeStart);
+
       while (current <= rangeEnd) {
-        const weekKey = `${current.getFullYear()}-W${Math.ceil(
+        const weekKey = `${Math.ceil(
           (current.getDate() + 6 - current.getDay()) / 7
         )}`;
         if (!weeks[weekKey]) {
           weeks[weekKey] = 0;
         }
         const dayKey = current.toISOString().split("T")[0];
-        weeks[weekKey] += dayDurations[dayKey] || 0;
+        if (new Date(dayKey).getDay() === 6) {
+          // if saturday
+          if (!weeks[weekKey - 1]) {
+            weeks[weekKey] += dayDurations[dayKey] || 0;
+          }
+          weeks[weekKey - 1] += dayDurations[dayKey] || 0;
+        } else {
+          weeks[weekKey] += dayDurations[dayKey] || 0;
+        }
         current.setDate(current.getDate() + 1);
       }
       Object.entries(weeks).forEach(([weekKey, duration]) => {
@@ -6028,6 +6155,8 @@ const DurationTimelineDisplay = ({
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(endOfWeek.getDate() + 6);
+    startOfWeek.setSeconds(0);
+    startOfWeek.setMilliseconds(0);
     return [startOfWeek, endOfWeek];
   };
 
@@ -9128,7 +9257,7 @@ const TaskListDisplay = ({
           onDoubleClick={() => handleEditField(field, i)}
         >
           <span
-            className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-all"
+            className="w-full flex text-[var(--text-primary)] bg-transparent outline-none break-words"
             style={{
               fontSize: `${field?.config?.fontSize}px`,
               textDecoration: `${
