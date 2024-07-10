@@ -1810,7 +1810,14 @@ const DocRenderView = ({
 };
 
 const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
-  const { sharedQuickAccess, setSharedQuickAccess } = useStateContext();
+  const {
+    sharedQuickAccess,
+    setSharedQuickAccess,
+    currentFlowPlan,
+    settings,
+    setSettings,
+  } = useStateContext();
+  const { docConfig } = settings;
   const [current, setCurrent] = useState({
     id: null,
     show: "false",
@@ -1823,6 +1830,7 @@ const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
       setSharedQuickAccess((prev) => {
         let temp = [...prev];
         temp[index] = {
+          refId: currentFlowPlan.refId,
           id: node?.id,
           show: current?.show === "true" ? "false" : "true",
           title: node?.title,
@@ -1835,6 +1843,7 @@ const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
       setSharedQuickAccess((prev) => {
         let temp = [...prev];
         temp.push({
+          refId: currentFlowPlan.refId,
           id: node?.id,
           show: current?.show === "true" ? "false" : "true",
           title: node?.title,
@@ -1851,6 +1860,24 @@ const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
       title: node?.title,
       location: currentFlowPlanNode,
     });
+  };
+
+  const handleChangeFieldGap = (e) => {
+    let value = e.target.value;
+    if (value === "") return;
+    if (value < 0) return;
+    value = Number(value);
+    if (Number.isNaN(value)) return;
+    value = "" + value;
+
+    setSettings((prev) => ({
+      ...prev,
+      docConfig: {
+        ...prev.docConfig,
+        gap: value,
+      },
+    }));
+    localStorage.setItem("docSpacing", value);
   };
 
   useEffect(() => {
@@ -1875,9 +1902,9 @@ const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
     }
   }, [sharedQuickAccess, node?.id, currentFlowPlanNode]);
   return (
-    <div className="w-full h-fit overflow-hidden rounded-md bg-[var(--bg-primary)] border-2 border-[var(--border-primary)]">
-      <div className="flex flex-col text-sm p-1 gap-1">
-        <div className="flex justify-between items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
+    <div className="w-full h-fit flex flex-col overflow-hidden rounded-md bg-[var(--bg-primary)] border-2 border-[var(--border-primary)] p-1 gap-1">
+      <div className="flex flex-col text-sm gap-1">
+        <div className=" w-full flex h-8 justify-between items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
           <span className="text-[var(--text-primary)]">
             Add Doc To Shared Quick Access
           </span>
@@ -1895,6 +1922,18 @@ const AddToQuickAccess = ({ node, currentFlowPlanNode }) => {
               className="block w-2 h-2 rounded-md bg-[var(--logo-primary)] transition-transform"
             ></span>
           </span>
+        </div>
+      </div>
+      <div className="flex flex-col text-sm gap-1">
+        <div className="flex justify-between  items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
+          <span className="text-[var(--text-primary)]">Field Gap:</span>
+          <input
+            type="number"
+            min={0}
+            value={docConfig?.gap}
+            onChange={(e) => handleChangeFieldGap(e)}
+            className="w-[40px] h-6 rounded-md bg-[var(--bg-primary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+          />
         </div>
       </div>
     </div>
@@ -5086,6 +5125,8 @@ const DurationTimeline = ({
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(endOfWeek.getDate() + 6);
+    startOfWeek.setSeconds(0);
+    startOfWeek.setMilliseconds(0);
     return [startOfWeek, endOfWeek];
   };
 
@@ -5130,11 +5171,9 @@ const DurationTimeline = ({
 
     events.forEach((event) => {
       const segments = splitEventByDay(event);
-
       segments.forEach((segment) => {
         const start = new Date(segment.start);
         const end = new Date(segment.end);
-
         if (start >= rangeStart && start <= rangeEnd) {
           const dayKey = start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
           if (!dayDurations[dayKey]) {
@@ -5146,7 +5185,6 @@ const DurationTimeline = ({
     });
 
     const durations = [];
-
     if (unit === "week") {
       for (let i = 0; i < 7; i++) {
         const day = new Date(rangeStart);
@@ -5161,17 +5199,36 @@ const DurationTimeline = ({
     } else if (unit === "month") {
       const weeks = {};
       const current = new Date(rangeStart);
+
       while (current <= rangeEnd) {
-        const weekKey = `${current.getFullYear()}-W${Math.ceil(
+        const weekKey = `${Math.ceil(
           (current.getDate() + 6 - current.getDay()) / 7
         )}`;
         if (!weeks[weekKey]) {
           weeks[weekKey] = 0;
         }
         const dayKey = current.toISOString().split("T")[0];
-        weeks[weekKey] += dayDurations[dayKey] || 0;
+        console.log(
+          new Date(dayKey).getDay() === 6,
+          dayKey,
+          dayDurations[dayKey] && dayKey,
+          weekKey,
+          current.getDate(),
+          6,
+          current.getDay()
+        );
+        if (new Date(dayKey).getDay() === 6) {
+          // if saturday
+          if (!weeks[weekKey - 1]) {
+            weeks[weekKey] += dayDurations[dayKey] || 0;
+          };
+          weeks[weekKey - 1] += dayDurations[dayKey] || 0;
+        } else {
+          weeks[weekKey] += dayDurations[dayKey] || 0;
+        }
         current.setDate(current.getDate() + 1);
       }
+      console.log(weeks);
       Object.entries(weeks).forEach(([weekKey, duration]) => {
         durations.push({
           label: "w-" + weekKey.split("-W")[1],
@@ -5203,6 +5260,7 @@ const DurationTimeline = ({
       durations.unshift(jan);
       durations.pop();
     }
+    console.log(durations);
 
     return durations.map((item) => ({
       ...item,
@@ -5214,6 +5272,7 @@ const DurationTimeline = ({
   };
   const getWeeklyDuration = (events, selectedDate) => {
     const [weekStart, weekEnd] = getWeekRange(selectedDate);
+    console.log("WEEEK", weekStart.toISOString());
     return calculateDurations(events, weekStart, weekEnd, "week");
   };
 
