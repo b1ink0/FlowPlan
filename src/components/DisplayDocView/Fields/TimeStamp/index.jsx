@@ -2,6 +2,7 @@ import { useStateContext } from "../../../../context/StateContext.jsx";
 import { v4 } from "uuid";
 import { InputTitleButtons } from "../../Helpers/InputTitleButtons/index.jsx";
 import React from "react";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const TimeStamp = ({
   currentField,
@@ -164,15 +165,7 @@ export const TimeStamp = ({
     });
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
@@ -204,7 +197,7 @@ export const TimeStamp = ({
       node.data.push({ ...finalField, id: v4() });
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };

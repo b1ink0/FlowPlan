@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useStateContext } from "../../context/StateContext";
 import AddIcon from "../../assets/Icons/AddIcon";
 import { v4 } from "uuid";
+import { useDatabase } from "../../hooks/useDatabase";
 
 function SharedMenu() {
   const {
@@ -15,15 +16,7 @@ function SharedMenu() {
     setCopyField,
   } = useStateContext();
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handleAllAreNull = (obj) => {
     return Object.values(obj).every((val) => val === null);
@@ -474,7 +467,7 @@ function SharedMenu() {
         }
         node.data.push(field);
 
-        await handleUpdateIndexDB(item.refId, root);
+        await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
 
         if (currentFlowPlan.refId === item.refId) {
           setCurrentFlowPlan((prev) => ({ ...prev, root: root }));

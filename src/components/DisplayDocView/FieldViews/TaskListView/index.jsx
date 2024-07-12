@@ -5,6 +5,7 @@ import { ProgressBar } from "../../Helpers/ProgressBar/index.jsx";
 import CheckedIcon from "../../../../assets/Icons/CheckedIcon.jsx";
 import UncheckedIcon from "../../../../assets/Icons/UncheckedIcon.jsx";
 import { TimeAndDate } from "../../../Helpers/TimeAndDate/index.jsx";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const TaskListView = ({
   field,
@@ -380,15 +381,7 @@ export const TaskListView = ({
     return finalIso;
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handleCalculateProgress = (list) => {
     if (!field?.config?.progressBar) return;
@@ -467,7 +460,7 @@ export const TaskListView = ({
     };
   };
 
-  const handleCompleteToggle = (e, index) => {
+  const handleCompleteToggle = async (e, index) => {
     let newList = [
       ...(field?.config?.repeat ? currentRepeatList : field?.data?.list),
     ];
@@ -516,7 +509,7 @@ export const TaskListView = ({
       },
     };
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
   };
 
   const isSameDate = (date1, date2) => {

@@ -10,6 +10,7 @@ import LinewrapIcon from "../../../../assets/Icons/LinewrapIcon.jsx";
 import NumberListIcon from "../../../../assets/Icons/NumberListIcon.jsx";
 import TopbarIcon from "../../../../assets/Icons/TopbarIcon.jsx";
 import DeleteIcon from "../../../../assets/Icons/DeleteIcon.jsx";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const CodeBlock = ({
   currentField,
@@ -52,15 +53,7 @@ export const CodeBlock = ({
       textarea.style.height = `${textarea.scrollHeight}px`; // Set the new height
     }
   };
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handleChangeLanguageSelect = (e) => {
     let language = e.target.value;
@@ -119,7 +112,7 @@ export const CodeBlock = ({
     });
     node.data.splice(index, 1);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };
@@ -156,7 +149,7 @@ export const CodeBlock = ({
       node.data.push({ ...finalField, id: v4() });
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };

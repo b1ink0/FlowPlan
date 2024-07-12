@@ -14,6 +14,7 @@ import CloseBtnIcon from "../../assets/Icons/CloseBtnIcon";
 import { TimeAndDate } from "../Helpers/TimeAndDate";
 import ExportIcon from "../../assets/Icons/ExportIcon";
 import ImportIcon from "../../assets/Icons/ImportIcon";
+import { useDatabase } from "../../hooks/useDatabase";
 
 function SideNavbar() {
   // destructure state from context
@@ -47,6 +48,7 @@ function SideNavbar() {
   });
   const [selected, setSelected] = useState([]);
   const [copied, setCopied] = useState(false);
+  const { handleUpdateIndexDB, handleAddNewPlan } = useDatabase();
 
   // function to create new note
   const handleAddNewNote = async (e) => {
@@ -66,7 +68,8 @@ function SideNavbar() {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await db?.flowPlans.add(newNote);
+    // @marker AddNewPlan
+    await handleAddNewPlan(newNote);
     handleSetCurrentFlowPlan(newRefId);
     setNoteTitle("");
   };
