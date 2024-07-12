@@ -3,6 +3,7 @@ import { v4 } from "uuid";
 import ColorIcon from "../../../../assets/Icons/ColorIcon.jsx";
 import DeleteIcon from "../../../../assets/Icons/DeleteIcon.jsx";
 import React from "react";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const Separator = ({
   currentField,
@@ -16,15 +17,7 @@ export const Separator = ({
   const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
     useStateContext();
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+    const { handleUpdateIndexDB } = useDatabase();
 
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
@@ -52,7 +45,7 @@ export const Separator = ({
       node.data.push({ ...finalField, id: v4() });
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };
@@ -65,7 +58,7 @@ export const Separator = ({
     });
     node.data.splice(index, 1);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };

@@ -10,6 +10,7 @@ import { TimeAndDate } from "../../../Helpers/TimeAndDate/index.jsx";
 import DeleteIcon from "../../../../assets/Icons/DeleteIcon.jsx";
 import TimeStampIcon from "../../../../assets/Icons/TimeStampIcon.jsx";
 import { InputTitleButtons } from "../../Helpers/InputTitleButtons/index.jsx";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const TaskList = ({
   currentField,
@@ -557,15 +558,7 @@ export const TaskList = ({
     });
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
@@ -617,7 +610,7 @@ export const TaskList = ({
       node.data.push({ ...finalField, id: v4() });
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };

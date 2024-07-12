@@ -33,6 +33,7 @@ import BackIcon from "../../../assets/Icons/BackIcon.jsx";
 import CloseBtnIcon from "../../../assets/Icons/CloseBtnIcon.jsx";
 import { AddEditField } from "../Helpers/AddEditField/index.jsx";
 import { MenuButtons } from "../Helpers/MenuButtons/index.jsx";
+import { useDatabase } from "../../../hooks/useDatabase/index.jsx";
 
 export const DocRenderView = ({
   field,
@@ -170,15 +171,7 @@ export const DocRenderView = ({
     }));
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handleMoveUp = async () => {
     if (i === 0) return;
@@ -191,7 +184,13 @@ export const DocRenderView = ({
     node.data[i] = node.data[i - 1];
     node.data[i - 1] = temp;
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(
+      currentFlowPlan.refId,
+      root,
+      true,
+      "updateNode",
+      node
+    );
   };
 
   const handleMoveDown = async () => {
@@ -205,7 +204,14 @@ export const DocRenderView = ({
     node.data[i] = node.data[i + 1];
     node.data[i + 1] = temp;
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    // @marker UpdateNode
+    await handleUpdateIndexDB(
+      currentFlowPlan.refId,
+      root,
+      true,
+      "updateNode",
+      node
+    );
   };
   const handleDuplicateField = async (i, duplicateContainingFields = false) => {
     let root = currentFlowPlan.root;
@@ -263,7 +269,13 @@ export const DocRenderView = ({
       node.data.splice(i + 1, 0, temp);
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(
+      currentFlowPlan.refId,
+      root,
+      true,
+      "updateNode",
+      node
+    );
   };
   const handleDeleteField = async (deleteContainingFields = false) => {
     let root = currentFlowPlan.root;
@@ -288,7 +300,13 @@ export const DocRenderView = ({
     }
     node.data.splice(i, 1);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(
+      currentFlowPlan.refId,
+      root,
+      true,
+      "updateNode",
+      node
+    );
   };
 
   const handleCopyFieldStyles = () => {
@@ -320,7 +338,13 @@ export const DocRenderView = ({
     }
 
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(
+      currentFlowPlan.refId,
+      root,
+      true,
+      "updateNode",
+      node
+    );
   };
 
   const handleCopyField = (i, copyContainingFields = false) => {
@@ -416,7 +440,13 @@ export const DocRenderView = ({
     }
 
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(
+      currentFlowPlan.refId,
+      root,
+      true,
+      "updateNode",
+      node
+    );
   };
 
   const handleCalculateProgressCurrentDoc = () => {

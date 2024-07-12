@@ -34,6 +34,7 @@ import CopyStyleIcon from "../../../../assets/Icons/CopyStyleIcon.jsx";
 import PasteStyleIcon from "../../../../assets/Icons/PasteStyleIcon.jsx";
 import DublicateIcon from "../../../../assets/Icons/DublicateIcon.jsx";
 import DeleteIcon from "../../../../assets/Icons/DeleteIcon.jsx";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const InputTitleButtons = ({
   config,
@@ -370,16 +371,7 @@ export const InputTitleButtons = ({
     setCurrentField(null);
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
-
+  const { handleUpdateIndexDB } = useDatabase();
   const handleDelete = async (index) => {
     console.log(currentField);
     let root = currentFlowPlan.root;
@@ -389,7 +381,7 @@ export const InputTitleButtons = ({
     });
     node.data.splice(index, 1);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };
@@ -414,7 +406,7 @@ export const InputTitleButtons = ({
     }
     node.data.splice(i + 1, 0, temp);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
   };
 
   const handleCopyFieldStyles = (i) => {

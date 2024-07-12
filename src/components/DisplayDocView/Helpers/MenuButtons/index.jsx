@@ -18,6 +18,7 @@ import CodeIcon from "../../../../assets/Icons/CodeIcon.jsx";
 import { v4 } from "uuid";
 import { Button } from "../Button/index.jsx";
 import PasteIcon from "../../../../assets/Icons/PasteIcon.jsx";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const MenuButtons = ({
   node,
@@ -130,15 +131,7 @@ export const MenuButtons = ({
     });
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handlePasteField = async () => {
     if (!copyField) return;
@@ -203,7 +196,7 @@ export const MenuButtons = ({
     }
 
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
   };
 
   return (

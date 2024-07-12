@@ -1,4 +1,5 @@
 import { useStateContext } from "../../../context/StateContext.jsx";
+import { useDatabase } from "../../../hooks/useDatabase/index.jsx";
 import { SortableList } from "../../Helpers/DND/SortableList/index.jsx";
 import { DocRenderView } from "../DocRenderView/index.jsx";
 import React from "react";
@@ -20,15 +21,7 @@ export const DocRenderViewContainer = ({
   const { db, currentFlowPlan, setCurrentFlowPlan, currentFlowPlanNode } =
     useStateContext();
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+    const { handleUpdateIndexDB } = useDatabase();
 
   const handleMove = async (items) => {
     if (items?.length === 0) return;
@@ -41,7 +34,7 @@ export const DocRenderViewContainer = ({
     node.updatedAt = new Date();
     handleResetShowAdd();
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };

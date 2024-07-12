@@ -5,6 +5,7 @@ import ColorIcon from "../../../../assets/Icons/ColorIcon.jsx";
 import AddIcon from "../../../../assets/Icons/AddIcon.jsx";
 import { InputTitleButtons } from "../../Helpers/InputTitleButtons/index.jsx";
 import React from "react";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const Table = ({
   currentField,
@@ -86,15 +87,7 @@ export const Table = ({
     });
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
@@ -119,7 +112,7 @@ export const Table = ({
       node.data.push({ ...finalField, id: v4() });
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };

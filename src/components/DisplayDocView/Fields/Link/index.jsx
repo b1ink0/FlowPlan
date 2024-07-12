@@ -5,6 +5,7 @@ import LinkIcon from "../../../../assets/Icons/LinkIcon.jsx";
 import CheckedIcon from "../../../../assets/Icons/CheckedIcon.jsx";
 import UncheckedIcon from "../../../../assets/Icons/UncheckedIcon.jsx";
 import { InputTitleButtons } from "../../Helpers/InputTitleButtons/index.jsx";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const Link = ({
   currentField,
@@ -34,15 +35,7 @@ export const Link = ({
     setLink(e.target.value);
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
@@ -81,7 +74,7 @@ export const Link = ({
       node.data.push({ ...finalField, id: v4() });
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };

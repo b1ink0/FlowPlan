@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { v4 } from "uuid";
 import ImageIcon from "../../../../assets/Icons/ImageIcon.jsx";
 import { InputTitleButtons } from "../../Helpers/InputTitleButtons/index.jsx";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const Image = ({
   currentField,
@@ -30,15 +31,7 @@ export const Image = ({
     setName(e.target.files[0].name);
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handleFileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -88,7 +81,7 @@ export const Image = ({
       node.data.push({ ...finalField, id: v4() });
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };

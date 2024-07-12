@@ -4,6 +4,7 @@ import { v4 } from "uuid";
 import { SortableList } from "../../../Helpers/DND/SortableList/index.jsx";
 import DeleteIcon from "../../../../assets/Icons/DeleteIcon.jsx";
 import { InputTitleButtons } from "../../Helpers/InputTitleButtons/index.jsx";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const NumberList = ({
   currentField,
@@ -101,15 +102,7 @@ export const NumberList = ({
     setItem("");
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
     let finalList =
@@ -150,7 +143,7 @@ export const NumberList = ({
       node.data.push({ ...finalField, id: v4() });
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };

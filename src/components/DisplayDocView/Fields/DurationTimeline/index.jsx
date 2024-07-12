@@ -8,6 +8,7 @@ import GraphIcon from "../../../../assets/Icons/GraphIcon.jsx";
 import OverlapIcon from "../../../../assets/Icons/OverlapIcon.jsx";
 import ColorIcon from "../../../../assets/Icons/ColorIcon.jsx";
 import DeleteIcon from "../../../../assets/Icons/DeleteIcon.jsx";
+import { useDatabase } from "../../../../hooks/useDatabase/index.jsx";
 
 export const DurationTimeline = ({
   node,
@@ -623,15 +624,7 @@ export const DurationTimeline = ({
     });
   };
 
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   const handleSave = async (e, index = null) => {
     e?.preventDefault();
@@ -667,7 +660,7 @@ export const DurationTimeline = ({
       node.data.push({ ...finalField, id: finalFieldId });
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
   };
@@ -680,7 +673,7 @@ export const DurationTimeline = ({
     });
     node.data.splice(i, 1);
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
   };
 
   const [formated, setFormated] = useState({
