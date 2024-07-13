@@ -95,6 +95,9 @@ function SideNavbar() {
       // get current note from db using refId
       const result = await db.flowPlans.where("refId").equals(refId).first();
       // position calculation for tree
+
+      if (result === undefined) return;
+
       handlePositionCalculation(result.root);
       // set current note in context
       setCurrentFlowPlan(result);

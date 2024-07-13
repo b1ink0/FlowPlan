@@ -2,9 +2,10 @@
 import { v4 } from "uuid";
 import { useStateContext } from "../../context/StateContext";
 import { deleteNode, moveNode, removeChild, reorderNode } from "../useTree";
-import { fsdb } from "../../firebase";
+import { fsdb, storage } from "../../firebase";
 import { useAuth } from "../../context/AuthContext";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 const FlowPlanAPIURL = import.meta.env.VITE_FLOWPLAN_API_URL;
 
@@ -50,8 +51,8 @@ export const useDatabase = () => {
 
   const handleSync = async () => {
     if (!handleUserLogedIn) return;
-    if (! await handleCreateUserDoc()) return;
-    if (! await handleCreateFlowPlanRecord()) return;
+    if (!(await handleCreateUserDoc())) return;
+    if (!(await handleGetUpdateTracking())) return;
   };
 
   const handleCreateUserDoc = async () => {
@@ -82,7 +83,7 @@ export const useDatabase = () => {
     }
   };
 
-  const handleCreateFlowPlanRecord = async () => {
+  const handleGetUpdateTracking = async () => {
     // first check if the flow plan record exists
     const flowPlanList = await handleAuthenticatedFetch(
       `${FlowPlanAPIURL}/flowPlanlist`
@@ -92,15 +93,15 @@ export const useDatabase = () => {
       return false;
     }
 
-    if (flowPlanList.data.length === 0) {
+    if (flowPlanList.length === 0) {
       console.log("No flow plan record exists");
       const flowPlans = await db.flowPlans.toArray();
       if (flowPlans.length === 0) {
         console.log("No flow plan record in indexedDB");
         return false;
       }
-      handleAddBulkFlowPlans(flowPlans);
-      return true;
+      await handleAddBulkFlowPlans(flowPlans);
+      return false;
     }
     console.log("Flow plan record exists", flowPlanList);
   };
@@ -170,7 +171,46 @@ export const useDatabase = () => {
 
   const handleAddBulkFlowPlans = async (plans) => {
     // @marker AddBulkFlowPlans
+    plans = structuredClone(plans);
+    plans = await handleProcessFlowPlanFileUpload(plans);
 
+    const flowPlanUpdateTrackingData = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowplanaddbulk`,
+      {
+        method: "POST",
+        body: JSON.stringify({ plans: plans }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!flowPlanUpdateTrackingData) {
+      console.log("Error adding bulk flow plans");
+      return;
+    }
+
+    console.log("Bulk flow plans added", flowPlanUpdateTrackingData);
+
+    await flowPlanUpdateTrackingData.forEach(async (plan) => {
+      const getPlan = await db.flowPlans
+        .where("refId")
+        .equals(plan.refId)
+        .first();
+      if (!getPlan) {
+        console.log("Plan not found in indexedDB", plan.refId);
+        return;
+      }
+
+      const update = await db.flowPlans
+        .where("refId")
+        .equals(plan.refId)
+        .modify({
+          updateTracking: plan.updateTracking,
+        });
+      console.log("Plan updated in indexedDB", update);
+    });
+    console.log("Bulk flow plans processed!");
   };
 
   const handleDeleteFlowPlanFromDB = async (refId) => {
@@ -178,13 +218,84 @@ export const useDatabase = () => {
     await db.flowPlans.where("refId").equals(refId).delete();
   };
 
-  const handleProcessFlowPlan = async (flowPlan) => {
-    // @marker ProcessFlowPlan
+  const handleProcessFlowPlanFileUpload = async (flowPlans) => {
+    const promises = flowPlans.map(async (plan) => {
+      const root = await handleProcessNodeFileUpload(plan.root);
+      plan.root = root;
+      console.log("Processed Plan", plan?.refId);
+    });
+    await Promise.all(promises);
+    return flowPlans;
   };
 
-  const handleProcessNode = async (node) => {
+  const handleProcessNodeFileUpload = async (node) => {
+    if (node?.data) {
+      // @marker ProcessNode
+      const promises = node.data.map(async (field) => {
+        if (field?.type === "image" || field?.type === "file") {
+          // @marker ProcessField
+          if (!field.data[field.type].url.startsWith("data:")) return;
+          const blob = await handleBase64ToBlob(
+            field.data[field.type].url,
+            field.data[field.type].mimiType
+          );
 
-  }
+          const storageRef = ref(storage, `${currentUser.uid}/${v4()}`);
+
+          // Upload the file (optional step depending on your needs)
+          console.log("Uploading file", field.data[field.type].name);
+          await uploadBytes(storageRef, blob);
+          const downloadURL = await getDownloadURL(storageRef);
+          // const downloadURL = "https://www.google.com";
+          console.log(
+            "File Complete",
+            field.data[field.type].name,
+            downloadURL
+          );
+          field.data[field.type].url = downloadURL;
+        }
+      });
+      // Wait for all the promises to resolve
+      await Promise.all(promises);
+      console.log("Porcessed Node", node?.id);
+    }
+
+    if (node?.children) {
+      // @marker ProcessChildren
+      const promises = node.children.map(async (child) => {
+        await handleProcessNodeFileUpload(child);
+      });
+      // Wait for all the promises to resolve
+      await Promise.all(promises);
+    }
+    return node;
+  };
+
+  const handleBase64ToBlob = (base64, mimeType) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const byteCharacters = atob(base64.split(",")[1]);
+        const byteArrays = [];
+
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+          const slice = byteCharacters.slice(offset, offset + 512);
+          const byteNumbers = new Array(slice.length);
+
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+
+          const byteArray = new Uint8Array(byteNumbers);
+          byteArrays.push(byteArray);
+        }
+
+        const blob = new Blob(byteArrays, { type: mimeType });
+        resolve(blob);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
 
   return {
     handleUpdateIndexDB,
