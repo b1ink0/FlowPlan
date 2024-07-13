@@ -2,19 +2,108 @@
 import { v4 } from "uuid";
 import { useStateContext } from "../../context/StateContext";
 import { deleteNode, moveNode, removeChild, reorderNode } from "../useTree";
+import { fsdb } from "../../firebase";
+import { useAuth } from "../../context/AuthContext";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
+const FlowPlanAPIURL = import.meta.env.VITE_FLOWPLAN_API_URL;
 
 export const useDatabase = () => {
   // destructure state from context
-  const {
-    db,
-    currentFlowPlan,
-    setCurrentFlowPlan,
-    update,
-    setUpdate,
-    move,
-    setMove,
-    setCopyNode,
-  } = useStateContext();
+  const { db } = useStateContext();
+  const { currentUser } = useAuth();
+
+  const handleUserLogedIn = () => {
+    return currentUser ? true : false;
+  };
+
+  const handleGetIdToken = async () => {
+    if (!handleUserLogedIn) return;
+    const idToken = await currentUser.getIdToken();
+    return idToken;
+  };
+
+  const handleAuthenticatedFetch = async (url, options = {}) => {
+    if (!handleUserLogedIn) return;
+    try {
+      const idToken = await handleGetIdToken();
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options?.headers,
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.log("Error fetching data from server", response);
+        return false;
+      }
+
+      const jsonResponce = await response.json();
+      return jsonResponce;
+    } catch (e) {
+      console.log("Error fetching data from server", e);
+      return false;
+    }
+  };
+
+  const handleSync = async () => {
+    if (!handleUserLogedIn) return;
+    if (! await handleCreateUserDoc()) return;
+    if (! await handleCreateFlowPlanRecord()) return;
+  };
+
+  const handleCreateUserDoc = async () => {
+    // fist check if the user doc exists
+    const useDocRef = doc(fsdb, "users", currentUser.uid);
+    try {
+      const docSnap = await getDoc(useDocRef);
+      if (docSnap.exists()) {
+        console.log("User doc exists", docSnap.data());
+        return true;
+      } else {
+        // doc doesn't exist, create one
+        const user = {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName,
+          photoURL: currentUser.photoURL,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        await setDoc(useDocRef, user);
+        console.log("User doc created");
+        return true;
+      }
+    } catch (e) {
+      console.log("Error getting document from user collection", e);
+      return false;
+    }
+  };
+
+  const handleCreateFlowPlanRecord = async () => {
+    // first check if the flow plan record exists
+    const flowPlanList = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowPlanlist`
+    );
+    if (!flowPlanList) {
+      console.log("Error fetching flow plan list");
+      return false;
+    }
+
+    if (flowPlanList.data.length === 0) {
+      console.log("No flow plan record exists");
+      const flowPlans = await db.flowPlans.toArray();
+      if (flowPlans.length === 0) {
+        console.log("No flow plan record in indexedDB");
+        return false;
+      }
+      handleAddBulkFlowPlans(flowPlans);
+      return true;
+    }
+    console.log("Flow plan record exists", flowPlanList);
+  };
 
   const handleUpdateIndexDB = async (
     refId,
@@ -33,6 +122,9 @@ export const useDatabase = () => {
 
     // handle dates and images and files
     // add updated timestamp to all the nodes that are updated
+
+    // return if no user is logged in
+    if (!handleUserLogedIn) return;
 
     switch (typeOfUpdate) {
       case "updateNode":
@@ -78,6 +170,7 @@ export const useDatabase = () => {
 
   const handleAddBulkFlowPlans = async (plans) => {
     // @marker AddBulkFlowPlans
+
   };
 
   const handleDeleteFlowPlanFromDB = async (refId) => {
@@ -85,10 +178,19 @@ export const useDatabase = () => {
     await db.flowPlans.where("refId").equals(refId).delete();
   };
 
+  const handleProcessFlowPlan = async (flowPlan) => {
+    // @marker ProcessFlowPlan
+  };
+
+  const handleProcessNode = async (node) => {
+
+  }
+
   return {
     handleUpdateIndexDB,
     handleAddNewPlan,
     handleAddBulkFlowPlans,
     handleDeleteFlowPlanFromDB,
+    handleSync,
   };
 };
