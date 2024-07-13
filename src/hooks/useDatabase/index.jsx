@@ -52,7 +52,233 @@ export const useDatabase = () => {
   const handleSync = async () => {
     if (!handleUserLogedIn) return;
     if (!(await handleCreateUserDoc())) return;
-    if (!(await handleGetUpdateTracking())) return;
+    const remoteUpdateTracking = await handleGetUpdateTracking();
+    if (!remoteUpdateTracking) return;
+    const localUpdateTracking = await db.flowPlans.toArray();
+    if (!localUpdateTracking) return;
+    console.log("Remote Update Tracking", remoteUpdateTracking);
+    console.log("Local Update Tracking", localUpdateTracking);
+
+    const newPlans = [];
+    const updatedPlans = [];
+    const deletedPlans = [];
+
+    remoteUpdateTracking.forEach((remote) => {
+      const local = localUpdateTracking.find((l) => l.refId === remote.refId);
+      if (!local) {
+        console.log("Local record not found", remote.refId);
+        newPlans.push(remote.refId);
+        return;
+      }
+      let newNodes = [];
+      let updatedNodes = [];
+      let deletedNodes = [];
+      Object.keys(remote.updateTracking).forEach(async (key) => {
+        if (!local.updateTracking[key]) {
+          newNodes.push(key);
+          return;
+        }
+        if (
+          handleCompareTimestamps(
+            remote.updateTracking[key],
+            local.updateTracking[key]
+          )
+        ) {
+          updatedNodes.push(key);
+          return;
+        }
+      });
+      Object.keys(local.updateTracking).forEach((key) => {
+        if (!remote.updateTracking[key]) {
+          deletedNodes.push(key);
+          return;
+        }
+      });
+
+      if (
+        newNodes.length === 0 &&
+        deletedNodes.length === 0 &&
+        updatedNodes.length === 0
+      )
+        return;
+
+      updatedPlans.push({
+        refId: remote.refId,
+        newNodes: newNodes,
+        updatedNodes: updatedNodes,
+        deletedNodes: deletedNodes,
+      });
+      console.log(updatedPlans);
+    });
+
+    localUpdateTracking.forEach((local) => {
+      const remote = remoteUpdateTracking.find((r) => r.refId === local.refId);
+      if (!remote) {
+        console.log("Remote record not found", local.refId);
+        deletedPlans.push(local.refId);
+        return;
+      }
+    });
+
+    console.log("New Plans", newPlans);
+    console.log("Updated Plans", updatedPlans);
+    console.log("Deleted Plans", deletedPlans);
+
+    await handleSyncNewPlans(newPlans);
+    await handleSyncUpdatedPlans(updatedPlans);
+    await handleSyncDeletedPlans(deletedPlans);
+  };
+
+  const handleSyncNewPlans = async (newPlans) => {
+    if (newPlans.length === 0) return;
+
+    const plans = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowPlan-retrieve-bulk`,
+      {
+        method: "POST",
+        body: JSON.stringify({ refIds: newPlans }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!plans) {
+      console.log("Error fetching new plans");
+      return;
+    }
+
+    plans.forEach(async (plan) => {
+      await handleAddNewPlan(plan, false);
+      console.log("New Plan Added", plan.refId);
+    });
+    console.log("New Plans processed!");
+  };
+
+  const handleSyncUpdatedPlans = async (updatedPlans) => {
+    console.log(updatedPlans);
+    if (updatedPlans.length === 0) return;
+
+    // await handleSyncUpdateNodes(updatedPlans);
+
+    updatedPlans.forEach(async (plan) => {
+      await handleDeleteNodes(plan);
+    });
+  };
+
+  const handleSyncUpdateNodes = async (updatedPlans) => {
+    if (updatedPlans.length === 0) return;
+    let temp = [];
+    updatedPlans.forEach((plan) => {
+      // updatedNodes = [...updatedNodes, ...(plan.updatedNodes.contat(plan.newNodes))];
+      temp.push({
+        refId: plan.refId,
+        nodes: plan.updatedNodes,
+      });
+    });
+
+    const planNodes = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowPlan-retrieve-nodes`,
+      {
+        method: "POST",
+        body: JSON.stringify({ plans: temp }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!planNodes) {
+      console.log("Error fetching plan nodes");
+      return;
+    }
+
+    planNodes.forEach(async (plan) => {
+      const localPlan = await db.flowPlans
+        .where("refId")
+        .equals(plan.refId)
+        .first();
+      if (!localPlan) {
+        console.log("Plan not found in indexedDB", plan.refId);
+        return;
+      }
+
+      localPlan.root = handleUpdateNodesInPlan(plan.nodes, localPlan.root);
+      await db.flowPlans.where("refId").equals(plan.refId).modify({
+        root: localPlan.root,
+        updatedAt: new Date(),
+      });
+      console.log("Plan updated in indexedDB", plan.refId);
+    });
+  };
+
+  const handleUpdateNodesInPlan = (nodes, node) => {
+    if (!nodes || nodes.length === 0) return node;
+
+    // Find the updated version of the current node
+    // const updatedNode = nodes.find((n) => n.id === node.id);
+
+    // // If the current node needs to be updated, return the updated node
+    // if (updatedNode) {
+    //   return { ...node, ...updatedNode };
+    // }
+
+    // // If the current node has children, recursively update them
+    // if (node?.children && node.children.length > 0) {
+    //   node.children = node.children.map((child) =>
+    //     handleUpdateNodesInPlan(nodes, child)
+    //   );
+    // }
+
+    // return node;
+  };
+
+  const handleDeleteNodes = async (plan) => {
+    if (plan.deletedNodes.length === 0) return;
+    const localPlan = await db.flowPlans
+      .where("refId")
+      .equals(plan.refId)
+      .first();
+    if (!localPlan) {
+      console.log("Plan not found in indexedDB", plan.refId);
+      return;
+    }
+
+    localPlan.root = handleDeleteNodesFromPlan(
+      plan.deletedNodes,
+      localPlan.root
+    );
+    console.log(localPlan.root);
+    await db.flowPlans.where("refId").equals(plan.refId).modify({
+      root: localPlan.root,
+      updatedAt: new Date(),
+    });
+  };
+
+  const handleDeleteNodesFromPlan = (deletedNodes, node) => {
+    if (deletedNodes.length === 0) return node;
+    if (deletedNodes.includes(node.id)) {
+      return null;
+    }
+    if (node?.children.length > 0) {
+      node.children = node.children
+        .map((child) => handleDeleteNodesFromPlan(deletedNodes, child))
+        .filter((child) => child !== null);
+    }
+    return node;
+  };
+
+  const handleSyncDeletedPlans = async (deletedPlans) => {
+    if (deletedPlans.length === 0) return;
+    deletedPlans.forEach(async (refId) => {
+      await handleDeleteFlowPlanFromDB(refId, false);
+    });
+  };
+
+  const handleCompareTimestamps = (remote, local) => {
+    const remoteTimestamp = new Date(remote).getTime();
+    const localTimestamp = new Date(local).getTime();
+    return remoteTimestamp > localTimestamp;
   };
 
   const handleCreateUserDoc = async () => {
@@ -86,7 +312,7 @@ export const useDatabase = () => {
   const handleGetUpdateTracking = async () => {
     // first check if the flow plan record exists
     const flowPlanList = await handleAuthenticatedFetch(
-      `${FlowPlanAPIURL}/flowPlanlist`
+      `${FlowPlanAPIURL}/flowPlan-list`
     );
     if (!flowPlanList) {
       console.log("Error fetching flow plan list");
@@ -104,6 +330,7 @@ export const useDatabase = () => {
       return false;
     }
     console.log("Flow plan record exists", flowPlanList);
+    return flowPlanList;
   };
 
   const handleUpdateIndexDB = async (
@@ -164,9 +391,11 @@ export const useDatabase = () => {
     }
   };
 
-  const handleAddNewPlan = async (plan) => {
+  const handleAddNewPlan = async (plan, remote = true) => {
     // @marker AddNewPlan
     await db.flowPlans.add(plan);
+
+    if (!remote) return;
   };
 
   const handleAddBulkFlowPlans = async (plans) => {
@@ -175,7 +404,7 @@ export const useDatabase = () => {
     plans = await handleProcessFlowPlanFileUpload(plans);
 
     const flowPlanUpdateTrackingData = await handleAuthenticatedFetch(
-      `${FlowPlanAPIURL}/flowplanaddbulk`,
+      `${FlowPlanAPIURL}/flowplan-add-bulk`,
       {
         method: "POST",
         body: JSON.stringify({ plans: plans }),
@@ -213,9 +442,11 @@ export const useDatabase = () => {
     console.log("Bulk flow plans processed!");
   };
 
-  const handleDeleteFlowPlanFromDB = async (refId) => {
+  const handleDeleteFlowPlanFromDB = async (refId, remote = true) => {
     // @marker DeleteFlowPlanFromDB
     await db.flowPlans.where("refId").equals(refId).delete();
+
+    if (!remote) return;
   };
 
   const handleProcessFlowPlanFileUpload = async (flowPlans) => {
