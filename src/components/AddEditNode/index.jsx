@@ -22,6 +22,7 @@ import RandomIcon from "../../assets/Icons/RandomIcon";
 import CopyIcon from "../../assets/Icons/CopyIcon";
 import PasteIcon from "../../assets/Icons/PasteIcon";
 import CustomizeIcon from "../../assets/Icons/CustomizeIcon";
+import { useDatabase } from "../../hooks/useDatabase";
 
 const AddEditNode = () => {
   // destructuring state from context
@@ -50,12 +51,7 @@ const AddEditNode = () => {
   const inputRef = useRef(null);
 
   // helper function for updating database
-  const handleUpdateDb = async (node, refId) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({ root: node, updatedAt: new Date() });
-  };
+  const { handleUpdateIndexDB } = useDatabase();
 
   // helper function for adding and editing a node
   const handleAddEditNode = async (e) => {
@@ -71,8 +67,9 @@ const AddEditNode = () => {
     });
 
     // if add node then create new node and add it to parent node
+    let newChildNode = null;
     if (addEditNode.type === "add") {
-      const newChildNode = createNode(v4(), node.title, node.data, node.config);
+      newChildNode = createNode(v4(), node.title, node.data, node.config);
       addChild(parentNode, newChildNode);
       handlePositionCalculation(root);
     }
@@ -83,7 +80,12 @@ const AddEditNode = () => {
 
     // update currentFlowPlan and database
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateDb(root, currentFlowPlan.refId);
+    // @marker AddEditNode
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "addEditNode", {
+      type: addEditNode.type,
+      node: addEditNode.type === "add" ? newChildNode : parentNode,
+      parentNode: parentNode,
+    });
 
     // reset local state and close addEditNode component
     setNode({

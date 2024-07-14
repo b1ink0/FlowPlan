@@ -1,6 +1,7 @@
 import { v4 } from "uuid";
 import { useStateContext } from "../../context/StateContext";
 import { deleteNode, moveNode, removeChild, reorderNode } from "../useTree";
+import { useDatabase } from "../useDatabase";
 
 export const useFunctions = () => {
   // destructure state from context
@@ -15,26 +16,32 @@ export const useFunctions = () => {
     setCopyNode,
   } = useStateContext();
 
-  // function to handle update tree note
-  const handleUpdateIndexDB = async (refId, root, updateDate = true) => {
-    await db.flowPlans
-      .where("refId")
-      .equals(refId)
-      .modify({
-        root: root,
-        ...(updateDate && { updatedAt: new Date() }),
-      });
-  };
+  const {
+    handleUpdateIndexDB,
+    handleAddBulkFlowPlans,
+    handleDeleteFlowPlanFromDB,
+  } = useDatabase();
 
   // function to handle delete node without its children
   const handleDeleteNodeWithoutItsChildren = async (parent, node, location) => {
     // function to delete node
+    const nodeCopy = structuredClone(node);
     deleteNode(parent, node, location);
     // update current tree note
     let root = currentFlowPlan?.root;
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     // update tree note in indexedDB
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    // @marker DeleteNodeWithoutItsChildren
+    await handleUpdateIndexDB(
+      currentFlowPlan.refId,
+      root,
+      true,
+      "deleteNodeWithoutItsChildren",
+      {
+        parent: parent,
+        node: nodeCopy,
+      }
+    );
     // handle position calculation
     handlePositionCalculation(root);
     // update state
@@ -45,11 +52,23 @@ export const useFunctions = () => {
   const handleDeleteNodeWithItsChildren = async (parent, node) => {
     let root = currentFlowPlan.root;
     // function to delete node
+    const nodeCopy = structuredClone(node);
     removeChild(parent, node);
     // update current tree note
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     // update tree note in indexedDB
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    // @marker DeleteNodeWithItsChildren
+    await handleUpdateIndexDB(
+      currentFlowPlan.refId,
+      root,
+      true,
+      "deleteNodeWithItsChildren",
+      {
+        parent: parent,
+        node: nodeCopy,
+      }
+    );
+
     // handle position calculation
     handlePositionCalculation(root);
     // update state
@@ -69,9 +88,15 @@ export const useFunctions = () => {
       node: null,
     });
     // update tree note in indexedDB
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    // @marker MoveNode
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, false, "moveNode", {
+      newParent: node,
+      node: move.node,
+      oldParent: move.parent,
+    });
+
     // handle position calculation
-    handlePositionCalculation(root);
+    handlePositionCalculation(root);~
     // update state
     setUpdate(update + 1);
   };
@@ -105,7 +130,18 @@ export const useFunctions = () => {
       node: null,
     });
     // update tree note in indexedDB
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    // @marker ReorderNode
+    await handleUpdateIndexDB(
+      currentFlowPlan.refId,
+      root,
+      true,
+      "reorderNode",
+      {
+        oldParent: move.parent,
+        newParent: parent,
+        node: move.node,
+      }
+    );
     // handle position calculation
     handlePositionCalculation(root);
     // update state
@@ -134,7 +170,6 @@ export const useFunctions = () => {
     downloadAnchorNode.setAttribute(
       "download",
       `FlowPlans_${date.getDate()}-${
-
         date.getMonth() + 1
       }-${date.getFullYear()}_${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}.json`
     );
@@ -155,8 +190,10 @@ export const useFunctions = () => {
       let promises = [];
 
       // loop through flow plans to add them to indexedDB
+      let importFlowPlans = [];
       for (let flowPlan of flowPlans) {
-        const FlowPlansPromise = db.flowPlans.add({
+        // loop through children of the flow plan
+        const updateFlowPlan = {
           // assign new refId
           refId: refIds[flowPlan.refId],
           title: flowPlan.title,
@@ -166,12 +203,19 @@ export const useFunctions = () => {
           },
           createdAt: new Date(flowPlan.createdAt),
           updatedAt: new Date(flowPlan.updatedAt),
-        });
+        };
+
+        const FlowPlansPromise = db.flowPlans.add(updateFlowPlan);
+        importFlowPlans.push(updateFlowPlan);
         // push promise to promises array
         promises.push(FlowPlansPromise);
       }
       // wait for all promises to resolve
       promises = await Promise.all(promises);
+
+      // @marker AddBulkFlowPlans
+      handleAddBulkFlowPlans(importFlowPlans);
+
       // update state
       setUpdate(update + 1);
       return promises;
@@ -213,7 +257,8 @@ export const useFunctions = () => {
   // function to handle delete tree note
   const handleDeleteFlowPlan = async (refId) => {
     // find tree note by refId and delete it
-    await db.flowPlans.where("refId").equals(refId).delete();
+    // @marker DeleteFlowPlanFromDB
+    await handleDeleteFlowPlanFromDB(refId);
     if (currentFlowPlan?.refId === refId) {
       setCurrentFlowPlan(null);
     }
@@ -258,9 +303,17 @@ export const useFunctions = () => {
   };
 
   // function to calculate the number of all children for that parent
-  const handleNumberOfAllChildrenForThatParent = (node, i = 1, root) => {
+  const handleNumberOfAllChildrenForThatParent = (
+    node,
+    i = 1,
+    root,
+    parentLocation = null,
+    location
+  ) => {
     // if the node has no children or the node is not expanded,
     // then the number of all children for that parent is 1
+    node.location = parentLocation ? [...parentLocation, location] : [];
+
     if (node?.children?.length === 0 || node?.expanded === false) {
       node.numberOfAllChildren = 1;
       // update the number of levels
@@ -271,9 +324,15 @@ export const useFunctions = () => {
     // initialize count
     let count = 0;
     // loop through children of the node
-    node?.children?.forEach((child) => {
+    node?.children?.forEach((child, index) => {
       // add the number of all children for that child to count
-      count += handleNumberOfAllChildrenForThatParent(child, i + 1, root);
+      count += handleNumberOfAllChildrenForThatParent(
+        child,
+        i + 1,
+        root,
+        node.location,
+        index
+      );
     });
     // update the number of children for that parent
     node.numberOfAllChildren = count;
@@ -299,7 +358,7 @@ export const useFunctions = () => {
   const handlePositionCalculation = (root) => {
     // reseting number of levels
     root.numberOfLevels = 1;
-    handleNumberOfAllChildrenForThatParent(root, 1, root);
+    handleNumberOfAllChildrenForThatParent(root, 1, root, null, 0);
     handleFinalPositionCalculation(root, 0);
   };
 
@@ -310,7 +369,14 @@ export const useFunctions = () => {
     let root = currentFlowPlan.root;
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     // update tree note in indexedDB
-    await handleUpdateIndexDB(currentFlowPlan.refId, root, false);
+    // @marker Expanded
+    await handleUpdateIndexDB(
+      currentFlowPlan.refId,
+      root,
+      false,
+      "expanded",
+      node
+    );
     // handle position calculation
     handlePositionCalculation(root);
     // update state
@@ -491,7 +557,12 @@ export const useFunctions = () => {
     // update current tree note
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     // update tree note in indexedDB
-    await handleUpdateIndexDB(currentFlowPlan.refId, root);
+    // @marker PasteNode
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "pasteNode", {
+      node: copyNode,
+      parent: node,
+    });
+
     // handle position calculation
     handlePositionCalculation(root);
     // update state
