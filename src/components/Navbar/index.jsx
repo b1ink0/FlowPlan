@@ -11,6 +11,7 @@ import useClickOutside from "../../hooks/useClickOutside";
 import { useAuth } from "../../context/AuthContext";
 import CloudIcon from "../../assets/Icons/CloudIcon";
 import { useDatabase } from "../../hooks/useDatabase";
+import ComponetSpinner from "../Helpers/ComponentSpinner";
 
 function Navbar() {
   const {
@@ -18,7 +19,8 @@ function Navbar() {
     isActive: isSettingsVisible,
     setIsActive: setIsSettingsVisible,
   } = useClickOutside(false);
-  const { setMove, settings, setSettings } = useStateContext();
+  const { setMove, settings, setSettings, updatingDatabase } =
+    useStateContext();
   const { handleSync } = useDatabase();
   const { toggleColorScheme } = useToggleTheme();
 
@@ -50,7 +52,13 @@ function Navbar() {
         className="w-fit shrink-0 h-8 rounded-md bg-[var(--bg-secondary)] p-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
         onClick={handleSync}
       >
-        <CloudIcon />
+        {updatingDatabase.updating ? (
+          <ComponetSpinner>
+            <CloudIcon />
+          </ComponetSpinner>
+        ) : (
+          <CloudIcon />
+        )}
       </button>
       <span ref={settingsRef} className="relative w-8 h-8">
         <button
@@ -92,7 +100,10 @@ const Settings = () => {
   const [setshowSettings, setSetshowSettings] = useState({
     background: false,
     saveTransforms: false,
+    autoSync: false,
   });
+
+  const { currentUser } = useAuth();
   const handleShow = (type) => {
     setSetshowSettings({
       ...setshowSettings,
@@ -121,6 +132,19 @@ const Settings = () => {
         </span>
       </button>
       {setshowSettings.saveTransforms && <SaveTransforms />}
+
+      {currentUser && (
+        <button
+          className="w-full flex justify-between items-center rounded-md bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
+          onClick={() => handleShow("autoSync")}
+        >
+          DB Auto Sync
+          <span className="w-5 h-8">
+            <CloudIcon />
+          </span>
+        </button>
+      )}
+      {setshowSettings.autoSync && <AutoSync />}
     </div>
   );
 };
@@ -323,6 +347,59 @@ const SaveTransforms = () => {
               style={{
                 transform:
                   treeConfig?.useSavedTransformState === "true"
+                    ? "translateX(18px)"
+                    : "translateX(2px)",
+              }}
+              className="block w-2 h-2 rounded-md bg-[var(--logo-primary)] transition-transform"
+            ></span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AutoSync = () => {
+  const { settings, setSettings } = useStateContext();
+  const { databaseConfig } = settings;
+  const handleUpdateUseSavedTransformState = (type) => {
+    const value = databaseConfig[type] === "true" ? "false" : "true";
+    setSettings({
+      ...settings,
+      databaseConfig: { ...settings.databaseConfig, [type]: value },
+    });
+    localStorage.setItem(type, value);
+  };
+  return (
+    <div className="w-full h-fit overflow-hidden rounded-md bg-[var(--bg-primary)] border-2 border-[var(--border-primary)]">
+      <div className="flex flex-col text-sm p-1 gap-1">
+        <div className="flex justify-between items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
+          <span className="text-[var(--text-primary)]">Auto Sync</span>
+          <span
+            onClick={() => handleUpdateUseSavedTransformState("autoSync")}
+            className="cursor-pointer flex justify-start items-center w-7 h-3 rounded-md bg-[var(--bg-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+          >
+            <span
+              style={{
+                transform:
+                  databaseConfig?.autoSync === "true"
+                    ? "translateX(18px)"
+                    : "translateX(2px)",
+              }}
+              className="block w-2 h-2 rounded-md bg-[var(--logo-primary)] transition-transform"
+            ></span>
+          </span>
+        </div>
+        <div className="flex justify-between items-center gap-2 px-1 py-1 rounded-md bg-[var(--bg-secondary)]">
+          <span className="text-[var(--text-primary)]">Show Log</span>
+          <span
+            onClick={() => handleUpdateUseSavedTransformState("showLog")}
+            className="cursor-pointer flex justify-start items-center w-7 h-3 rounded-md bg-[var(--bg-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)] focus:border-transparent"
+          >
+            <span
+              style={{
+                transform:
+                  databaseConfig?.showLog === "true"
                     ? "translateX(18px)"
                     : "translateX(2px)",
               }}

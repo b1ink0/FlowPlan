@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import SideNavbar from "../SideNavbar";
 import DisplayTree from "../DisplayTree";
 import AddEditNode from "../AddEditNode";
@@ -8,12 +8,29 @@ import Navbar from "../Navbar";
 import DisplayDocView from "../DisplayDocView";
 import SharedMenu from "../SharedMenu";
 import AlertMessageLogs from "../Helpers/AlertMessageLogs";
+import { useDatabase } from "../../hooks/useDatabase";
+import { useAuth } from "../../context/AuthContext";
 
 function Home() {
   // destructure state from context
-  const { currentFlowPlan } = useStateContext();
+  const { currentFlowPlan, settings } = useStateContext();
+  const { currentUser } = useAuth();
+
+  const { databaseConfig } = settings;
+
+  const { handleSync } = useDatabase();
   // destructure functions from custom hook
-  const { handleImportFlowPlan } = useFunctions();
+
+  useEffect(() => {
+    if (databaseConfig?.autoSync === "true") {
+      if (!currentUser) return;
+      setTimeout(() => {
+        console.log("Syncing Database");
+        handleSync();
+      }, 1000);
+    }
+  }, [currentUser]);
+
   return (
     <div
       id="top_container"

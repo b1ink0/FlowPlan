@@ -100,6 +100,11 @@ export function StateProvider({ children }) {
         },
       ],
     },
+    databaseConfig: {
+      autoSync: localStorage.getItem("autoSync") ?? "true",
+      showLog: localStorage.getItem("showLog") ?? "false",
+      syncInterval: localStorage.getItem("syncInterval") || "60000",
+    },
   });
 
   // db state contains the database object to interact with the indexedDB database
