@@ -8,6 +8,9 @@ import SelectedIcon from "../../assets/Icons/SelectedIcon";
 import BackIcon from "../../assets/Icons/BackIcon";
 import ResetToDefaultIcon from "../../assets/Icons/ResetToDefaultIcon";
 import useClickOutside from "../../hooks/useClickOutside";
+import { useAuth } from "../../context/AuthContext";
+import CloudIcon from "../../assets/Icons/CloudIcon";
+import { useDatabase } from "../../hooks/useDatabase";
 
 function Navbar() {
   const {
@@ -16,6 +19,7 @@ function Navbar() {
     setIsActive: setIsSettingsVisible,
   } = useClickOutside(false);
   const { setMove, settings, setSettings } = useStateContext();
+  const { handleSync } = useDatabase();
   const { toggleColorScheme } = useToggleTheme();
 
   const handleSettingsToggle = () => {
@@ -33,13 +37,20 @@ function Navbar() {
     });
     localStorage.setItem("renderType", e.target.value);
   };
+
   return (
-    <div className="z-10 absolute top-2 right-0 rounded-sm w-fit h-10 text-gray-200 flex justify-center items-center gap-3 px-3 py-2">
+    <div className="z-10 absolute top-2 right-0 rounded-sm w-fit h-10 text-gray-200 flex justify-center items-center gap-2 px-3 py-2">
       <button
-        className="w-fit h-8 rounded-md bg-[var(--bg-secondary)] px-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
+        className="w-fit shrink-0 h-8 rounded-md bg-[var(--bg-secondary)] p-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
         onClick={toggleColorScheme}
       >
         <ThemeIcon />
+      </button>
+      <button
+        className="w-fit shrink-0 h-8 rounded-md bg-[var(--bg-secondary)] p-2 focus:outline-none focus:ring-2 focus:ring-[var(--border-primary)]"
+        onClick={handleSync}
+      >
+        <CloudIcon />
       </button>
       <span ref={settingsRef} className="relative w-8 h-8">
         <button
@@ -291,7 +302,8 @@ const SaveTransforms = () => {
   const { settings, setSettings } = useStateContext();
   const { treeConfig } = settings;
   const handleUpdateUseSavedTransformState = () => {
-    const value = treeConfig?.useSavedTransformState === "true" ? "false" : "true";
+    const value =
+      treeConfig?.useSavedTransformState === "true" ? "false" : "true";
     setSettings({
       ...settings,
       treeConfig: { ...settings.treeConfig, useSavedTransformState: value },

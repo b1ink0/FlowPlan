@@ -245,6 +245,12 @@ export function StateProvider({ children }) {
     }
   });
 
+  const [updatingDatabase, setUpdatingDatabase] = useState({
+    updating: false,
+    message: "",
+    messageLog: [],
+  });
+
   // values contains all the states and functions to update the states
   const values = {
     settings,
@@ -290,6 +296,8 @@ export function StateProvider({ children }) {
     setSharedData,
     sharedQuickAccess,
     setSharedQuickAccess,
+    updatingDatabase,
+    setUpdatingDatabase,
   };
   return (
     // Providing all the states and functions to update the states

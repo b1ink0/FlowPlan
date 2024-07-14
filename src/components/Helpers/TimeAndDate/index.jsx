@@ -1,9 +1,14 @@
+import { useState } from "react";
+
 export const TimeAndDate = ({
   timeDate,
   absolute = true,
   text = "",
   group = true,
 }) => {
+  const [date, setDate] = useState(
+    timeDate ? new Date(timeDate) : new Date()
+  );
   return (
     <span
       style={absolute ? { position: "absolute" } : {}}
@@ -12,12 +17,11 @@ export const TimeAndDate = ({
       } right-2 bottom-[1px]`}
     >
       {text}
-      {timeDate?.toLocaleTimeString("en-US", {
+      {date?.toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "numeric",
-      })}
-      {" "}
-      {timeDate?.toLocaleDateString("en-US", {
+      })}{" "}
+      {date?.toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
         day: "numeric",

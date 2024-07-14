@@ -96,7 +96,7 @@ export const useFunctions = () => {
     });
 
     // handle position calculation
-    handlePositionCalculation(root);
+    handlePositionCalculation(root);~
     // update state
     setUpdate(update + 1);
   };
@@ -139,7 +139,7 @@ export const useFunctions = () => {
       {
         oldParent: move.parent,
         newParent: parent,
-        oldNode: move.node,
+        node: move.node,
       }
     );
     // handle position calculation
@@ -303,9 +303,17 @@ export const useFunctions = () => {
   };
 
   // function to calculate the number of all children for that parent
-  const handleNumberOfAllChildrenForThatParent = (node, i = 1, root) => {
+  const handleNumberOfAllChildrenForThatParent = (
+    node,
+    i = 1,
+    root,
+    parentLocation = null,
+    location
+  ) => {
     // if the node has no children or the node is not expanded,
     // then the number of all children for that parent is 1
+    node.location = parentLocation ? [...parentLocation, location] : [];
+
     if (node?.children?.length === 0 || node?.expanded === false) {
       node.numberOfAllChildren = 1;
       // update the number of levels
@@ -316,9 +324,15 @@ export const useFunctions = () => {
     // initialize count
     let count = 0;
     // loop through children of the node
-    node?.children?.forEach((child) => {
+    node?.children?.forEach((child, index) => {
       // add the number of all children for that child to count
-      count += handleNumberOfAllChildrenForThatParent(child, i + 1, root);
+      count += handleNumberOfAllChildrenForThatParent(
+        child,
+        i + 1,
+        root,
+        node.location,
+        index
+      );
     });
     // update the number of children for that parent
     node.numberOfAllChildren = count;
@@ -344,7 +358,7 @@ export const useFunctions = () => {
   const handlePositionCalculation = (root) => {
     // reseting number of levels
     root.numberOfLevels = 1;
-    handleNumberOfAllChildrenForThatParent(root, 1, root);
+    handleNumberOfAllChildrenForThatParent(root, 1, root, null, 0);
     handleFinalPositionCalculation(root, 0);
   };
 
