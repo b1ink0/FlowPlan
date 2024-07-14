@@ -15,6 +15,8 @@ import { TimeAndDate } from "../Helpers/TimeAndDate";
 import ExportIcon from "../../assets/Icons/ExportIcon";
 import ImportIcon from "../../assets/Icons/ImportIcon";
 import { useDatabase } from "../../hooks/useDatabase";
+import CloudIcon from "../../assets/Icons/CloudIcon";
+import { useAuth } from "../../context/AuthContext";
 
 function SideNavbar() {
   // destructure state from context
@@ -37,6 +39,7 @@ function SideNavbar() {
     handleDeleteFlowPlan,
     handlePositionCalculation,
   } = useFunctions();
+  const { currentUser, handleLogIn, handleLogOut } = useAuth();
   // local state
   const [showSideNavbar, setShowSideNavbar] = useState(true);
   const [noteTitle, setNoteTitle] = useState("");
@@ -48,7 +51,7 @@ function SideNavbar() {
   });
   const [selected, setSelected] = useState([]);
   const [copied, setCopied] = useState(false);
-  const { handleUpdateIndexDB, handleAddNewPlan } = useDatabase();
+  const { handleUpdateIndexDB, handleAddNewPlan, handleUpdateFlowPlanTitle } = useDatabase();
 
   // function to create new note
   const handleAddNewNote = async (e) => {
@@ -77,11 +80,7 @@ function SideNavbar() {
   // function to edit note
   const handleEditNote = async (e) => {
     e.preventDefault();
-    if (db === null) return;
-    await db?.flowPlans.where("refId").equals(currentFlowPlan.refId).modify({
-      title: noteTitle,
-      updatedAt: new Date(),
-    });
+    await handleUpdateFlowPlanTitle(currentFlowPlan.refId, noteTitle);
     setEditNote(false);
     setNoteTitle("");
   };
@@ -92,6 +91,9 @@ function SideNavbar() {
       // get current note from db using refId
       const result = await db.flowPlans.where("refId").equals(refId).first();
       // position calculation for tree
+
+      if (result === undefined) return;
+
       handlePositionCalculation(result.root);
       // set current note in context
       setCurrentFlowPlan(result);
@@ -192,9 +194,20 @@ function SideNavbar() {
 
       {/* SideNavbar header */}
       <div className="w-full flex flex-col justify-center items-center p-3 px-2 gap-1 border-b-2 border-[var(--border-primary)]">
-        <h3 className="text-[var(--text-primary)] text-lg font-medium tracking-wider">
-          FlowPlan
-        </h3>
+        <div className="w-full flex justify-center items-center relative">
+          <h3 className="text-[var(--text-primary)] text-lg font-medium tracking-wider">
+            FlowPlan
+          </h3>
+          <button
+            className="w-8 h-8 bg-[var(--bg-secondary)] rounded-md flex justify-center items-center absolute right-0 top-0"
+            onClick={() => (currentUser ? handleLogOut() : handleLogIn())}
+            title={currentUser ? "Logout" : "Login"}
+          >
+            <span className="-rotate-90 w-5 h-5 flex justify-center items-center">
+              {currentUser ? <ExportIcon /> : <ImportIcon />}
+            </span>
+          </button>
+        </div>
         <Form
           handles={{ handleAddNewNote, handleEditNote }}
           editNote={editNote}
@@ -383,8 +396,9 @@ const ImportExport = ({ handleImportFlowPlan, setExportSelect }) => {
   return (
     <div className="w-full p-3 px-2 h-fit flex gap-2">
       <div
-      title="Import"
-      className="relative w-full flex justify-center items-center cursor-pointer flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300">
+        title="Import"
+        className="relative w-full flex justify-center items-center cursor-pointer flex-1 bg-[var(--bg-secondary)] py-1 rounded-md hover:bg-[var(--bg-tertiary)] transition-colors duration-300"
+      >
         <span className="w-6 h-6">
           <ImportIcon />
         </span>

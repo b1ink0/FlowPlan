@@ -81,9 +81,10 @@ const AddEditNode = () => {
     // update currentFlowPlan and database
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
     // @marker AddEditNode
-    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, null, null, "addEditNode", {
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "addEditNode", {
       type: addEditNode.type,
       node: addEditNode.type === "add" ? newChildNode : parentNode,
+      parentNode: parentNode,
     });
 
     // reset local state and close addEditNode component
