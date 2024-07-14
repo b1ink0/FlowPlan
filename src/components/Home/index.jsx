@@ -7,6 +7,7 @@ import { useFunctions } from "../../hooks/useFunctions";
 import Navbar from "../Navbar";
 import DisplayDocView from "../DisplayDocView";
 import SharedMenu from "../SharedMenu";
+import AlertMessageLogs from "../Helpers/AlertMessageLogs";
 
 function Home() {
   // destructure state from context
@@ -32,6 +33,7 @@ function Home() {
       <DisplayDocView />
       {/* AddEditNode component for adding and editing a node */}
       <AddEditNode />
+      <AlertMessageLogs />
     </div>
   );
 }

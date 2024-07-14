@@ -11,7 +11,7 @@ const FlowPlanAPIURL = import.meta.env.VITE_FLOWPLAN_API_URL;
 
 export const useDatabase = () => {
   // destructure state from context
-  const { db } = useStateContext();
+  const { db, setUpdatingDatabase } = useStateContext();
   const { currentUser } = useAuth();
 
   const handleUserLogedIn = () => {
@@ -416,6 +416,12 @@ export const useDatabase = () => {
     typeOfUpdate,
     data
   ) => {
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: true,
+      message: "Updating Database Started",
+    }));
+
     await db.flowPlans
       .where("refId")
       .equals(refId)
@@ -428,9 +434,33 @@ export const useDatabase = () => {
     // add updated timestamp to all the nodes that are updated
 
     // return if no user is logged in
-    if (!handleUserLogedIn) return;
-    if (!typeOfUpdate) return;
-    if (!data) return;
+    if (!handleUserLogedIn) {
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Error: User not logged in",
+        messageLog: [...prev.messageLog, "User not logged in"],
+      }));
+      return;
+    }
+    if (!typeOfUpdate) {
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Error: Type of update not provided",
+        messageLog: [...prev.messageLog, "Type of update not provided"],
+      }));
+      return;
+    }
+    if (!data) {
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Error: Data not provided",
+        messageLog: [...prev.messageLog, "Data not provided"],
+      }));
+      return;
+    }
 
     switch (typeOfUpdate) {
       case "updateNode":
@@ -484,6 +514,13 @@ export const useDatabase = () => {
       default:
         break;
     }
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: false,
+      message: "Updating Database Completed",
+      messageLog: [...prev.messageLog, "Database Updated"],
+    }));
   };
 
   const handleDeleteNodeWithItsChildren = async (refId, data) => {
