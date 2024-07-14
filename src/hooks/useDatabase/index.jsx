@@ -11,7 +11,13 @@ const FlowPlanAPIURL = import.meta.env.VITE_FLOWPLAN_API_URL;
 
 export const useDatabase = () => {
   // destructure state from context
-  const { db, setUpdatingDatabase } = useStateContext();
+  const {
+    db,
+    setUpdatingDatabase,
+    currentFlowPlan,
+    setCurrentFlowPlan,
+    setUpdate,
+  } = useStateContext();
   const { currentUser } = useAuth();
 
   const handleUserLogedIn = () => {
@@ -20,7 +26,23 @@ export const useDatabase = () => {
 
   const handleGetIdToken = async () => {
     if (!handleUserLogedIn) return;
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: true,
+      message: "Getting Id Token",
+      messageLog: [...prev.messageLog, "Getting Id Token"],
+    }));
+
     const idToken = await currentUser.getIdToken();
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: false,
+      message: "Id Token Received",
+      messageLog: [...prev.messageLog, "Id Token Received"],
+    }));
+
     return idToken;
   };
 
@@ -50,12 +72,52 @@ export const useDatabase = () => {
   };
 
   const handleSync = async () => {
-    if (!handleUserLogedIn) return;
-    if (!(await handleCreateUserDoc())) return;
+    if (!currentUser) return;
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: true,
+      message: "Sync Started",
+    }));
+
+    if (!handleUserLogedIn) {
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Error: User not logged in",
+        messageLog: [...prev.messageLog, "User not logged in"],
+      }));
+      return;
+    }
+    if (!(await handleCreateUserDoc())) {
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Error: User doc not created",
+        messageLog: [...prev.messageLog, "User doc not created"],
+      }));
+      return;
+    }
     const remoteUpdateTracking = await handleGetUpdateTracking();
-    if (!remoteUpdateTracking) return;
+    if (!remoteUpdateTracking) {
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Error: Update Tracking not found",
+        messageLog: [...prev.messageLog, "Update Tracking not found"],
+      }));
+      return;
+    }
     const localUpdateTracking = await db.flowPlans.toArray();
-    if (!localUpdateTracking) return;
+    if (!localUpdateTracking) {
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Error: Local Update Tracking not found",
+        messageLog: [...prev.messageLog, "Local Update Tracking not found"],
+      }));
+      return;
+    }
     console.log("Remote Update Tracking", remoteUpdateTracking);
     console.log("Local Update Tracking", localUpdateTracking);
 
@@ -130,10 +192,90 @@ export const useDatabase = () => {
       updatedPlans
     );
     await handleSyncDeletedPlans(deletedPlans);
+
+    console.log("Sync Completed");
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      message: "Sync Completed",
+      messageLog: [...prev.messageLog, "Sync Completed"],
+    }));
+
+    if (!currentFlowPlan) {
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Sync Completed",
+        messageLog: [...prev.messageLog, "Sync Completed"],
+      }));
+      return;
+    }
+
+    newPlans.forEach(async (refId) => {
+      if (currentFlowPlan?.refId === refId) {
+        const current = await db.flowPlans.where("refId").equals(refId).first();
+        handlePositionCalculation(current.root);
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          message: "New Plans Added to IndexedDB",
+          messageLog: [...prev.messageLog, "New Plans Added to IndexedDB"],
+        }));
+
+        setUpdate((prev) => prev + 1);
+      }
+    });
+
+    updatedPlans.forEach(async (plan) => {
+      if (currentFlowPlan?.refId === plan.refId) {
+
+        console.log("asfaffffdsasfffsfa", plan.refId);
+
+        const current = await db.flowPlans
+          .where("refId")
+          .equals(plan.refId)
+          .first();
+        setCurrentFlowPlan(null);
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          message: "Updated Plans Added to IndexedDB",
+          messageLog: [...prev.messageLog, "Updated Plans Added to IndexedDB"],
+        }));
+
+        setUpdate((prev) => prev + 1);
+      }
+    });
+
+    deletedPlans.forEach(async (refId) => {
+      if (currentFlowPlan?.refId === refId) {
+        setCurrentFlowPlan(null);
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          message: "Deleted Plans Removed from IndexedDB",
+          messageLog: [
+            ...prev.messageLog,
+            "Deleted Plans Removed from IndexedDB",
+          ],
+        }));
+      }
+    });
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: false,
+      message: "Sync Completed",
+      messageLog: [...prev.messageLog, "Sync Completed"],
+    }));
   };
 
   const handleSyncNewPlans = async (newPlans) => {
     if (newPlans.length === 0) return;
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: true,
+      message: "Sync New Plans Started",
+      messageLog: [...prev.messageLog, "Sync New Plans Started"],
+    }));
 
     const plans = await handleAuthenticatedFetch(
       `${FlowPlanAPIURL}/flowPlan-retrieve-bulk`,
@@ -148,6 +290,14 @@ export const useDatabase = () => {
 
     if (!plans) {
       console.log("Error fetching new plans");
+
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Error fetching new plans",
+        messageLog: [...prev.messageLog, "Error fetching new plans"],
+      }));
+
       return;
     }
 
@@ -155,6 +305,14 @@ export const useDatabase = () => {
       await handleAddNewPlan(plan, false);
       console.log("New Plan Added", plan.refId);
     });
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: false,
+      message: "New Plans Added to IndexedDB",
+      messageLog: [...prev.messageLog, "New Plans Added to IndexedDB"],
+    }));
+
     console.log("New Plans processed!");
   };
 
@@ -162,6 +320,13 @@ export const useDatabase = () => {
     updatedPlans
   ) => {
     if (updatedPlans.length === 0) return;
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: true,
+      message: "Sync Updated Plans Started",
+      messageLog: [...prev.messageLog, "Sync Updated Plans Started"],
+    }));
 
     const temp = [];
     updatedPlans.forEach((plan) => {
@@ -181,6 +346,14 @@ export const useDatabase = () => {
 
     if (!plans) {
       console.log("Error fetching new plans");
+
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Error fetching new plans",
+        messageLog: [...prev.messageLog, "Error fetching new plans"],
+      }));
+
       return;
     }
 
@@ -202,6 +375,13 @@ export const useDatabase = () => {
         });
       console.log("Plan updated in indexedDB", plan.refId);
     });
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: false,
+      message: "Updated Plans processed",
+      messageLog: [...prev.messageLog, "Updated Plans processed"],
+    }));
 
     console.log("Updated Plans processed!");
   };
@@ -311,12 +491,28 @@ export const useDatabase = () => {
 
   const handleDeleteNodes = async (plan) => {
     if (plan.deletedNodes.length === 0) return;
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: true,
+      message: "Deleting Nodes Started",
+      messageLog: [...prev.messageLog, "Deleting Nodes Started"],
+    }));
+
     const localPlan = await db.flowPlans
       .where("refId")
       .equals(plan.refId)
       .first();
     if (!localPlan) {
       console.log("Plan not found in indexedDB", plan.refId);
+
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Plan not found in indexedDB",
+        messageLog: [...prev.messageLog, "Plan not found in indexedDB"],
+      }));
+
       return;
     }
 
@@ -329,6 +525,15 @@ export const useDatabase = () => {
       root: localPlan.root,
       updatedAt: new Date(),
     });
+
+    console.log("Plan updated in indexedDB", plan.refId);
+
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: false,
+      message: "Nodes Deleted",
+      messageLog: [...prev.messageLog, "Nodes Deleted"],
+    }));
   };
 
   const handleDeleteNodesFromPlan = (deletedNodes, node) => {
@@ -361,12 +566,34 @@ export const useDatabase = () => {
     // fist check if the user doc exists
     const useDocRef = doc(fsdb, "users", currentUser.uid);
     try {
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: true,
+        message: "Checking User Doc",
+        messageLog: [...prev.messageLog, "Checking User Doc"],
+      }));
+
       const docSnap = await getDoc(useDocRef);
       if (docSnap.exists()) {
         console.log("User doc exists", docSnap.data());
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: false,
+          message: "User doc exists",
+          messageLog: [...prev.messageLog, "User doc exists"],
+        }));
+
         return true;
       } else {
         // doc doesn't exist, create one
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          message: "User doc doesn't exist",
+          messageLog: [...prev.messageLog, "User doc doesn't exist"],
+        }));
+
         const user = {
           uid: currentUser.uid,
           email: currentUser.email,
@@ -377,10 +604,29 @@ export const useDatabase = () => {
         };
         await setDoc(useDocRef, user);
         console.log("User doc created");
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: false,
+          message: "User doc created",
+          messageLog: [...prev.messageLog, "User doc created"],
+        }));
+
         return true;
       }
     } catch (e) {
       console.log("Error getting document from user collection", e);
+
+      setUpdatingDatabase((prev) => ({
+        ...prev,
+        updating: false,
+        message: "Error getting document from user collection",
+        messageLog: [
+          ...prev.messageLog,
+          "Error getting document from user collection",
+        ],
+      }));
+
       return false;
     }
   };
@@ -472,44 +718,172 @@ export const useDatabase = () => {
         console.log(data);
         if (data.type === "edit") {
           // update the node doc
+
+          setUpdatingDatabase((prev) => ({
+            ...prev,
+            updating: true,
+            message: "Updating Node Started",
+            messageLog: [...prev.messageLog, "Updating Node Started"],
+          }));
+
           await handleUpdateNode(refId, data.node);
+
+          setUpdatingDatabase((prev) => ({
+            ...prev,
+            updating: false,
+            message: "Node Updated",
+            messageLog: [...prev.messageLog, "Node Updated"],
+          }));
+
           break;
         }
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: true,
+          message: "Adding Node Started",
+          messageLog: [...prev.messageLog, "Adding Node Started"],
+        }));
+
         await handleAddNodeToParent(refId, data);
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: false,
+          message: "Node Added",
+          messageLog: [...prev.messageLog, "Node Added"],
+        }));
+
         break;
       case "deleteNodeWithoutItsChildren":
         // @marker DeleteNodeWithoutItsChildren
         // delete the node doc , add the ids of children of node to parent of node,
         // remove the node from the children of parent of node
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: true,
+          message: "Deleting Node Started",
+          messageLog: [...prev.messageLog, "Deleting Node Started"],
+        }));
+
         await handleDeleteNodeWithoutItsChildren(refId, data);
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: false,
+          message: "Node Deleted",
+          messageLog: [...prev.messageLog, "Node Deleted"],
+        }));
+
         break;
       case "deleteNodeWithItsChildren":
         // @marker DeleteNodeWithItsChildren
         // delete the node doc and all its children docs,
         // remove node id form parent of node,
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: true,
+          message: "Deleting Node Started",
+          messageLog: [...prev.messageLog, "Deleting Node Started"],
+        }));
+
         await handleDeleteNodeWithItsChildren(refId, data);
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: false,
+          message: "Node Deleted",
+          messageLog: [...prev.messageLog, "Node Deleted"],
+        }));
+
         break;
       case "moveNode":
         // @marker MoveNode
         // remove node id from old parent and add it to new parent
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: true,
+          message: "Moving Node Started",
+          messageLog: [...prev.messageLog, "Moving Node Started"],
+        }));
+
         await handleMoveNode(refId, data);
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: false,
+          message: "Node Moved",
+          messageLog: [...prev.messageLog, "Node Moved"],
+        }));
+
         break;
       case "reorderNode":
         // @marker ReorderNode
         // remove node id from old parent and add it to new parent
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: true,
+          message: "Reordering Node Started",
+          messageLog: [...prev.messageLog, "Reordering Node Started"],
+        }));
+
         await handleMoveNode(refId, data);
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: false,
+          message: "Node Reordered",
+          messageLog: [...prev.messageLog, "Node Reordered"],
+        }));
+
         break;
       case "expanded":
         // @marker Expanded
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: true,
+          message: "Updating Node Started",
+          messageLog: [...prev.messageLog, "Updating Node Started"],
+        }));
+
         await handleUpdateNode(refId, data);
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: false,
+          message: "Node Updated",
+          messageLog: [...prev.messageLog, "Node Updated"],
+        }));
+
         break;
       case "pasteNode":
         // @marker PasteNode
         // add new node and update teh parent of node
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: true,
+          message: "Adding Node Started",
+          messageLog: [...prev.messageLog, "Adding Node Started"],
+        }));
+
         await handleAddNodeToParent(refId, {
           parentNode: data.parent,
           node: data.node,
         });
+
+        setUpdatingDatabase((prev) => ({
+          ...prev,
+          updating: false,
+          message: "Node Added",
+          messageLog: [...prev.messageLog, "Node Added"],
+        }));
+
         break;
       default:
         break;
@@ -744,6 +1118,8 @@ export const useDatabase = () => {
 
     tempData.children = childrenIds;
 
+    tempData = await handleProcessNodeFileUpload(tempData);
+
     const request = await handleAuthenticatedFetch(
       `${FlowPlanAPIURL}/flowplan-update-node`,
       {
@@ -893,6 +1269,17 @@ export const useDatabase = () => {
 
           // Upload the file (optional step depending on your needs)
           console.log("Uploading file", field.data[field.type].name);
+
+          setUpdatingDatabase((prev) => ({
+            ...prev,
+            updating: true,
+            message: `Uploading ${field.data[field.type].name}`,
+            messageLog: [
+              ...prev.messageLog,
+              `Uploading ${field.data[field.type].name}`,
+            ],
+          }));
+
           await uploadBytes(storageRef, blob);
           const downloadURL = await getDownloadURL(storageRef);
           // const downloadURL = "https://www.google.com";
@@ -901,6 +1288,17 @@ export const useDatabase = () => {
             field.data[field.type].name,
             downloadURL
           );
+
+          setUpdatingDatabase((prev) => ({
+            ...prev,
+            updating: false,
+            message: `File Uploaded ${field.data[field.type].name}`,
+            messageLog: [
+              ...prev.messageLog,
+              `File Uploaded ${field.data[field.type].name}`,
+            ],
+          }));
+
           field.data[field.type].url = downloadURL;
         }
       });

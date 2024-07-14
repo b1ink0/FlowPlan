@@ -5,7 +5,7 @@ import AddIcon from "../../../assets/Icons/AddIcon";
 function AlertMessageLogs() {
   const { updatingDatabase, setUpdatingDatabase } = useStateContext();
   return updatingDatabase.updating ? (
-    <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] font-bold z-50 p-2 rounded-md text-center w-[500px] max-md:w-11/12 absolute bottom-2 flex justify-center items-center">
+    <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border-[var(--border-primary)] border-2 font-bold z-50 p-2 rounded-md text-center w-[500px] max-md:w-11/12 absolute bottom-2 flex justify-center items-center">
       {updatingDatabase.message}
       <button
         onClick={() =>
