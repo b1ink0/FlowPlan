@@ -6,7 +6,7 @@ import { fsdb, storage } from "../../firebase";
 import { useAuth } from "../../context/AuthContext";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-
+import { handlePositionCalculation } from "../helpers/PositionCalculation";
 const FlowPlanAPIURL = import.meta.env.VITE_FLOWPLAN_API_URL;
 
 export const useDatabase = () => {
@@ -125,7 +125,10 @@ export const useDatabase = () => {
     console.log("Deleted Plans", deletedPlans);
 
     await handleSyncNewPlans(newPlans);
-    await handleSyncUpdatedPlans(updatedPlans);
+    // await handleSyncUpdatedPlans(updatedPlans);
+    await handleSyncUpdatedPlansNotEfficientButIDontHaveTimeToOptimizeIt(
+      updatedPlans
+    );
     await handleSyncDeletedPlans(deletedPlans);
   };
 
@@ -155,11 +158,59 @@ export const useDatabase = () => {
     console.log("New Plans processed!");
   };
 
+  const handleSyncUpdatedPlansNotEfficientButIDontHaveTimeToOptimizeIt = async (
+    updatedPlans
+  ) => {
+    if (updatedPlans.length === 0) return;
+
+    const temp = [];
+    updatedPlans.forEach((plan) => {
+      temp.push(plan.refId);
+    });
+
+    const plans = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowPlan-retrieve-bulk`,
+      {
+        method: "POST",
+        body: JSON.stringify({ refIds: temp }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!plans) {
+      console.log("Error fetching new plans");
+      return;
+    }
+
+    plans.forEach(async (plan) => {
+      const localPlan = await db.flowPlans
+        .where("refId")
+        .equals(plan.refId)
+        .first();
+      if (!localPlan) {
+        console.log("Plan not found in indexedDB", plan.refId);
+        return;
+      }
+      // update the whole plan
+      await db.flowPlans
+        .where("refId")
+        .equals(plan.refId)
+        .modify({
+          ...plan,
+        });
+      console.log("Plan updated in indexedDB", plan.refId);
+    });
+
+    console.log("Updated Plans processed!");
+  };
+
   const handleSyncUpdatedPlans = async (updatedPlans) => {
     console.log(updatedPlans);
     if (updatedPlans.length === 0) return;
 
-    // await handleSyncUpdateNodes(updatedPlans);
+    await handleSyncUpdateNodes(updatedPlans);
 
     updatedPlans.forEach(async (plan) => {
       await handleDeleteNodes(plan);
@@ -176,6 +227,7 @@ export const useDatabase = () => {
         nodes: plan.updatedNodes,
       });
     });
+    console.log(temp);
 
     const planNodes = await handleAuthenticatedFetch(
       `${FlowPlanAPIURL}/flowPlan-retrieve-nodes`,
@@ -187,6 +239,8 @@ export const useDatabase = () => {
         },
       }
     );
+
+    console.log(planNodes);
 
     if (!planNodes) {
       console.log("Error fetching plan nodes");
@@ -203,17 +257,39 @@ export const useDatabase = () => {
         return;
       }
 
+      console.log(localPlan);
+
       localPlan.root = handleUpdateNodesInPlan(plan.nodes, localPlan.root);
-      await db.flowPlans.where("refId").equals(plan.refId).modify({
-        root: localPlan.root,
-        updatedAt: new Date(),
-      });
-      console.log("Plan updated in indexedDB", plan.refId);
+      // await db.flowPlans.where("refId").equals(plan.refId).modify({
+      //   root: localPlan.root,
+      //   updatedAt: new Date(),
+      // });
+      // console.log("Plan updated in indexedDB", plan.refId);
     });
   };
 
-  const handleUpdateNodesInPlan = (nodes, node) => {
-    if (!nodes || nodes.length === 0) return node;
+  const handleUpdateNodesInPlan = (nodes, root) => {
+    console.log(nodes, root);
+    if (!nodes || nodes.length === 0) return root;
+
+    if (!root?.location) root.location = [];
+
+    nodes.forEach((node) => {
+      if (!node?.location) return;
+      if (node.location.length === 0) {
+        // root = node;
+        return;
+      }
+      let parent = root;
+      node.location.forEach((i, index) => {
+        parent = parent.children[i];
+        if (index === node.location.length - 1) {
+          // parent = node;
+        }
+      });
+
+      console.log(parent);
+    });
 
     // Find the updated version of the current node
     // const updatedNode = nodes.find((n) => n.id === node.id);
@@ -353,42 +429,319 @@ export const useDatabase = () => {
 
     // return if no user is logged in
     if (!handleUserLogedIn) return;
+    if (!typeOfUpdate) return;
+    if (!data) return;
 
     switch (typeOfUpdate) {
       case "updateNode":
         // @marker UpdateNode
+        await handleUpdateNode(refId, data);
         break;
       case "addEditNode":
         // @marker AddEditNode
+        console.log(data);
+        if (data.type === "edit") {
+          // update the node doc
+          await handleUpdateNode(refId, data.node);
+          break;
+        }
+        await handleAddNodeToParent(refId, data);
         break;
       case "deleteNodeWithoutItsChildren":
         // @marker DeleteNodeWithoutItsChildren
         // delete the node doc , add the ids of children of node to parent of node,
         // remove the node from the children of parent of node
+        await handleDeleteNodeWithoutItsChildren(refId, data);
         break;
       case "deleteNodeWithItsChildren":
         // @marker DeleteNodeWithItsChildren
         // delete the node doc and all its children docs,
         // remove node id form parent of node,
+        await handleDeleteNodeWithItsChildren(refId, data);
         break;
       case "moveNode":
         // @marker MoveNode
         // remove node id from old parent and add it to new parent
+        await handleMoveNode(refId, data);
         break;
       case "reorderNode":
         // @marker ReorderNode
         // remove node id from old parent and add it to new parent
+        await handleMoveNode(refId, data);
         break;
       case "expanded":
         // @marker Expanded
+        await handleUpdateNode(refId, data);
         break;
       case "pasteNode":
         // @marker PasteNode
         // add new node and update teh parent of node
+        await handleAddNodeToParent(refId, {
+          parentNode: data.parent,
+          node: data.node,
+        });
         break;
       default:
         break;
     }
+  };
+
+  const handleDeleteNodeWithItsChildren = async (refId, data) => {
+    let tempData = structuredClone(data);
+
+    let parentChildrenIds = [];
+
+    tempData.parent.children.forEach((child) => {
+      parentChildrenIds.push(child.id);
+    });
+
+    let childrenIds = [];
+
+    childrenIds = handleAgrigateChildrenIds(tempData.node);
+
+    const request = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowplan-delete-node-with-children`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          refId: refId,
+          parentId: tempData.parent.id,
+          nodeId: tempData.node.id,
+          newParentChildOrder: parentChildrenIds,
+          childrenIds: childrenIds,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!request) {
+      console.log("Error deleting node", request);
+      return;
+    }
+
+    console.log("Node deleted", request);
+
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        updateTracking: {
+          ...request.updateTracking,
+        },
+      });
+
+    console.log("Node deleted in indexedDB", refId);
+  };
+
+  const handleAgrigateChildrenIds = (node) => {
+    let childrenIds = [];
+
+    if (!node.children || node.children.length === 0) return childrenIds;
+
+    node.children.forEach((child) => {
+      childrenIds.push(child.id);
+    });
+
+    node.children.forEach((child) => {
+      childrenIds = [...childrenIds, ...handleAgrigateChildrenIds(child)];
+    });
+
+    return childrenIds;
+  };
+
+  const handleDeleteNodeWithoutItsChildren = async (refId, data) => {
+    let tempData = structuredClone(data);
+
+    const childrenIds = [];
+
+    tempData.parent.children.forEach((child) => {
+      childrenIds.push(child.id);
+    });
+
+    const request = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowplan-delete-node-without-children`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          refId: refId,
+          parentId: tempData.parent.id,
+          nodeId: tempData.node.id,
+          newParentChildOrder: childrenIds,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!request) {
+      console.log("Error deleting node", request);
+      return;
+    }
+
+    console.log("Node deleted", request);
+
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        updateTracking: {
+          ...request.updateTracking,
+        },
+      });
+
+    console.log("Node deleted in indexedDB", refId);
+  };
+
+  const handleMoveNode = async (refId, data) => {
+    const oldParentChildOrder = [];
+
+    data.oldParent.children.forEach((child) => {
+      oldParentChildOrder.push(child.id);
+    });
+
+    const newParentChildOrder = [];
+
+    data.newParent.children.forEach((child) => {
+      newParentChildOrder.push(child.id);
+    });
+
+    const request_movenode = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowplan-move-child-node`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          refId: refId,
+          childId: data.node.id,
+          oldParentId: data.oldParent.id,
+          newParentId: data.newParent.id,
+          oldParentChildOrder: oldParentChildOrder,
+          newParentChildOrder: newParentChildOrder,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!request_movenode) {
+      console.log("Error moving node", request_movenode);
+      return;
+    }
+
+    console.log("Node moved", request_movenode);
+
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        updateTracking: {
+          ...request_movenode.updateTracking,
+        },
+      });
+
+    console.log("Node moved in indexedDB", refId);
+  };
+
+  const handleAddNodeToParent = async (refId, data) => {
+    data = structuredClone(data);
+
+    const childrenIds = [];
+
+    console.log("Parent Node", data);
+
+    data.parentNode.children.forEach((child) => {
+      childrenIds.push(child.id);
+    });
+
+    console.log("Children Ids", childrenIds);
+    console.log("Parent Node", data.parentNode?.id);
+    console.log("New Node", data.node?.id);
+
+    const request = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowplan-add-child-node`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          refId: refId,
+          parentId: data.parentNode.id,
+          childOrder: childrenIds,
+          newChildNode: data.node,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!request) {
+      console.log("Error adding child node", request);
+      return;
+    }
+
+    console.log("Child node added", request);
+
+    const localPlan = await db.flowPlans.where("refId").equals(refId).first();
+
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        updateTracking: {
+          ...localPlan.updateTracking,
+          ...request.updateTracking,
+        },
+      });
+  };
+
+  const handleUpdateNode = async (refId, data) => {
+    let tempData = structuredClone(data);
+
+    let childrenIds = [];
+
+    tempData.children.forEach((child) => {
+      childrenIds.push(child.id);
+    });
+
+    tempData.children = childrenIds;
+
+    const request = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowplan-update-node`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          refId: refId,
+          nodeId: data.id,
+          newNode: tempData,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!request) {
+      console.log("Error updating node");
+      return;
+    }
+
+    console.log("Node updated", request);
+
+    const localPlan = await db.flowPlans.where("refId").equals(refId).first();
+
+    await db.flowPlans
+      .where("refId")
+      .equals(refId)
+      .modify({
+        updateTracking: {
+          ...localPlan.updateTracking,
+          [data.id]: request.newTimestamp,
+        },
+      });
+
+    console.log("Node updated in indexedDB", refId);
   };
 
   const handleAddNewPlan = async (plan, remote = true) => {
@@ -396,6 +749,12 @@ export const useDatabase = () => {
     await db.flowPlans.add(plan);
 
     if (!remote) return;
+
+    let tempPLan = structuredClone(plan);
+
+    await handleAddBulkFlowPlans([tempPLan]);
+
+    console.log("New flow plan added", plan.refId);
   };
 
   const handleAddBulkFlowPlans = async (plans) => {
@@ -437,7 +796,7 @@ export const useDatabase = () => {
         .modify({
           updateTracking: plan.updateTracking,
         });
-      console.log("Plan updated in indexedDB", update);
+      console.log("Plan updated in indexedDB", plan.refId, update);
     });
     console.log("Bulk flow plans processed!");
   };
@@ -447,12 +806,34 @@ export const useDatabase = () => {
     await db.flowPlans.where("refId").equals(refId).delete();
 
     if (!remote) return;
+
+    console.log("Deleting flow plan", refId);
+
+    const flowPlanUpdateTrackingData = await handleAuthenticatedFetch(
+      `${FlowPlanAPIURL}/flowplan-delete`,
+      {
+        method: "POST",
+        body: JSON.stringify({ refId: refId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!flowPlanUpdateTrackingData) {
+      console.log("Error deleting flow plan");
+      return;
+    }
+
+    console.log("Flow plan deleted", flowPlanUpdateTrackingData);
   };
 
   const handleProcessFlowPlanFileUpload = async (flowPlans) => {
     const promises = flowPlans.map(async (plan) => {
       const root = await handleProcessNodeFileUpload(plan.root);
       plan.root = root;
+      handlePositionCalculation(plan.root);
+      console.log(plan);
       console.log("Processed Plan", plan?.refId);
     });
     await Promise.all(promises);
@@ -528,11 +909,37 @@ export const useDatabase = () => {
     });
   };
 
+  const handleUpdateFlowPlanTitle = async (refId, title) => {
+    await db.flowPlans.where("refId").equals(refId).modify({
+      title: title,
+      updatedAt: new Date(),
+    });
+
+    // const request = await handleAuthenticatedFetch(
+    //   `${FlowPlanAPIURL}/flowplan-update-title`,
+    //   {
+    //     method: "POST",
+    //     body: JSON.stringify({ refId: refId, title: title }),
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //   }
+    // );
+
+    // if (!request) {
+    //   console.log("Error updating title");
+    //   return;
+    // }
+
+    // console.log("Title updated", request);
+  };
+
   return {
     handleUpdateIndexDB,
     handleAddNewPlan,
     handleAddBulkFlowPlans,
     handleDeleteFlowPlanFromDB,
     handleSync,
+    handleUpdateFlowPlanTitle,
   };
 };

@@ -17,6 +17,8 @@ function addChild(parent, child) {
 }
 
 function removeChild(parent, child) {
+  if (!parent) return;
+  if (!child) return;
   parent.children = parent.children.filter((c) => c !== child);
 }
 
