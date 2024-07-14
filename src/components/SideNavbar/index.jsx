@@ -51,7 +51,7 @@ function SideNavbar() {
   });
   const [selected, setSelected] = useState([]);
   const [copied, setCopied] = useState(false);
-  const { handleUpdateIndexDB, handleAddNewPlan } = useDatabase();
+  const { handleUpdateIndexDB, handleAddNewPlan, handleUpdateFlowPlanTitle } = useDatabase();
 
   // function to create new note
   const handleAddNewNote = async (e) => {
@@ -80,11 +80,7 @@ function SideNavbar() {
   // function to edit note
   const handleEditNote = async (e) => {
     e.preventDefault();
-    if (db === null) return;
-    await db?.flowPlans.where("refId").equals(currentFlowPlan.refId).modify({
-      title: noteTitle,
-      updatedAt: new Date(),
-    });
+    await handleUpdateFlowPlanTitle(currentFlowPlan.refId, noteTitle);
     setEditNote(false);
     setNoteTitle("");
   };
