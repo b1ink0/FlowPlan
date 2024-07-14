@@ -3,6 +3,7 @@ import Dexie from "dexie";
 import Home from "./components/Home";
 import { useStateContext } from "./context/StateContext";
 import { useEffect, useState } from "react";
+import { useDatabase } from "./hooks/useDatabase";
 
 // Initialize Database
 const initializeDb = new Dexie("FlowPlan");
