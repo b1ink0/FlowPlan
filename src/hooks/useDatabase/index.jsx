@@ -38,7 +38,7 @@ export const useDatabase = () => {
 
     setUpdatingDatabase((prev) => ({
       ...prev,
-      updating: false,
+      updating: true,
       message: "Id Token Received",
       messageLog: [...prev.messageLog, "Id Token Received"],
     }));
@@ -197,6 +197,7 @@ export const useDatabase = () => {
 
     setUpdatingDatabase((prev) => ({
       ...prev,
+      updating: true,
       message: "Sync Completed",
       messageLog: [...prev.messageLog, "Sync Completed"],
     }));
@@ -759,7 +760,6 @@ export const useDatabase = () => {
         // @marker DeleteNodeWithoutItsChildren
         // delete the node doc , add the ids of children of node to parent of node,
         // remove the node from the children of parent of node
-
         setUpdatingDatabase((prev) => ({
           ...prev,
           updating: true,
@@ -1004,6 +1004,12 @@ export const useDatabase = () => {
       });
 
     console.log("Node deleted in indexedDB", refId);
+    setUpdatingDatabase((prev) => ({
+      ...prev,
+      updating: true,
+      message: "Completed Deleting Node Without Its Children",
+      messageLog: [...prev.messageLog, "Database Updated"],
+    }));
   };
 
   const handleMoveNode = async (refId, data) => {
