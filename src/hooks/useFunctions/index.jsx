@@ -30,6 +30,10 @@ export const useFunctions = () => {
     // update current tree note
     let root = currentFlowPlan?.root;
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    // handle position calculation
+    handlePositionCalculation(root);
+    // update state
+    setUpdate(update + 1);
     // update tree note in indexedDB
     // @marker DeleteNodeWithoutItsChildren
     await handleUpdateIndexDB(
@@ -42,10 +46,6 @@ export const useFunctions = () => {
         node: nodeCopy,
       }
     );
-    // handle position calculation
-    handlePositionCalculation(root);
-    // update state
-    setUpdate(update + 1);
   };
 
   // function to handle delete node with its children
@@ -56,6 +56,10 @@ export const useFunctions = () => {
     removeChild(parent, node);
     // update current tree note
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    // handle position calculation
+    handlePositionCalculation(root);
+    // update state
+    setUpdate(update + 1);
     // update tree note in indexedDB
     // @marker DeleteNodeWithItsChildren
     await handleUpdateIndexDB(
@@ -68,11 +72,6 @@ export const useFunctions = () => {
         node: nodeCopy,
       }
     );
-
-    // handle position calculation
-    handlePositionCalculation(root);
-    // update state
-    setUpdate(update + 1);
   };
 
   // function to handle move node
@@ -87,6 +86,10 @@ export const useFunctions = () => {
       enable: false,
       node: null,
     });
+    // handle position calculation
+    handlePositionCalculation(root);~
+    // update state
+    setUpdate(update + 1);
     // update tree note in indexedDB
     // @marker MoveNode
     await handleUpdateIndexDB(currentFlowPlan.refId, root, false, "moveNode", {
@@ -94,11 +97,6 @@ export const useFunctions = () => {
       node: move.node,
       oldParent: move.parent,
     });
-
-    // handle position calculation
-    handlePositionCalculation(root);~
-    // update state
-    setUpdate(update + 1);
   };
 
   // function to handle reorder node
@@ -129,6 +127,10 @@ export const useFunctions = () => {
       enable: false,
       node: null,
     });
+    // handle position calculation
+    handlePositionCalculation(root);
+    // update state
+    setUpdate(update + 1);
     // update tree note in indexedDB
     // @marker ReorderNode
     await handleUpdateIndexDB(
@@ -142,10 +144,6 @@ export const useFunctions = () => {
         node: move.node,
       }
     );
-    // handle position calculation
-    handlePositionCalculation(root);
-    // update state
-    setUpdate(update + 1);
   };
 
   // function to handle export tree note
@@ -368,6 +366,10 @@ export const useFunctions = () => {
     node.expanded = !node.expanded;
     let root = currentFlowPlan.root;
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    // handle position calculation
+    handlePositionCalculation(root);
+    // update state
+    setUpdate(update + 1);
     // update tree note in indexedDB
     // @marker Expanded
     await handleUpdateIndexDB(
@@ -377,10 +379,6 @@ export const useFunctions = () => {
       "expanded",
       node
     );
-    // handle position calculation
-    handlePositionCalculation(root);
-    // update state
-    setUpdate(update + 1);
   };
   const handleGetValueFromProperty = (property) => {
     try {
@@ -556,17 +554,16 @@ export const useFunctions = () => {
     }
     // update current tree note
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
+    // handle position calculation
+    handlePositionCalculation(root);
+    // update state
+    setUpdate(update + 1);
     // update tree note in indexedDB
     // @marker PasteNode
     await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "pasteNode", {
       node: copyNode,
       parent: node,
     });
-
-    // handle position calculation
-    handlePositionCalculation(root);
-    // update state
-    setUpdate(update + 1);
   };
 
   const handleDublicate = (parent, node, location) => {
