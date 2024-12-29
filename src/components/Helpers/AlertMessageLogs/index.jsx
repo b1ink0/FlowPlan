@@ -3,9 +3,10 @@ import { useStateContext } from "../../../context/StateContext";
 import AddIcon from "../../../assets/Icons/AddIcon";
 
 function AlertMessageLogs() {
-  const { updatingDatabase, setUpdatingDatabase } = useStateContext();
+  const { updatingDatabase, setUpdatingDatabase, settings } = useStateContext();
   const [ currentStatus, setCurrentStatus ] = useState([])
   const [ display, setDisplay ] = useState(true);
+  const { databaseConfig } = settings;
   useEffect(() => {
     if ( updatingDatabase?.message === "") return;
     setCurrentStatus((prev) => [...prev, updatingDatabase?.message]);
@@ -19,7 +20,7 @@ function AlertMessageLogs() {
       }
     }, 1000)
   }, [updatingDatabase])
-  return (display && currentStatus?.length > 0) ? (
+  return ( databaseConfig?.showLog === "true" && display && currentStatus?.length > 0) ? (
     <div className="bg-[var(--bg-secondary)] flex-col text-[var(--text-primary)] border-[var(--border-primary)] border-2 font-bold z-50 p-2 rounded-md text-center w-[500px] max-md:w-11/12 absolute bottom-2 flex justify-center items-center">
       {currentStatus?.map((message, index) => (
         <p id={"alert_message_" + index}>{index + 1}: {message}</p>
