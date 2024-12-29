@@ -65,9 +65,9 @@ export const Paragraph = ({
       node.data.push({ ...currentField, id: v4() });
     }
     setCurrentFlowPlan((prev) => ({ ...prev, root: root }));
-    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
     setCurrentFieldType(null);
     setCurrentField(null);
+    await handleUpdateIndexDB(currentFlowPlan.refId, root, true, "updateNode", node);
   };
   useEffect(() => {
     handleTextareaChange();
