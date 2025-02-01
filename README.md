@@ -74,7 +74,61 @@
 
 	- What are different node operation that can be performed?
 
-		Nodes can be moved, edited, deleted, copied, duplicated and other nodes or new nodes can be added as its children.
+		Nodes can be moved, edited, deleted, copied, pasted, duplicated and other nodes or new nodes can be added as its children and it can hide and show its children.
+
+		- How to move node?
+
+			Node moving can be activated by clicking on the move node button.
+			Then you can click on where you want the node to be moved to.
+			Now you have two choices:
+			First you can move your node to other node by clicking on the node where you want it to moved to it will make your moved node as the child of the node you moved to.
+			Second you can move your node in between the nodes you will see a green box where you can click to move node at that position.
+			Note:
+			You can't move a node to its children nodes as it will cause it to become orphan ( FlowPlan will give you a red effect that you can't move it there ).
+			You can't move the root node as its a root node
+			If You move a node then its all children will also get moved.
+			When you are in node move mode it will highlight how the node will be connected.
+		
+		- How to delete node?
+
+			First you will have to click on the `...` button on the node which will bring up more buttons.
+			Then you can click on the delete button choice how you want to delete a node.
+			First Delete Only Current Node this option will only delete the node you are interacting with and move deleted nodes  children to the parent of the deleted node.
+			Second Delete Node And Its Children this option will deleted the node your are interacting with and its all children
+			Note:
+			You can't delete the root node.
+			You con't undo a delete.
+
+		- How to copy a node?
+
+			Click on the copy button on the node which will give you choices>
+			First Copy Only Current Node this copy only the node selected and not its children.
+			Second Copy Node and Its Children this will copy the node selected and its all children.
+			Note: 
+			You can copy a node from one plan to other plan.
+			If you refresh the page your copied node will be cleared from the memory.
+
+		- How to paste a plan?
+
+			Navigate to the node where you want to paste and click on the `...` button then click on the paste button which will bring a choices.
+			First Paste as Sibling this option will paste the copied node as a sibling.
+			Second Paste as Child this option will paste the copied node as a child.
+		
+		- How to duplicate node?
+
+			Click on the `...` button of the node and then click on the duplicate button.
+			Note: 
+			You can't duplicate the root node.
+
+		- How to add a child node / new node?
+
+			Navigate to the node where you want to create a new node or add a new as its child and click on the plus icon which will bring up the Node panel where you can name the node and then click on the Add button to add it.
+			Note: 
+			If you are adding node and then you decide to click on other nodes add node button it wipe your unsaved button.
+
+		- How to hide show the child nodes?
+
+			If your node has children then there will be a hide show button chick on that to toggle children nodes visibility.
 
 	- How many children and parent can one Node have?
 
@@ -147,3 +201,68 @@
 				If you click on this option it will open up the Document Panel for the current node.
 
 			- Save 
+
+				If you click on the save button it will save the node title setting and node settings and close the node panel.
+
+3. Map Panel
+
+	- What are available views?
+
+		Currently there are two views on horizontal view and vertical view I am planing to add a tagged view in future.
+	
+	- What does view mean?
+
+		View is the way the nodes are displayed on the Map Panel.
+
+	- What is Horizontal view?
+
+		Horizontal view means that the node are displayed on the horizontal axis.
+		Root node is displayed at the left and children nodes are displayed on the right side.
+
+	- What is Vertical view?
+
+		Vertical view means that the node are displayed on the vertical axis.
+		Root node is display at the top and children nodes are displayed on the bottom side.
+
+	- How to change the views?
+
+		On the Map Panel on the top right side you will find a navbar containing a dropdown which can be used to change between views.
+		Note: Your choice will be saved and will be used you will reload the page.
+
+	- How to change between theme?
+
+		There are currently only dark theme and light theme (dark by default).
+		On the Map Panel on the top right side you will find a navbar containing a theme toggle button which will the first button from the left.
+
+	- How to search?
+
+		Note: Search is not implemented yet I am still deciding how the search should function.
+		On the Map Panel on the top right side you will find a navbar containing a search field where you can search for the contents.
+
+	- Where can i find settings?
+
+		On the Map Panel on the top right side you will find a navbar containing a settings button which will be third from the left side.
+
+	- What are different settings available?
+
+		Settings has options like changing the background, toggling the transforms saving, auto sync options.
+
+		- How to change the background?
+
+			Click on the setting button and then click on background option which will lets you choose the background.
+
+			- How many background are there?
+
+				There are only 2 background for now one is grid and other is dot. dot one is useful in the light theme.
+
+			- How to add custom background?
+
+				Currently there is no supported for the custom background but I am planing to add it in future.
+
+			- What are different background settings?
+
+				You can change opacity, size, position, repeat,  of the background.
+		
+		- How to save my last position on the Map Panel?
+
+			Click on the setting button and then click on Sav Transforms and then toggle switch labeled Save.
