@@ -265,4 +265,69 @@
 		
 		- How to save my last position on the Map Panel?
 
-			Click on the setting button and then click on Sav Transforms and then toggle switch labeled Save.
+			Click on the setting button and then click on Save Transforms and then toggle switch labeled Save.
+		
+		- How to turn on auto sync?
+
+			Click on the setting button and then click on DB Auto Sync and toggle switch labeled Auto Sync.
+
+		- How to show auto sync logs?
+
+			Click on the settings button and then click on DB Auto Sync and toggle switch labeled Show Log.
+
+4. Document Panel
+
+	- What is Document Panel?
+
+		Document Panel allows you to add more data into each node using different fields. You can think of it as a really simple WYSIWYG editor. 
+
+	- How to open Document Panel?
+
+		To open Document Panel double click on the nodes title it will open the Document Panel.
+
+	- What is relation between Document Panel and Node?
+
+		Each Node can have its separate Document Panel. Document Panel allows you to add more information and data to the node.
+	
+	- What are different operation which can be performed on Document Panel?
+
+		Close, fullscreen, resize, toggle node navigation, open document settings.
+
+		- How to close the Document Panel?
+
+			You can close panel using the close button on the top left of the Document Panel.
+		
+		- How to toggle fullscreen in Document Panel?
+
+			You can toggle the Document Panel fullscreen using the fullscreen button on the top right of the Document Panel.
+
+		- How to resize / How to change width of Document Panel?
+
+			Hover over the left border of the Document Panel then click and hold the border and drag it to adjust the width as required.
+
+		- How to change the gap between fields?
+
+			Click on the Document Settings button located on the top part of Document Panel then change the field gap by changing the value of input labeled Field Gap.
+
+		- How to toggle Node navigation?
+
+			Click on the Node navigation button located on the top part of Document Panel to toggle Node navigation.
+
+		- What is Node navigation?
+
+			Node navigation is visible after toggling on the Node navigation which will four new buttons to the Document panel. Two buttons at the top and two at the bottom of Document Panel.
+
+			Parent: This button lets you navigate to Document Panel of the nodes parent.
+			First Child: This button lets you navigate to the Document Panel of the nodes first child.
+			Previous Sibling: This button lets you navigate to the Document Panel of the nodes previous sibling.
+			Next Sibling: This button lets you navigate to the Document Panel of the nodes next sibling.
+
+	- What are fields?
+
+		Fields are the building block of the Document Panel. Each field has its unique function and unique operation.
+
+		- What are different fields available?
+
+			Heading, Paragraph, Unordered List, Ordered List, Task List, Link, Image, File, Table, Separator, Progress, Time Stamp, Duration, Duration Timeline, Code Block.
+
+
