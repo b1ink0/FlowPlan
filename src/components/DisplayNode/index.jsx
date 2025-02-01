@@ -92,7 +92,7 @@ function Node({
     handleExpanded,
     handleCopyNode,
     handlePasteNode,
-    handleDublicate
+    handleDublicate,
   } = useFunctions();
 
   // local state
@@ -634,7 +634,7 @@ const ButtonsWrapper = ({
   setCopyMenu,
   setPasteMenu,
   copyNode,
-  handleDublicate
+  handleDublicate,
 }) => {
   // function to handle move node
   const handleInitMove = () => {
@@ -737,15 +737,15 @@ const ButtonsWrapper = ({
       >
         <EditBtnIcon />
       </button>
-      {/* Delete Node Button */}
       <button
         className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-        onClick={() => setDeleteMenu(true)}
+        title="Copy Node"
+        onClick={() => setCopyMenu(true)}
         style={{
           background: node?.config?.nodeConfig?.buttonColor,
         }}
       >
-        <DeleteIcon />
+        <CopyIcon />
       </button>
       <button
         className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
@@ -758,7 +758,7 @@ const ButtonsWrapper = ({
       </button>
       {subMenu && (
         <div className="absolute -top-12 w-full flex justify-center items-center gap-2 p-2">
-           <button
+          <button
             className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
             title="Dublicate Node"
             onClick={handleDublicate}
@@ -768,16 +768,7 @@ const ButtonsWrapper = ({
           >
             <DublicateIcon />
           </button>
-          <button
-            className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
-            title="Copy Node"
-            onClick={() => setCopyMenu(true)}
-            style={{
-              background: node?.config?.nodeConfig?.buttonColor,
-            }}
-          >
-            <CopyIcon />
-          </button>
+
           <button
             className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
             title="Paste Node"
@@ -788,6 +779,16 @@ const ButtonsWrapper = ({
             }}
           >
             <PasteIcon />
+          </button>
+          {/* Delete Node Button */}
+          <button
+            className="w-8 h-8 flex justify-center items-center relative text-xs bg-[var(--btn-secondary)] py-1 px-2 rounded-md hover:bg-[var(--btn-delete)] transition-colors duration-300"
+            onClick={() => setDeleteMenu(true)}
+            style={{
+              background: node?.config?.nodeConfig?.buttonColor,
+            }}
+          >
+            <DeleteIcon />
           </button>
         </div>
       )}
