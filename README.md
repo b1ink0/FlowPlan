@@ -330,4 +330,57 @@
 
 			Heading, Paragraph, Unordered List, Ordered List, Task List, Link, Image, File, Table, Separator, Progress, Time Stamp, Duration, Duration Timeline, Code Block.
 
+			- What is Heading field?
+
+				Heading field could be used for the title of the section, sub section.
+
+				Operations:
+				Font size, strick through, italic, bold, text color, text font, text alignment.
+
+			- What is Paragraph field? 
+
+				Paragraph field could be used for add a detailed text about some topic.
+
+				Operations:
+				Strick through, italic, bold, text color, text font, text alignment.
+
+			- What is Unordered list field?
+
+				Operations:
+				Bullet style, Indentation, Strick through, italic, bold, text color, text font.
+
+				Bullet style: filled circle, empty circle, filled square, filled diamond, filled start, filled arrow.
+				Indentation: This operations lets you make the list as sub list of other list ( Note this just visual and does not connect the lists ) ( Note you can't indent items in the same list you will have to make new list below the list to this ).
+
+				- How to move list item?
+
+					Double click on the list to enter into the editing mode then hover over the item you want to move up or down there will be a `::` icon click and hold it then drag the list item to required position.
+
+			- What is Ordered list field?
+
+				This field lets you create a ordered list of items.
+
+				Operations:
+				Order style, Indentation, strick through, italic, bold, text color, text font.
+
+				Order style: Number, Roman Number, Alphabets.
+
+			- What is Link field?
+
+				This field lets you add a link to the document this is the only way you can add a clickable link in Document view for now. This field is really powerful field which will display the preview of the link.
+
+				Operations:
+				Preview Details, Preview Config, strick thorough, italic, bold, link color, link font.
+
+				Preview Details: Toggling this option will hide the preview of the link and only display the link.
+				Preview Config: This option is dynamic and depends on the link and will let you choose what things you want to display in the preview like Title, Description, Favicon, Sitename, Images.
+			
+			- What is Image field?
+
+				This field lets you add a image to your document.
+
+				Note: The image size can only be less than or equal to 1MB because this image will be stored into the indexdb of the browser for persistant storage. Also when you will be exporting a plan containing the images it will encode the image into base64 which will typically increase the size of the exported json by a lot.
+
+				Note: If you are using the cloud sync then the image will not be stored locally and will be stored on the firebase storage.
+
 
