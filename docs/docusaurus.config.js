@@ -18,12 +18,12 @@ const config = {
   url: 'https://your-docusaurus-site.example.com',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  baseUrl: '/FlowPlan/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'facebook', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  organizationName: 'b1ink0', // Change this to your GitHub username
+  projectName: 'FlowPlan', // Change this to your repository name
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -146,6 +146,9 @@ const config = {
         darkTheme: prismThemes.dracula,
       },
     }),
+
+  // This is important for GitHub Pages deployment
+  trailingSlash: false,
 };
 
 export default config;
