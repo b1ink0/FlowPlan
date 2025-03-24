@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:docs": "cd docs && npm run start",
+    "build:docs": "cd docs && npm run build"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
