@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkflowplan_docs=self.webpackChunkflowplan_docs||[]).push([[472],{5513:e=>{e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Welcome to the FlowPlan Blog","permalink":"/FlowPlan/blog/welcome","unlisted":false,"date":"2025-03-24T05:26:16.000Z"}]}')}}]);
