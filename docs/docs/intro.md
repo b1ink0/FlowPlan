@@ -2,46 +2,43 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# FlowPlan Introduction
 
-Let's discover **Docusaurus in less than 5 minutes**.
+Let's discover **FlowPlan in less than 5 minutes**.
+
+## What is FlowPlan?
+
+FlowPlan is a web-based project management application designed to streamline project planning, note-taking, and documentation through a visual, node-based interface.
+
+### Key Features
+
+- **Visual Planning**: Create hierarchical node structures to organize your projects
+- **Rich Content**: Add detailed information to nodes using the Document Panel
+- **Multiple Views**: Switch between horizontal and vertical views to suit your workflow
+- **Customizable Nodes**: Personalize node appearance with different colors and styles
+- **Export/Import**: Share and back up your plans with export/import functionality
 
 ## Getting Started
 
-Get started by **creating a new site**.
+The FlowPlan interface consists of four main panels:
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+1. **Plan Panel**: Create and manage your projects
+2. **Map Panel**: Visualize and interact with your node structure
+3. **Node Panel**: Edit node properties and settings
+4. **Document Panel**: Add detailed content to nodes
 
-### What you'll need
+### Creating Your First Plan
 
-- [Node.js](https://nodejs.org/en/download/) version 18.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
+1. Open the Plan Panel
+2. Enter a name for your plan in the input field at the top
+3. Click the add button (+ icon) or press Enter on your keyboard
+4. A new plan with a root node will be created in the Map Panel
 
-## Generate a new site
+## Basic Workflow
 
-Generate a new Docusaurus site using the **classic template**.
+1. Create nodes to build your project structure in the Map Panel
+2. Customize nodes through the Node Panel
+3. Add detailed content to nodes using the Document Panel
+4. Export your plan to share or back up your work
 
-The classic template will automatically be added to your project after you run the command:
-
-```bash
-npm init docusaurus@latest my-website classic
-```
-
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
-
-The command also installs all necessary dependencies you need to run Docusaurus.
-
-## Start your site
-
-Run the development server:
-
-```bash
-cd my-website
-npm run start
-```
-
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
-
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
-
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+Ready to explore more? Check out the detailed documentation for each component to learn about all of FlowPlan's features.

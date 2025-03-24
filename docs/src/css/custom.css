@@ -19,12 +19,43 @@
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  /* Dracula Theme Colors */
+  --ifm-color-primary: #bd93f9; /* Purple */
+  --ifm-color-primary-dark: #a675f7;
+  --ifm-color-primary-darker: #9258f5;
+  --ifm-color-primary-darkest: #7c3cf3;
+  --ifm-color-primary-light: #d4b1fb;
+  --ifm-color-primary-lighter: #e8cefd;
+  --ifm-color-primary-lightest: #fcebff;
+  
+  --ifm-background-color: #282a36; /* Dracula background */
+  --ifm-background-surface-color: #44475a; /* Dracula current line */
+  --ifm-navbar-background-color: #1e1f29; /* Darker than background */
+  --ifm-footer-background-color: #1e1f29; /* Darker than background */
+  
+  --ifm-color-success: #50fa7b; /* Dracula green */
+  --ifm-color-info: #8be9fd; /* Dracula cyan */
+  --ifm-color-warning: #f1fa8c; /* Dracula yellow */
+  --ifm-color-danger: #ff5555; /* Dracula red */
+  
+  --ifm-color-gray-100: #f8f8f2; /* Dracula foreground */
+  --ifm-color-gray-200: #e0e0e0;
+  --ifm-color-gray-300: #c0c0c0;
+  --ifm-color-gray-400: #a0a0a0;
+  --ifm-color-gray-500: #808080;
+  --ifm-color-gray-600: #606060;
+  --ifm-color-gray-700: #404040;
+  --ifm-color-gray-800: #282a36; /* Dracula background */
+  --ifm-color-gray-900: #1e1f29; /* Darker than background */
+  
+  --ifm-color-content: #f8f8f2; /* Dracula foreground */
+  --ifm-color-content-secondary: #bd93f9; /* Dracula purple */
+  
+  --ifm-link-color: #ff79c6; /* Dracula pink */
+  --ifm-link-hover-color: #ffb86c; /* Dracula orange */
+  
+  --ifm-menu-color-active: #ff79c6; /* Dracula pink */
+  --ifm-breadcrumb-item-background-active: rgba(189, 147, 249, 0.1); /* Dracula purple with opacity */
+  
+  --docusaurus-highlighted-code-line-bg: rgba(68, 71, 90, 0.3); /* Dracula current line with opacity */
 }
