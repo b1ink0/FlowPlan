@@ -1,6 +1,6 @@
 # FlowPlan
  FlowPlan web-based project management application designed to streamline project planning, note-taking, and documentation. 
-
+<!--
 ## Usage Guide
 1. Main Interface
 
@@ -384,3 +384,4 @@
 				Note: If you are using the cloud sync then the image will not be stored locally and will be stored on the firebase storage.
 
 
+-->
